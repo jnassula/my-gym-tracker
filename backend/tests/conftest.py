@@ -8,6 +8,7 @@ transaction that is rolled back afterwards.
 import os
 from collections.abc import AsyncIterator
 from pathlib import Path
+from typing import TYPE_CHECKING, Any
 
 import pytest
 from alembic import command
@@ -19,6 +20,10 @@ from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, create_async_engin
 from sqlalchemy.pool import NullPool
 
 from app.core.email import EmailMessage
+from tests.workouts.layout import PLAN_REPLY
+
+if TYPE_CHECKING:
+    from app.workouts.parser import ParsedPlan
 
 BACKEND_DIR = Path(__file__).resolve().parents[1]
 
@@ -39,6 +44,8 @@ os.environ["ENVIRONMENT"] = "test"
 os.environ.setdefault("JWT_SECRET", "test-secret-" + "x" * 32)
 # The test client talks plain http, so Secure cookies would never be sent back.
 os.environ["COOKIE_SECURE"] = "false"
+# Tests never reach the real LLM by accident: only the opt-in live tests get the key back.
+LLM_API_KEY = os.environ.pop("LLM_API_KEY", "")
 
 
 async def _create_database_if_missing(url: str) -> None:
@@ -129,6 +136,28 @@ def storage() -> MemoryStorage:
     return MemoryStorage()
 
 
+class FakePlanParser:
+    """Stands in for the LLM: replies ``reply`` (or raises ``error``) and records its input."""
+
+    def __init__(self) -> None:
+        self.texts: list[str] = []
+        self.reply: dict[str, Any] = PLAN_REPLY
+        self.error: Exception | None = None
+
+    async def parse(self, text: str) -> "ParsedPlan":
+        from app.workouts.parser.output import PlanOutput, to_parsed_plan  # noqa: PLC0415
+
+        self.texts.append(text)
+        if self.error is not None:
+            raise self.error
+        return to_parsed_plan(PlanOutput.model_validate(self.reply))
+
+
+@pytest.fixture
+def plan_parser() -> FakePlanParser:
+    return FakePlanParser()
+
+
 @pytest.fixture(autouse=True)
 def _reset_rate_limits() -> None:
     from app.core.rate_limit import limiter  # noqa: PLC0415  # imported after env is set
@@ -138,12 +167,13 @@ def _reset_rate_limits() -> None:
 
 @pytest.fixture
 async def client(
-    db_session: AsyncSession, outbox: Outbox, storage: MemoryStorage
+    db_session: AsyncSession, outbox: Outbox, storage: MemoryStorage, plan_parser: FakePlanParser
 ) -> AsyncIterator[AsyncClient]:
     from app.core.db import get_session  # noqa: PLC0415  # imported after env is set
     from app.core.email import get_mailer  # noqa: PLC0415
     from app.core.storage import get_storage  # noqa: PLC0415
     from app.main import app  # noqa: PLC0415
+    from app.workouts.parser import get_plan_parser  # noqa: PLC0415
 
     async def override_session() -> AsyncIterator[AsyncSession]:
         yield db_session
@@ -151,6 +181,7 @@ async def client(
     app.dependency_overrides[get_session] = override_session
     app.dependency_overrides[get_mailer] = lambda: outbox
     app.dependency_overrides[get_storage] = lambda: storage
+    app.dependency_overrides[get_plan_parser] = lambda: plan_parser
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         yield client
     app.dependency_overrides.clear()

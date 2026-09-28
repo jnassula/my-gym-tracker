@@ -5,33 +5,6 @@ from enum import StrEnum
 from app.exercises.models import MuscleGroup
 
 
-@dataclass(frozen=True)
-class Word:
-    text: str
-    x0: float
-    x1: float
-    top: float
-
-    @property
-    def center(self) -> float:
-        return (self.x0 + self.x1) / 2
-
-
-@dataclass(frozen=True)
-class Line:
-    """One visual line of the PDF, words ordered left to right."""
-
-    words: tuple[Word, ...]
-
-    @property
-    def text(self) -> str:
-        return " ".join(word.text for word in self.words)
-
-    @property
-    def top(self) -> float:
-        return self.words[0].top
-
-
 class ParseWarning(StrEnum):
     """Why an exercise deserves a second look in the preview."""
 
@@ -56,7 +29,7 @@ class ParsedExercise:
 
 @dataclass
 class ParsedDay:
-    weekday: int  # 0 = Monday
+    weekday: int | None  # 0 = Monday; None for rotating days ("Treino A/B/C")
     label: str  # the day's focus, e.g. "Peitoral, Ombros e Abdômen"
     exercises: list[ParsedExercise]
 

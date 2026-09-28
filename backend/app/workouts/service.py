@@ -1,10 +1,11 @@
 """Business logic for the workouts domain. Routers only map HTTP to these functions.
 
-Import is two steps: ``import_pdf`` stores the upload and returns what the parser understood;
+Import is two steps: ``import_pdf`` stores the upload and returns what the LLM understood;
 the client lets the user fix it and ``create_plan`` saves the confirmed structure.
 """
 
 import asyncio
+import logging
 import re
 import uuid
 from pathlib import PurePath
@@ -21,16 +22,18 @@ from app.files.models import FileKind
 from app.workouts.errors import (
     PdfNoStructureError,
     PdfNoTextError,
+    PdfReaderUnavailableError,
     PdfUnreadableError,
     PlanNotFoundError,
 )
 from app.workouts.models import WorkoutDay, WorkoutPlan
 from app.workouts.parser import (
-    NoTextLayerError,
     NoWorkoutStructureError,
     ParsedPlan,
+    ParserUnavailableError,
+    PlanParser,
     UnreadablePdfError,
-    parse_pdf,
+    extract_text,
 )
 from app.workouts.schemas import (
     DayPreview,
@@ -40,16 +43,9 @@ from app.workouts.schemas import (
     PlanSummary,
 )
 
+logger = logging.getLogger(__name__)
+
 MAX_PDF_BYTES = 20 * 1024 * 1024
-_MAX_NOTES = 2000
-_MAX_SETS = 50
-_MAX_REST = 3600
-
-
-def _at_most(value: int | None, limit: int) -> int | None:
-    return None if value is None else min(value, limit)
-
-
 _TITLE_PREFIX = re.compile(r"^periodiza[cç][aã]o\s+de\s+", re.IGNORECASE)
 
 
@@ -61,6 +57,7 @@ def _plan_name(parsed: ParsedPlan, filename: str) -> str:
 
 
 def _preview(parsed: ParsedPlan, file_id: uuid.UUID, filename: str) -> ImportPreview:
+    """The parser already bounds every value to what these schemas accept."""
     return ImportPreview(
         file_id=file_id,
         filename=filename,
@@ -70,20 +67,8 @@ def _preview(parsed: ParsedPlan, file_id: uuid.UUID, filename: str) -> ImportPre
         days=[
             DayPreview(
                 weekday=day.weekday,
-                label=day.label[:120],
-                exercises=[
-                    ExercisePreview(
-                        name=exercise.name or "?",
-                        muscle_group=exercise.muscle_group,
-                        sets=_at_most(exercise.sets, _MAX_SETS),
-                        reps=exercise.reps,
-                        rest_seconds=_at_most(exercise.rest_seconds, _MAX_REST),
-                        rest_max_seconds=_at_most(exercise.rest_max_seconds, _MAX_REST),
-                        notes=exercise.notes[:_MAX_NOTES] if exercise.notes else None,
-                        warnings=exercise.warnings,
-                    )
-                    for exercise in day.exercises
-                ],
+                label=day.label,
+                exercises=[ExercisePreview(**vars(exercise)) for exercise in day.exercises],
             )
             for day in parsed.days
         ],
@@ -91,19 +76,28 @@ def _preview(parsed: ParsedPlan, file_id: uuid.UUID, filename: str) -> ImportPre
 
 
 async def import_pdf(
-    session: AsyncSession, storage: Storage, user_id: uuid.UUID, upload: UploadFile
+    session: AsyncSession,
+    storage: Storage,
+    parser: PlanParser,
+    user_id: uuid.UUID,
+    upload: UploadFile,
 ) -> ImportPreview:
     data = await files.read_upload(upload, max_bytes=MAX_PDF_BYTES)
     files.require_pdf(data)
     try:
         # pdfminer is CPU-bound: keep it off the event loop.
-        parsed = await asyncio.to_thread(parse_pdf, data)
-    except NoTextLayerError as exc:
-        raise PdfNoTextError from exc
-    except NoWorkoutStructureError as exc:
-        raise PdfNoStructureError from exc
+        text = await asyncio.to_thread(extract_text, data)
     except UnreadablePdfError as exc:
         raise PdfUnreadableError from exc
+    if not text:
+        raise PdfNoTextError  # a scan: the LLM only reads text
+    try:
+        parsed = await parser.parse(text)
+    except NoWorkoutStructureError as exc:
+        raise PdfNoStructureError from exc
+    except ParserUnavailableError as exc:
+        logger.warning("Workout-plan reader unavailable: %s", exc)
+        raise PdfReaderUnavailableError from exc
     # Only PDFs that parsed are kept.
     stored = await files.store_file(
         session,

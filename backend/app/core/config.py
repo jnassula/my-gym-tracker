@@ -32,6 +32,12 @@ class Settings(BaseSettings):
     s3_secure: bool = False  # HTTPS to the storage endpoint
     s3_region: str | None = None
 
+    # --- LLM that reads imported workout PDFs (any OpenAI-compatible API) ---
+    llm_api_key: SecretStr = SecretStr("")
+    llm_base_url: str = "https://api.deepseek.com"
+    llm_model: str = "deepseek-flash"
+    llm_timeout_seconds: float = 120.0
+
     # --- email (password recovery) ---
     frontend_url: str = "http://localhost:5173"
     smtp_host: str = "localhost"

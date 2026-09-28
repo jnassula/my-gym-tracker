@@ -4,7 +4,8 @@ import pytest
 from httpx import AsyncClient, Response
 
 from app.workouts import service
-from tests.conftest import MemoryStorage
+from app.workouts.parser import NoWorkoutStructureError, ParserUnavailableError
+from tests.conftest import FakePlanParser, MemoryStorage
 from tests.helpers import signup
 from tests.workouts.layout import PLAN, blank_pdf, to_pdf
 
@@ -40,17 +41,20 @@ def plan_body(preview: dict[str, Any], **overrides: Any) -> dict[str, Any]:
     } | overrides
 
 
-# --- import (upload + parse) -----------------------------------------------------------------
+# --- import (upload + read) ------------------------------------------------------------------
 
 
 async def test_import_returns_the_parsed_structure_and_stores_the_pdf(
-    client: AsyncClient, storage: MemoryStorage
+    client: AsyncClient, storage: MemoryStorage, plan_parser: FakePlanParser
 ) -> None:
     headers = await signup(client)
 
     response = await upload(client, headers)
 
     assert response.status_code == 200
+    # The LLM got the PDF's text, not the file.
+    [text] = plan_parser.texts
+    assert "Cadeira Extensora 3x12 Rm (com 10 segundos de isometria)" in text
     preview = response.json()
     assert preview["name"] == "Treino 07"
     assert preview["filename"] == "Treino 07.pdf"
@@ -83,12 +87,17 @@ async def test_import_requires_authentication(client: AsyncClient) -> None:
     [
         (b"PK\x03\x04 this is a zip", 415, "unsupported_file_type"),
         (blank_pdf(), 422, "pdf_no_text"),
-        (to_pdf([[(20, "Fatura n.º 123")]]), 422, "pdf_no_structure"),
         (b"%PDF-1.4 broken", 422, "pdf_unreadable"),
     ],
 )
-async def test_import_rejects_files_it_cannot_use(
-    client: AsyncClient, storage: MemoryStorage, data: bytes, status: int, code: str
+async def test_import_rejects_files_before_calling_the_llm(
+    client: AsyncClient,
+    *,
+    storage: MemoryStorage,
+    plan_parser: FakePlanParser,
+    data: bytes,
+    status: int,
+    code: str,
 ) -> None:
     headers = await signup(client)
 
@@ -96,7 +105,34 @@ async def test_import_rejects_files_it_cannot_use(
 
     assert response.status_code == status
     assert response.json()["code"] == code
+    assert plan_parser.texts == []
     assert storage.objects == {}  # nothing is kept when the import fails
+
+
+@pytest.mark.parametrize(
+    ("error", "status", "code"),
+    [
+        (NoWorkoutStructureError("not a plan"), 422, "pdf_no_structure"),
+        (ParserUnavailableError("APIConnectionError"), 503, "pdf_reader_unavailable"),
+    ],
+)
+async def test_import_reports_what_the_llm_could_not_do(
+    client: AsyncClient,
+    *,
+    storage: MemoryStorage,
+    plan_parser: FakePlanParser,
+    error: Exception,
+    status: int,
+    code: str,
+) -> None:
+    headers = await signup(client)
+    plan_parser.error = error
+
+    response = await upload(client, headers, to_pdf([[(20, "Fatura n.º 123")]]))
+
+    assert response.status_code == status
+    assert response.json()["code"] == code
+    assert storage.objects == {}
 
 
 async def test_import_rejects_files_over_the_limit(

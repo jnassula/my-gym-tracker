@@ -1,51 +1,65 @@
-"""PDF bytes → visual lines with word positions (the only I/O-facing part of the parser)."""
+"""PDF bytes → text for the LLM: the page text with its layout kept, plus any table cells.
+
+The two views complement each other. Layout text keeps each exercise on the same line as its rest
+time, but squeezes a summary's side-by-side columns together; table cells (when the PDF draws a
+grid, as spreadsheet exports do) say exactly which text sits under which weekday.
+"""
 
 import io
 import logging
 
 import pdfplumber
 
-from app.workouts.parser.types import Line, Word
-
 logger = logging.getLogger(__name__)
 
 MAX_PAGES = 20
-# Words whose tops differ by less than this belong to the same line.
-_LINE_TOLERANCE = 2.5
+# A workout plan is a few thousand characters; this bounds what one import sends to the LLM.
+MAX_CHARS = 60_000
+PAGE_TEXT_HEADER = "=== Page text (layout kept) ==="
+TABLES_HEADER = (
+    "=== Table cells, row by row (' | ' separates cells, ' / ' is a line break in a cell) ==="
+)
+
+Table = list[list[str | None]]
 
 
 class UnreadablePdfError(Exception):
     """Not a PDF, encrypted, corrupt, or too long to be a workout plan."""
 
 
-def _group_lines(words: list[Word]) -> list[Line]:
-    lines: list[list[Word]] = []
-    for word in sorted(words, key=lambda w: (w.top, w.x0)):
-        if lines and abs(lines[-1][0].top - word.top) < _LINE_TOLERANCE:
-            lines[-1].append(word)
-        else:
-            lines.append([word])
-    return [Line(words=tuple(sorted(line, key=lambda w: w.x0))) for line in lines]
+def render_tables(tables: list[Table]) -> str:
+    """One line per row. Merged cells (None) are left out; empty cells stay, so columns line up."""
+    lines = []
+    for table in tables:
+        for row in table:
+            cells = [(cell or "").replace("\n", " / ").strip() for cell in row if cell is not None]
+            if any(cells):
+                lines.append(" | ".join(cells))
+        lines.append("")
+    return "\n".join(lines).strip()
 
 
-def extract_lines(data: bytes) -> list[Line]:
-    """All pages, top to bottom. An empty list means the PDF has no text layer (a scan)."""
+def extract_text(data: bytes) -> str:
+    """All pages, top to bottom. An empty string means the PDF has no text layer (a scan)."""
     try:
         with pdfplumber.open(io.BytesIO(data)) as pdf:
             if len(pdf.pages) > MAX_PAGES:
                 raise UnreadablePdfError(f"More than {MAX_PAGES} pages")
-            lines: list[Line] = []
-            offset = 0.0
-            for page in pdf.pages:
-                words = [
-                    Word(text=w["text"], x0=w["x0"], x1=w["x1"], top=w["top"] + offset)
-                    for w in page.extract_words(x_tolerance=2, y_tolerance=2)
-                ]
-                lines += _group_lines(words)
-                offset += float(page.height)
-            return lines
+            pages = [page.extract_text(layout=True) or "" for page in pdf.pages]
+            tables = [table.extract() for page in pdf.pages for table in page.find_tables()]
     except UnreadablePdfError:
         raise
     except Exception as exc:  # untrusted input: any parser failure is "unreadable"
         logger.info("Unreadable PDF: %s", exc)
         raise UnreadablePdfError(str(exc)) from exc
+    # Layout mode pads the page with blank lines and trailing spaces; they only cost tokens.
+    lines = [line.rstrip() for page in pages for line in page.splitlines()]
+    page_text = "\n".join(line for line in lines if line.strip())
+    if not page_text:
+        return ""
+    text = f"{PAGE_TEXT_HEADER}\n{page_text}"
+    if cells := render_tables(tables):
+        text += f"\n\n{TABLES_HEADER}\n{cells}"
+    if len(text) > MAX_CHARS:
+        raise UnreadablePdfError(f"More than {MAX_CHARS} characters of text")
+    return text

@@ -8,24 +8,28 @@ from app.core.db import SessionDep
 from app.core.rate_limit import limiter
 from app.core.storage import Storage, get_storage
 from app.workouts import service
+from app.workouts.parser import PlanParser, get_plan_parser
 from app.workouts.schemas import ImportPreview, PlanCreate, PlanRead, PlanSummary
 
 router = APIRouter(prefix="/workouts", tags=["workouts"])
 
 StorageDep = Annotated[Storage, Depends(get_storage)]
+ParserDep = Annotated[PlanParser, Depends(get_plan_parser)]
 
 
 @router.post("/import")
 @limiter.limit("30/hour")
 async def import_pdf(
     request: Request,
+    *,
     user: CurrentUser,
     session: SessionDep,
     storage: StorageDep,
+    parser: ParserDep,
     file: Annotated[UploadFile, File(description="Workout plan PDF, up to 20 MB")],
 ) -> ImportPreview:
-    """Upload a PDF and get the structure the parser understood, for review before saving."""
-    return await service.import_pdf(session, storage, user.id, file)
+    """Upload a PDF and get the structure the LLM read from it, for review before saving."""
+    return await service.import_pdf(session, storage, parser, user.id, file)
 
 
 @router.post("", status_code=status.HTTP_201_CREATED)

@@ -25,3 +25,9 @@ class PdfNoTextError(_PdfError):
 class PdfNoStructureError(_PdfError):
     code = "pdf_no_structure"
     detail = "No workout days were found in the PDF"
+
+
+class PdfReaderUnavailableError(AppError):
+    status_code = HTTPStatus.SERVICE_UNAVAILABLE
+    code = "pdf_reader_unavailable"
+    detail = "The PDF reader is unavailable right now, try again later"

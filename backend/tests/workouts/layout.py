@@ -1,25 +1,23 @@
 """Test fixtures shaped like the trainer's PDF template, without anyone's real plan.
 
 A layout is a list of rows; each row is a list of ``(x, text)`` chunks on the same line.
-``to_lines`` turns it into parser input directly; ``to_pdf`` renders a real PDF (Helvetica,
-no dependencies) so extraction and the upload API can be tested end to end.
+``to_pdf`` renders it as a real PDF (Helvetica, no dependencies) so text extraction and the
+upload API can be tested end to end.
 """
 
-from app.workouts.parser.types import Line, Word
+from typing import Any
 
 Row = list[tuple[float, str]]
 
 FIRST_TOP = 55.0
 LINE_HEIGHT = 12.5
-CHAR_WIDTH = 5.0
-SPACE_WIDTH = 2.8
 PAGE_WIDTH, PAGE_HEIGHT = 842, 1191
 REST = 705  # x of the rest column
 WARMUP = 330  # warm-up blocks are centred
 
 # An anonymised plan in the template: summary with multi-line focus columns, a rest day,
 # techniques, a progression, a combined and an alternative exercise, a wrapped line,
-# an unknown machine and an exercise the rules can't classify.
+# an unknown machine and an exercise that fits no muscle group.
 PLAN: list[Row] = [
     [(355, "Periodização de Treino 07")],
     [(388, "Aluno: Atleta Teste")],
@@ -58,22 +56,59 @@ PLAN: list[Row] = [
 ]  # fmt: skip
 
 
+# A correct reading of PLAN, as the LLM replies (fields it leaves out default to null / []).
+PLAN_REPLY: dict[str, Any] = {
+    "is_workout_plan": True,
+    "title": "Periodização de Treino 07",
+    "valid_until": "2026-04-15",
+    "rest_days": [2],
+    "days": [
+        {"weekday": 0, "label": "Quadriceps e Glúteos", "exercises": [
+            {"name": "Esteira", "muscle_group": "warmup", "reps": "30 min",
+             "notes": "30 Minutos na Velocidade 6.5 km/h"},
+            {"name": "Cadeira Extensora", "muscle_group": "warmup", "sets": 2, "reps": "20",
+             "notes": "2x20 (carga leve)"},
+            {"name": "Cadeira Extensora", "muscle_group": "quads", "sets": 3, "reps": "12",
+             "rest_seconds": 80, "notes": "3x12 Rm (com 10 segundos de isometria)"},
+            {"name": "Agachamento Livre", "muscle_group": "quads", "sets": 3, "reps": "15/8-12",
+             "rest_seconds": 60, "rest_max_seconds": 120,
+             "notes": "1x15 (carga leve) + 2x8 a 12 Rm"},
+            {"name": "Cadeira Extensora", "muscle_group": "quads", "sets": 2, "reps": "Rest Pause",
+             "rest_seconds": 60, "rest_max_seconds": 120,
+             "notes": "2x (Rest Pause) = 3x até a falha", "flags": ["technique_sets"]},
+        ]},
+        {"weekday": 1, "label": "Peitoral, Ombros, Abdômen e Panturrilhas", "exercises": [
+            {"name": "Rotação Externa no CrossOver", "muscle_group": "warmup", "sets": 2,
+             "reps": "15", "notes": "2x15 (carga leve)"},
+            {"name": "Supino Inclinado (Progressão de Cargas)", "muscle_group": "chest", "sets": 4,
+             "reps": "15/12/10/6-8", "rest_seconds": 90, "notes": "1x15, 1x12, 1x10, 1x6 a 8 Rm"},
+            {"name": "Crucifixo Inferior com a Polia Alta", "muscle_group": "chest", "sets": 3,
+             "reps": "12", "rest_seconds": 90, "notes": "3x12 Rm + 1x (Drop Set) = FALHA + FALHA",
+             "flags": ["technique_sets"]},
+            {"name": "Abdômen Remador + Prancha Abdominal Isométrica", "muscle_group": "abs",
+             "sets": 3, "reps": "falha", "rest_seconds": 60,
+             "notes": "3x até a falha + Prancha Abdominal Isométrica 3x até a falha",
+             "flags": ["combined_exercise"]},
+            {"name": "Panturrilha Sentada", "muscle_group": "calves", "sets": 4, "reps": "12",
+             "rest_seconds": 45,
+             "notes": "4x12 Rm + 20 segundos de alongamento no final de cada série"},
+        ]},
+        {"weekday": 2, "label": "DayOff", "exercises": []},
+        {"weekday": 4, "label": "Costas (ênfase em remadas)", "exercises": [
+            {"name": "Remada Articulada Máquina", "muscle_group": "back", "sets": 3, "reps": "12",
+             "rest_seconds": 60, "notes": "3x12 Rm ou Remada Unilateral Livre 3x12 Rm",
+             "flags": ["alternative_exercise"]},
+            {"name": "Graviton", "muscle_group": "back", "sets": 3, "reps": "12",
+             "rest_seconds": 60, "notes": "3x12 (carga leve)"},
+            {"name": "Movimento Desconhecido", "muscle_group": None, "sets": 3, "reps": "10",
+             "rest_seconds": 40, "notes": "3x10 Rm"},
+        ]},
+    ],
+}  # fmt: skip
+
+
 def _top(index: int) -> float:
     return FIRST_TOP + index * LINE_HEIGHT
-
-
-def to_lines(rows: list[Row]) -> list[Line]:
-    lines = []
-    for index, row in enumerate(rows):
-        words = []
-        for x, text in row:
-            cursor = x
-            for token in text.split():
-                width = len(token) * CHAR_WIDTH
-                words.append(Word(text=token, x0=cursor, x1=cursor + width, top=_top(index)))
-                cursor += width + SPACE_WIDTH
-        lines.append(Line(words=tuple(words)))
-    return lines
 
 
 def _escape(text: str) -> bytes:
