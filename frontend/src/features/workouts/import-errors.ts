@@ -3,6 +3,7 @@ export const IMPORT_ERRORS = [
   'pdf_no_text',
   'pdf_no_structure',
   'pdf_unreadable',
+  'pdf_reader_unavailable',
   'file_too_large',
   'unsupported_file_type',
 ] as const

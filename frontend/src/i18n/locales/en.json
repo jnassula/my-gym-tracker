@@ -131,6 +131,7 @@
     "pdf_no_text": "The PDF has no text.",
     "pdf_no_structure": "No workout days found in the PDF.",
     "pdf_unreadable": "We couldn't open the PDF.",
+    "pdf_reader_unavailable": "The PDF reader is unavailable. Try again in a moment.",
     "plan_not_found": "Plan not found.",
     "file_not_found": "File not found."
   },
@@ -190,7 +191,7 @@
     "limits": "PDF · max. 20 MB",
     "chooseFile": "Choose file",
     "hint": "The plan is read by weekday → muscle group → exercise (sets × reps, rest). You can fix anything before confirming.",
-    "reading": "Reading the structure…",
+    "reading": "Reading the plan… this can take up to a minute.",
     "anotherFile": "Another file",
     "errors": {
       "pdf_no_text": {
@@ -204,6 +205,10 @@
       "pdf_unreadable": {
         "title": "We couldn't open the PDF",
         "body": "The file may be damaged or password-protected."
+      },
+      "pdf_reader_unavailable": {
+        "title": "We couldn't read the PDF right now",
+        "body": "The service that reads plans didn't answer. Nothing was saved; try again in a moment."
       },
       "file_too_large": {
         "title": "File too large",

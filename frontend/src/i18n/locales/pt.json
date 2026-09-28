@@ -131,6 +131,7 @@
     "pdf_no_text": "O PDF não tem texto.",
     "pdf_no_structure": "Não encontrámos dias de treino no PDF.",
     "pdf_unreadable": "Não conseguimos abrir o PDF.",
+    "pdf_reader_unavailable": "O leitor de PDFs está indisponível. Tenta daqui a pouco.",
     "plan_not_found": "Plano não encontrado.",
     "file_not_found": "Ficheiro não encontrado."
   },
@@ -190,7 +191,7 @@
     "limits": "PDF · máx. 20 MB",
     "chooseFile": "Escolher ficheiro",
     "hint": "O plano é lido por dia da semana → grupo muscular → exercício (séries × reps, descanso). Podes corrigir tudo antes de confirmar.",
-    "reading": "A ler a estrutura…",
+    "reading": "A ler o plano… pode demorar até um minuto.",
     "anotherFile": "Outro ficheiro",
     "errors": {
       "pdf_no_text": {
@@ -204,6 +205,10 @@
       "pdf_unreadable": {
         "title": "Não conseguimos abrir o PDF",
         "body": "O ficheiro pode estar danificado ou protegido por palavra-passe."
+      },
+      "pdf_reader_unavailable": {
+        "title": "Não conseguimos ler o PDF agora",
+        "body": "O serviço que lê os planos não respondeu. Nada foi guardado; tenta outra vez daqui a pouco."
       },
       "file_too_large": {
         "title": "Ficheiro demasiado grande",

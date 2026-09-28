@@ -131,6 +131,7 @@
     "pdf_no_text": "El PDF no tiene texto.",
     "pdf_no_structure": "No hemos encontrado días de entreno en el PDF.",
     "pdf_unreadable": "No hemos podido abrir el PDF.",
+    "pdf_reader_unavailable": "El lector de PDF no está disponible. Inténtalo de nuevo en un momento.",
     "plan_not_found": "Plan no encontrado.",
     "file_not_found": "Archivo no encontrado."
   },
@@ -190,7 +191,7 @@
     "limits": "PDF · máx. 20 MB",
     "chooseFile": "Elegir archivo",
     "hint": "El plan se lee por día de la semana → grupo muscular → ejercicio (series × reps, descanso). Puedes corregirlo todo antes de confirmar.",
-    "reading": "Leyendo la estructura…",
+    "reading": "Leyendo el plan… puede tardar hasta un minuto.",
     "anotherFile": "Otro archivo",
     "errors": {
       "pdf_no_text": {
@@ -204,6 +205,10 @@
       "pdf_unreadable": {
         "title": "No hemos podido abrir el PDF",
         "body": "El archivo puede estar dañado o protegido con contraseña."
+      },
+      "pdf_reader_unavailable": {
+        "title": "No hemos podido leer el PDF ahora",
+        "body": "El servicio que lee los planes no ha respondido. No se ha guardado nada; inténtalo de nuevo en un momento."
       },
       "file_too_large": {
         "title": "Archivo demasiado grande",
