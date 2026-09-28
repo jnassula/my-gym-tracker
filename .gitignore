@@ -25,3 +25,6 @@ coverage/
 .idea/
 .vscode/*
 !.vscode/extensions.json
+
+# Personal sample workout plans: used by local parser tests, never committed
+samples/*.pdf
