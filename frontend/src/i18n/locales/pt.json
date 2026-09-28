@@ -1,0 +1,128 @@
+{
+  "app": {
+    "name": "myGymTracker",
+    "tagline": "O teu plano em PDF vira um treino guiado. Regista cargas com um toque e vê a progressão.",
+    "loading": "A carregar…"
+  },
+  "nav": {
+    "today": "Hoje",
+    "workouts": "Treinos",
+    "progress": "Progresso",
+    "settings": "Definições",
+    "back": "Voltar",
+    "main": "Navegação principal"
+  },
+  "welcome": {
+    "createAccount": "Criar conta",
+    "haveAccount": "Já tenho conta"
+  },
+  "auth": {
+    "email": "Email",
+    "password": "Palavra-passe",
+    "name": "Nome",
+    "show": "mostrar",
+    "hide": "ocultar",
+    "showPassword": "Mostrar palavra-passe",
+    "hidePassword": "Ocultar palavra-passe",
+    "login": {
+      "title": "Entrar",
+      "subtitle": "Bem-vindo de volta.",
+      "remember": "Lembrar-me",
+      "forgot": "Esqueci a palavra-passe",
+      "submit": "Entrar",
+      "submitting": "A entrar…",
+      "noAccount": "Não tens conta?",
+      "createAccount": "Criar conta"
+    },
+    "register": {
+      "title": "Criar conta",
+      "subtitle": "Demora menos de um minuto.",
+      "submit": "Criar conta",
+      "submitting": "A criar conta…",
+      "haveAccount": "Já tens conta?",
+      "login": "Entrar"
+    },
+    "forgot": {
+      "back": "Entrar",
+      "title": "Recuperar palavra-passe",
+      "subtitle": "Enviamos um link para definires uma nova palavra-passe.",
+      "submit": "Enviar link",
+      "submitting": "A enviar…",
+      "sentTitle": "Email enviado",
+      "sentBody": "Verifica a caixa de entrada (e o spam). O link expira em 30 minutos.",
+      "resend": "Reenviar"
+    },
+    "reset": {
+      "title": "Nova palavra-passe",
+      "for": "Para {{email}}",
+      "newPassword": "Nova palavra-passe",
+      "confirm": "Confirmar",
+      "submit": "Guardar e entrar",
+      "submitting": "A guardar…",
+      "checking": "A verificar o link…",
+      "invalidTitle": "Link inválido ou expirado",
+      "invalidBody": "Pede um novo link para recuperar a palavra-passe.",
+      "requestNew": "Pedir novo link"
+    },
+    "strength": {
+      "label": "Força da palavra-passe",
+      "1": "Fraca",
+      "2": "Média",
+      "3": "Forte",
+      "4": "Muito forte",
+      "missing": {
+        "length": "usa pelo menos 8 caracteres",
+        "number": "adiciona um número",
+        "symbol": "adiciona um símbolo"
+      },
+      "criteriaMet": "8+ caracteres, número e símbolo"
+    }
+  },
+  "settings": {
+    "title": "Definições",
+    "account": "Conta",
+    "changePassword": "Alterar palavra-passe",
+    "logout": "Terminar sessão",
+    "password": {
+      "title": "Alterar palavra-passe",
+      "current": "Palavra-passe atual",
+      "new": "Nova palavra-passe",
+      "confirm": "Confirmar nova palavra-passe",
+      "submit": "Guardar alterações",
+      "submitting": "A guardar…",
+      "success": "Palavra-passe alterada. Terminámos a sessão nos outros dispositivos."
+    }
+  },
+  "empty": {
+    "today": {
+      "title": "Sem treino para hoje",
+      "description": "Quando importares o teu plano em PDF, o treino do dia aparece aqui."
+    },
+    "workouts": {
+      "title": "Ainda não tens treinos",
+      "description": "Os planos que importares em PDF aparecem aqui."
+    },
+    "progress": {
+      "title": "Ainda sem progresso",
+      "description": "Regista as tuas primeiras séries para veres a evolução das cargas."
+    }
+  },
+  "validation": {
+    "required": "Campo obrigatório.",
+    "email": "Introduz um email válido.",
+    "passwordMin": "Usa pelo menos 8 caracteres.",
+    "passwordMax": "Usa no máximo 128 caracteres.",
+    "nameMax": "Usa no máximo 100 caracteres.",
+    "passwordsMismatch": "As palavras-passe não coincidem."
+  },
+  "errors": {
+    "invalid_credentials": "Email ou palavra-passe incorretos.",
+    "email_taken": "Já existe uma conta com este email.",
+    "invalid_current_password": "A palavra-passe atual está incorreta.",
+    "invalid_reset_token": "O link é inválido ou expirou.",
+    "rate_limited": "Demasiadas tentativas. Tenta novamente daqui a pouco.",
+    "validation_error": "Verifica os campos assinalados.",
+    "network": "Sem ligação ao servidor. Verifica a internet e tenta novamente.",
+    "unknown": "Algo correu mal. Tenta novamente."
+  }
+}

@@ -1,0 +1,128 @@
+{
+  "app": {
+    "name": "myGymTracker",
+    "tagline": "Your PDF plan becomes a guided workout. Log weights in one tap and watch the progression.",
+    "loading": "Loading…"
+  },
+  "nav": {
+    "today": "Today",
+    "workouts": "Workouts",
+    "progress": "Progress",
+    "settings": "Settings",
+    "back": "Back",
+    "main": "Main navigation"
+  },
+  "welcome": {
+    "createAccount": "Create account",
+    "haveAccount": "I already have an account"
+  },
+  "auth": {
+    "email": "Email",
+    "password": "Password",
+    "name": "Name",
+    "show": "show",
+    "hide": "hide",
+    "showPassword": "Show password",
+    "hidePassword": "Hide password",
+    "login": {
+      "title": "Sign in",
+      "subtitle": "Welcome back.",
+      "remember": "Remember me",
+      "forgot": "Forgot password?",
+      "submit": "Sign in",
+      "submitting": "Signing in…",
+      "noAccount": "No account yet?",
+      "createAccount": "Create one"
+    },
+    "register": {
+      "title": "Create account",
+      "subtitle": "It takes less than a minute.",
+      "submit": "Create account",
+      "submitting": "Creating account…",
+      "haveAccount": "Already have an account?",
+      "login": "Sign in"
+    },
+    "forgot": {
+      "back": "Sign in",
+      "title": "Reset password",
+      "subtitle": "We'll send you a link to set a new password.",
+      "submit": "Send link",
+      "submitting": "Sending…",
+      "sentTitle": "Email sent",
+      "sentBody": "Check your inbox (and spam). The link expires in 30 minutes.",
+      "resend": "Resend"
+    },
+    "reset": {
+      "title": "New password",
+      "for": "For {{email}}",
+      "newPassword": "New password",
+      "confirm": "Confirm",
+      "submit": "Save and sign in",
+      "submitting": "Saving…",
+      "checking": "Checking the link…",
+      "invalidTitle": "Invalid or expired link",
+      "invalidBody": "Request a new link to reset your password.",
+      "requestNew": "Request a new link"
+    },
+    "strength": {
+      "label": "Password strength",
+      "1": "Weak",
+      "2": "Fair",
+      "3": "Strong",
+      "4": "Very strong",
+      "missing": {
+        "length": "use at least 8 characters",
+        "number": "add a number",
+        "symbol": "add a symbol"
+      },
+      "criteriaMet": "8+ characters, number and symbol"
+    }
+  },
+  "settings": {
+    "title": "Settings",
+    "account": "Account",
+    "changePassword": "Change password",
+    "logout": "Log out",
+    "password": {
+      "title": "Change password",
+      "current": "Current password",
+      "new": "New password",
+      "confirm": "Confirm new password",
+      "submit": "Save changes",
+      "submitting": "Saving…",
+      "success": "Password changed. We signed you out on your other devices."
+    }
+  },
+  "empty": {
+    "today": {
+      "title": "No workout today",
+      "description": "Once you import your PDF plan, today's workout shows up here."
+    },
+    "workouts": {
+      "title": "No workouts yet",
+      "description": "The plans you import from PDF show up here."
+    },
+    "progress": {
+      "title": "No progress yet",
+      "description": "Log your first sets to see how your weights evolve."
+    }
+  },
+  "validation": {
+    "required": "Required.",
+    "email": "Enter a valid email.",
+    "passwordMin": "Use at least 8 characters.",
+    "passwordMax": "Use at most 128 characters.",
+    "nameMax": "Use at most 100 characters.",
+    "passwordsMismatch": "Passwords don't match."
+  },
+  "errors": {
+    "invalid_credentials": "Wrong email or password.",
+    "email_taken": "An account with this email already exists.",
+    "invalid_current_password": "Your current password is incorrect.",
+    "invalid_reset_token": "This link is invalid or has expired.",
+    "rate_limited": "Too many attempts. Try again in a moment.",
+    "validation_error": "Check the highlighted fields.",
+    "network": "Can't reach the server. Check your connection and try again.",
+    "unknown": "Something went wrong. Please try again."
+  }
+}
