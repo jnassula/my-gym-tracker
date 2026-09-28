@@ -54,9 +54,12 @@ class HealthToken(BaseModel):
 
 
 def _as_list(value: object) -> object:
-    """The Shortcuts app sends a one-item list as the item itself, and an empty one as nothing."""
-    if value is None or value == "":
+    """A list, or the Shortcuts app's text of one item per line (a list variable in a Text field
+    of a JSON body). A lone item arrives as itself, and none as nothing."""
+    if value is None:
         return []
+    if isinstance(value, str):
+        return [line for line in value.splitlines() if line.strip()]
     return value if isinstance(value, list) else [value]
 
 
@@ -103,7 +106,7 @@ def _samples(
 
 class SyncBatch(BaseModel):
     """What the shortcut posts: for heart rate (``hr``) and active calories (``ae``), the samples'
-    start instants (``_t``) and values (``_v``) as two lists in the same order."""
+    start instants (``_t``) and values (``_v``) in the same order, as lists or one per line."""
 
     hr_t: Texts
     hr_v: Texts

@@ -102,8 +102,18 @@ async def test_a_lone_sample_arrives_as_text_and_numbers_as_the_region_writes_th
     assert result == {"received": 2, "kept": 2, "sessions": 1}
 
 
+async def test_lists_in_text_fields_arrive_one_per_line(gym: Gym, clock: Clock) -> None:
+    await train(gym, clock)
+    body = {key: "\n".join(values) for key, values in BATCH.items()}
+
+    assert await sync(gym, await connect(gym), body) == {"received": 9, "kept": 6, "sessions": 1}
+
+
 async def test_nothing_to_send(gym: Gym) -> None:
+    empty = {"hr_t": "", "hr_v": "", "ae_t": "", "ae_v": ""}
+
     assert await sync(gym, await connect(gym), {}) == {"received": 0, "kept": 0, "sessions": 0}
+    assert await sync(gym, await connect(gym), empty) == {"received": 0, "kept": 0, "sessions": 0}
 
 
 async def test_sensor_glitches_are_dropped(gym: Gym, clock: Clock) -> None:
