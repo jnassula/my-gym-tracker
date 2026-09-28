@@ -40,12 +40,15 @@ from app.logs.schemas import (
     SetCreate,
     SetRead,
     SetUpdate,
+    WeightPoint,
 )
 from app.users.models import User
 from app.workouts import service as workouts
 from app.workouts.models import WorkoutDay, WorkoutPlan
 
 HISTORY_SESSIONS = 4
+# The exercise screen's "Progressão" sparkline.
+RECENT_SESSIONS = 8
 
 
 def now() -> datetime:
@@ -62,10 +65,33 @@ def planned_sets(exercise: Exercise) -> int:
     return exercise.sets or 1
 
 
+def count_done(
+    exercises: Iterable[Exercise], workout: WorkoutSession, sets_logged: dict[uuid.UUID, int]
+) -> int:
+    """Exercises done in a session: ticked off, or with all their planned sets logged."""
+    return sum(
+        1
+        for exercise in exercises
+        if exercise.id in workout.done_exercise_ids
+        or sets_logged.get(exercise.id, 0) >= planned_sets(exercise)
+    )
+
+
+ExerciseKey = tuple[str, MuscleGroup | None]
+
+
+def exercise_key(name: str, group: MuscleGroup | None) -> ExerciseKey:
+    """Same name and group: the same exercise in another plan. The group keeps a warm-up
+    "Cadeira Extensora 2x20 (carga leve)" apart from the working one."""
+    return name.strip().lower(), group
+
+
 # --- ownership -----------------------------------------------------------------------------------
 
 
-async def _exercise(session: AsyncSession, user_id: uuid.UUID, exercise_id: uuid.UUID) -> Exercise:
+async def get_exercise(
+    session: AsyncSession, user_id: uuid.UUID, exercise_id: uuid.UUID
+) -> Exercise:
     exercise = await session.scalar(
         select(Exercise)
         .join(WorkoutDay, Exercise.day_id == WorkoutDay.id)
@@ -174,7 +200,7 @@ async def _drop_if_empty(session: AsyncSession, workout: WorkoutSession) -> bool
 async def log_set(
     session: AsyncSession, user: User, exercise_id: uuid.UUID, data: SetCreate
 ) -> SessionRead:
-    exercise = await _exercise(session, user.id, exercise_id)
+    exercise = await get_exercise(session, user.id, exercise_id)
     workout = await _ensure_session(session, user, exercise.day_id)
     last_number = await session.scalar(
         select(func.max(ExerciseLog.set_number)).where(
@@ -231,7 +257,7 @@ async def delete_set(session: AsyncSession, user: User, set_id: uuid.UUID) -> Se
 
 
 async def mark_done(session: AsyncSession, user: User, exercise_id: uuid.UUID) -> SessionRead:
-    exercise = await _exercise(session, user.id, exercise_id)
+    exercise = await get_exercise(session, user.id, exercise_id)
     workout = await _ensure_session(session, user, exercise.day_id)
     if exercise.id not in workout.done_exercise_ids:
         workout.done_exercise_ids = [*workout.done_exercise_ids, exercise.id]
@@ -242,7 +268,7 @@ async def mark_done(session: AsyncSession, user: User, exercise_id: uuid.UUID) -
 async def unmark_done(
     session: AsyncSession, user: User, exercise_id: uuid.UUID
 ) -> SessionRead | None:
-    exercise = await _exercise(session, user.id, exercise_id)
+    exercise = await get_exercise(session, user.id, exercise_id)
     workout = await _todays_session(session, user, exercise.day_id, lock=True)
     if workout is None:
         return None
@@ -258,19 +284,13 @@ async def unmark_done(
 @dataclass(frozen=True)
 class _PastLog:
     exercise_id: uuid.UUID
-    key: tuple[str, MuscleGroup | None]
+    key: ExerciseKey
     session_id: uuid.UUID
     local_date: date
     performed_at: datetime
     set_number: int
     weight: Decimal
     reps: int
-
-
-def _key(name: str, group: MuscleGroup | None) -> tuple[str, MuscleGroup | None]:
-    """Same name and group: the same exercise in another plan. The group keeps a warm-up
-    "Cadeira Extensora 2x20 (carga leve)" apart from the working one."""
-    return name.strip().lower(), group
 
 
 async def _past_logs(
@@ -308,7 +328,7 @@ async def _past_logs(
     return [
         _PastLog(
             exercise_id=row.exercise_id,
-            key=_key(row.name, row.muscle_group),
+            key=exercise_key(row.name, row.muscle_group),
             session_id=row.session_id,
             local_date=row.local_date,
             performed_at=row.performed_at,
@@ -325,7 +345,7 @@ def _history(
 ) -> list[PastSession]:
     """Earlier sessions of an exercise, newest first. Where the exercise itself was logged only
     its own sets count (a day can list the same machine twice); otherwise the same-named one."""
-    key = _key(exercise.name, exercise.muscle_group)
+    key = exercise_key(exercise.name, exercise.muscle_group)
     by_session: dict[uuid.UUID, list[_PastLog]] = {}
     for log in logs:
         if log.exercise_id == exercise.id or log.key == key:
@@ -361,11 +381,15 @@ async def day_log(session: AsyncSession, user: User, day_id: uuid.UUID) -> DayLo
 async def exercise_history(
     session: AsyncSession, user: User, exercise_id: uuid.UUID
 ) -> ExerciseHistory:
-    exercise = await _exercise(session, user.id, exercise_id)
+    exercise = await get_exercise(session, user.id, exercise_id)
     logs = await _past_logs(session, user.id, [exercise], before=local_today(user))
     sessions = _history(exercise, logs)
     best = max((s.weight for past in sessions for s in past.sets), default=None)
-    return ExerciseHistory(sessions=sessions[:HISTORY_SESSIONS], best_weight=best)
+    recent = [
+        WeightPoint(date=past.date, weight=max(s.weight for s in past.sets))
+        for past in reversed(sessions[:RECENT_SESSIONS])
+    ]
+    return ExerciseHistory(sessions=sessions[:HISTORY_SESSIONS], best_weight=best, recent=recent)
 
 
 # --- week and summary ----------------------------------------------------------------------------
@@ -410,12 +434,8 @@ async def plan_week(session: AsyncSession, user: User, plan_id: uuid.UUID) -> Pl
                 )
             )
             continue
-        done = sum(
-            1
-            for exercise in day.exercises
-            if exercise.id in workout.done_exercise_ids
-            or counts.get((workout.id, exercise.id), 0) >= planned_sets(exercise)
-        )
+        logged = {ex_id: n for (sid, ex_id), n in counts.items() if sid == workout.id}
+        done = count_done(day.exercises, workout, logged)
         days.append(
             DayWeek(
                 day_id=day.id,

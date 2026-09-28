@@ -20,6 +20,7 @@ from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, create_async_engin
 from sqlalchemy.pool import NullPool
 
 from app.core.email import EmailMessage
+from tests.training import MONDAY, Clock, Gym, open_gym
 from tests.workouts.layout import PLAN_REPLY
 
 if TYPE_CHECKING:
@@ -185,3 +186,18 @@ async def client(
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         yield client
     app.dependency_overrides.clear()
+
+
+@pytest.fixture
+def clock(monkeypatch: pytest.MonkeyPatch) -> Clock:
+    """Moves "now" for the training log (and so for progress): starts on a Monday evening."""
+    from app.logs import service  # noqa: PLC0415  # imported after env is set
+
+    clock = Clock(MONDAY)
+    monkeypatch.setattr(service, "now", lambda: clock.now)
+    return clock
+
+
+@pytest.fixture
+async def gym(client: AsyncClient, clock: Clock) -> Gym:
+    return await open_gym(client)

@@ -18,6 +18,7 @@ from app.exercises.router import router as exercises_router
 from app.files.router import router as files_router
 from app.health.router import router as health_router
 from app.logs.router import router as logs_router
+from app.progress.router import router as progress_router
 from app.users.router import router as users_router
 from app.workouts.router import router as workouts_router
 
@@ -27,6 +28,7 @@ DOMAIN_ROUTERS = (
     workouts_router,
     exercises_router,
     logs_router,
+    progress_router,
     files_router,
     health_router,
 )

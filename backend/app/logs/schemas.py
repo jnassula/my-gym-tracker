@@ -72,11 +72,20 @@ class DayLog(BaseModel):
     last: dict[uuid.UUID, PastSession]
 
 
+class WeightPoint(BaseModel):
+    """The heaviest set of a session (or a week), e.g. a point of a progress chart."""
+
+    date: date
+    weight: Kg
+
+
 class ExerciseHistory(BaseModel):
     """Earlier sessions, newest first, and the heaviest weight ever lifted (today excluded)."""
 
     sessions: list[PastSession]
     best_weight: Kg | None
+    # Heaviest set of each of the last 8 sessions, oldest first (the "Progressão" sparkline).
+    recent: list[WeightPoint]
 
 
 class DayWeek(BaseModel):
