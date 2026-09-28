@@ -7,13 +7,19 @@ from sqlalchemy.pool import NullPool
 from app import __version__
 from app.core.db import get_session
 from app.main import app
+from tests.conftest import MemoryStorage
 
 
 async def test_health_reports_ok_when_database_is_reachable(client: AsyncClient) -> None:
     response = await client.get("/health")
 
     assert response.status_code == 200
-    assert response.json() == {"status": "ok", "version": __version__, "database": "ok"}
+    assert response.json() == {
+        "status": "ok",
+        "version": __version__,
+        "database": "ok",
+        "storage": "ok",
+    }
 
 
 async def test_health_returns_503_when_database_is_unreachable(client: AsyncClient) -> None:
@@ -33,3 +39,15 @@ async def test_health_returns_503_when_database_is_unreachable(client: AsyncClie
     assert response.status_code == 503
     assert response.json()["status"] == "degraded"
     assert response.json()["database"] == "unavailable"
+
+
+async def test_health_returns_503_when_storage_is_unreachable(
+    client: AsyncClient, storage: MemoryStorage
+) -> None:
+    storage.available = False
+
+    response = await client.get("/health")
+
+    assert response.status_code == 503
+    assert response.json()["storage"] == "unavailable"
+    assert response.json()["database"] == "ok"

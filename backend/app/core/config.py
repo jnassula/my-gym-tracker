@@ -24,6 +24,14 @@ class Settings(BaseSettings):
     cookie_secure: bool = True
     rate_limit_enabled: bool = True
 
+    # --- object storage (MinIO / any S3) ---
+    s3_endpoint: str = "localhost:9000"  # host:port, no scheme
+    s3_access_key: str = ""
+    s3_secret_key: SecretStr = SecretStr("")
+    s3_bucket: str = "mygymtracker"
+    s3_secure: bool = False  # HTTPS to the storage endpoint
+    s3_region: str | None = None
+
     # --- email (password recovery) ---
     frontend_url: str = "http://localhost:5173"
     smtp_host: str = "localhost"

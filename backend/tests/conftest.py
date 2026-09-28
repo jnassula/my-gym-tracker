@@ -104,6 +104,31 @@ def outbox() -> Outbox:
     return Outbox()
 
 
+class MemoryStorage:
+    """In-memory ``Storage``: tests inspect ``objects`` instead of talking to MinIO."""
+
+    def __init__(self) -> None:
+        self.objects: dict[str, tuple[bytes, str]] = {}
+        self.available = True
+
+    async def put(self, key: str, data: bytes, content_type: str) -> None:
+        self.objects[key] = (data, content_type)
+
+    async def get(self, key: str) -> bytes:
+        return self.objects[key][0]
+
+    async def delete(self, key: str) -> None:
+        self.objects.pop(key, None)
+
+    async def ping(self) -> bool:
+        return self.available
+
+
+@pytest.fixture
+def storage() -> MemoryStorage:
+    return MemoryStorage()
+
+
 @pytest.fixture(autouse=True)
 def _reset_rate_limits() -> None:
     from app.core.rate_limit import limiter  # noqa: PLC0415  # imported after env is set
@@ -112,9 +137,12 @@ def _reset_rate_limits() -> None:
 
 
 @pytest.fixture
-async def client(db_session: AsyncSession, outbox: Outbox) -> AsyncIterator[AsyncClient]:
+async def client(
+    db_session: AsyncSession, outbox: Outbox, storage: MemoryStorage
+) -> AsyncIterator[AsyncClient]:
     from app.core.db import get_session  # noqa: PLC0415  # imported after env is set
     from app.core.email import get_mailer  # noqa: PLC0415
+    from app.core.storage import get_storage  # noqa: PLC0415
     from app.main import app  # noqa: PLC0415
 
     async def override_session() -> AsyncIterator[AsyncSession]:
@@ -122,6 +150,7 @@ async def client(db_session: AsyncSession, outbox: Outbox) -> AsyncIterator[Asyn
 
     app.dependency_overrides[get_session] = override_session
     app.dependency_overrides[get_mailer] = lambda: outbox
+    app.dependency_overrides[get_storage] = lambda: storage
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         yield client
     app.dependency_overrides.clear()
