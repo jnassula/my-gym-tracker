@@ -138,4 +138,13 @@
   h1, h2, h3, h4 {
     @apply font-heading font-medium tracking-tight;
     }
+  /*
+   * Grid items default to min-width: auto, so one long exercise name (truncated or unbroken)
+   * widens its column, and every grid above it, past the screen. Our grids are layout stacks
+   * and fixed track lists, so items shrink to their track instead. Zero specificity: any
+   * min-w-* utility still wins.
+   */
+  :where(.grid) > * {
+    min-width: 0;
+    }
 }
