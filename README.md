@@ -7,7 +7,7 @@ App mobile-first para registar treinos de ginásio: importa o plano a partir de 
 | Backend | Python 3.13, FastAPI, SQLAlchemy 2 (async) + asyncpg, Alembic, Pydantic v2 |
 | Base de dados | PostgreSQL 17 |
 | Ficheiros | MinIO (compatível com S3), SDK `minio` |
-| PDF | pdfplumber + regras próprias (`backend/app/workouts/parser`) |
+| PDF | pdfplumber (texto) + agente LLM com Google ADK, DeepSeek por omissão (`backend/app/workouts/parser`) |
 | Frontend | React 19, Vite 8, TypeScript, Tailwind CSS 4, shadcn/ui (Base UI), TanStack Router + Query, react-hook-form + zod, i18next (pt/en/es) |
 | Autenticação | JWT (PyJWT) + refresh token rotativo, Argon2id (pwdlib), rate limit (slowapi) |
 | Testes | pytest + pytest-asyncio (backend), Vitest + Testing Library (frontend) |
@@ -18,7 +18,7 @@ App mobile-first para registar treinos de ginásio: importa o plano a partir de 
 Requisitos: Docker com Compose v2.
 
 ```bash
-cp .env.example .env        # ajusta passwords/portas e gera um JWT_SECRET
+cp .env.example .env        # ajusta passwords/portas, gera um JWT_SECRET e põe a LLM_API_KEY
 docker compose up --build
 ```
 
@@ -63,19 +63,26 @@ Em desenvolvimento, os emails de recuperação aparecem no Mailpit (http://local
 
 ## Importar um plano em PDF
 
-1. **Upload** (`POST /api/workouts/import`, multipart, até 20 MB). O ficheiro passa pela API em vez de ir por URL presigned: o backend precisa dos bytes na hora para o parse, valida o tipo pelos bytes (`%PDF-`) e o tamanho antes de guardar, e o MinIO fica privado (sem CORS, sem endpoint público). Com PDFs deste tamanho, o custo de passar pela API é irrelevante. Só são guardados no MinIO os PDFs que o parser consegue ler.
-2. **Pré-visualização**: a resposta traz a estrutura que o parser entendeu (dias → exercícios com grupo muscular, séries, reps e descanso), com avisos quando algo merece revisão: técnicas como drop set ou rest pause, exercícios combinados ou alternativos, séries em falta, grupo desconhecido.
+1. **Upload** (`POST /api/workouts/import`, multipart, até 20 MB). O ficheiro passa pela API em vez de ir por URL presigned: o backend precisa dos bytes na hora para a leitura, valida o tipo pelos bytes (`%PDF-`) e o tamanho antes de guardar, e o MinIO fica privado (sem CORS, sem endpoint público). Com PDFs deste tamanho, o custo de passar pela API é irrelevante. Só são guardados no MinIO os PDFs que foram lidos com sucesso.
+2. **Pré-visualização**: a resposta traz a estrutura que o LLM leu (dias → exercícios com grupo muscular, séries, reps e descanso), com avisos quando algo merece revisão: técnicas como drop set ou rest pause, exercícios combinados ou alternativos, séries em falta, grupo desconhecido.
 3. **Revisão** no ecrã: renomear o plano, editar exercícios, "Mover para…" outro dia ou grupo, reordenar, apagar e adicionar.
 4. **Confirmação** (`POST /api/workouts`) grava o plano e, por defeito, torna-o o plano ativo. Cancelar apaga o upload (`DELETE /api/files/{id}`).
 
-O parser tem duas camadas:
+A leitura tem três passos (`backend/app/workouts/parser`):
 
-- **Extração** (`parser/extract.py`): pdfplumber → linhas com a posição de cada palavra.
-- **Interpretação** (`parser/parse.py`, `prescription.py`, `muscle_groups.py`): funções puras, das linhas para o plano. Usa a coluna "Tempo de intervalo" para o descanso, as colunas do resumo para o foco de cada dia, o bloco "Aquecimento" (mostrado primeiro) e os dias `DayOff`.
+- **Extração** (`extract.py`): o pdfplumber tira o texto do PDF localmente, em duas vistas do mesmo conteúdo. O texto da página com o layout preservado mantém cada exercício na mesma linha do seu descanso. As células das tabelas, quando o PDF desenha uma grelha (como os exportados de folhas de cálculo), dizem sem ambiguidade que foco fica debaixo de que dia no resumo; no texto da página essas colunas ficam coladas. Um PDF sem texto (digitalizado) para aqui com `pdf_no_text`: o DeepSeek só lê texto.
+- **Agente** (`agent.py`, `prompt.py`): um `LlmAgent` do [Google ADK](https://google.github.io/adk-docs/) recebe o texto e devolve JSON com dias, exercícios, grupo muscular, séries, reps, descanso e avisos. O modelo é chamado através do `OpenAILlm` do ADK, que fala com qualquer API compatível com a da OpenAI; por omissão aponta para o DeepSeek. O raciocínio do modelo fica desligado (`reasoning_effort: none`): ligado, mesmo no mínimo, um plano de uma semana demorava 90–120 s e esgotava o limite de tokens; desligado, demora 10–16 s e lê igual. Cada importação corre numa sessão nova, apagada no fim, e uma resposta que não seja JSON válido tem uma segunda tentativa.
+- **Normalização** (`output.py`): função pura que valida a resposta e a limita ao que a pré-visualização aceita (grupos conhecidos, cada dia da semana uma só vez, tamanhos máximos, descanso mín ≤ máx). Os avisos "sem séries" e "grupo desconhecido" são calculados aqui; os de técnica, exercício combinado e alternativa vêm do modelo.
 
-Os erros têm códigos próprios: `pdf_no_text` (PDF digitalizado), `pdf_no_structure`, `pdf_unreadable`, `file_too_large` e `unsupported_file_type`.
+Configuração no `.env`: `LLM_API_KEY` (obrigatória para importar; sem ela a app funciona, mas a importação responde `503`), `LLM_BASE_URL` (`https://api.deepseek.com`) e `LLM_MODEL` (`deepseek-flash`; a conta também tem `deepseek-v4-pro`). **O texto do PDF é enviado ao fornecedor do LLM**, incluindo o nome do aluno que aparece no cabeçalho.
 
-Os PDFs pessoais em `samples/` **não são commitados** (estão no `.gitignore`). Os testes do parser usam um layout anonimizado (`backend/tests/workouts/layout.py`), que também é convertido num PDF real. Os testes com os samples (`test_sample_pdfs.py`) correm quando os ficheiros existem e são ignorados quando não existem.
+Os erros têm códigos próprios: `pdf_no_text` (PDF digitalizado), `pdf_no_structure` (não é um plano de treino), `pdf_unreadable`, `pdf_reader_unavailable` (`503`: o LLM falhou, excedeu o tempo ou não está configurado), `file_too_large` e `unsupported_file_type`.
+
+Os PDFs pessoais em `samples/` **não são commitados** (estão no `.gitignore`). Os testes normais nunca chamam o LLM: usam um modelo com respostas pré-definidas e um layout anonimizado (`backend/tests/workouts/layout.py`), que também é convertido num PDF real. Os testes com o LLM real sobre os samples (`test_sample_pdfs.py`) são opcionais, porque custam dinheiro e demoram minutos:
+
+```bash
+docker compose exec -e LLM_LIVE_TESTS=1 backend pytest -m llm
+```
 
 ## Testes e linters
 

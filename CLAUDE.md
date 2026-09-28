@@ -10,7 +10,7 @@ Mobile-first gym tracker. FastAPI + Postgres + MinIO backend, React + shadcn fro
 - Ask before adding dependencies outside the stack. Secrets only through env vars; never commit `.env`.
 - At the end of each phase: update this file and give a 5-line summary (done, left out, decisions, how to test, next step).
 
-Dependencies the user approved (2026-09-28): TanStack Router, react-hook-form + zod, Phosphor icons, PyJWT, pwdlib[argon2], slowapi, email-validator, Mailpit (dev SMTP), `minio` (S3 SDK) + python-multipart. pdfplumber is in the brief. Vitest/Testing Library/jsdom were added in phase 1 as test tooling. The user chose a "Mover para…" menu over drag-and-drop (no dnd-kit).
+Dependencies the user approved (2026-09-28): TanStack Router, react-hook-form + zod, Phosphor icons, PyJWT, pwdlib[argon2], slowapi, email-validator, Mailpit (dev SMTP), `minio` (S3 SDK) + python-multipart, and (2026-09-28, phase 3 rework) `google-adk[openai]` to read PDFs with DeepSeek, the only LLM provider the user has. pdfplumber is in the brief. Vitest/Testing Library/jsdom were added in phase 1 as test tooling. The user chose a "Mover para…" menu over drag-and-drop (no dnd-kit).
 
 **Personal PDFs in `samples/` must never be committed** (they're in `.gitignore`); tests use the anonymised layout in `backend/tests/workouts/layout.py`.
 
@@ -20,6 +20,7 @@ Dependencies the user approved (2026-09-28): TanStack Router, react-hook-form + 
 docker compose up --build                     # full stack (needs .env, copy from .env.example)
 docker compose up --build -V frontend         # after package.json changes (renews node_modules volume)
 docker compose exec backend pytest            # backend tests (own *_test DB, auto-created)
+docker compose exec -e LLM_LIVE_TESTS=1 backend pytest -m llm   # real DeepSeek on samples/ (paid, minutes)
 docker compose exec backend sh -c "ruff check . && ruff format --check . && mypy ."
 docker compose exec backend alembic revision --autogenerate -m "..."
 cd frontend && npm run lint && npm run typecheck && npm test && npm run build
@@ -35,7 +36,7 @@ Host ports (127.0.0.1): frontend 5173, backend 8200, Postgres 5440, MinIO 9100/9
 - Rate limits: `@limiter.limit("…")` (`app/core/rate_limit.py`); the endpoint needs a `request: Request` parameter. Tests reset the limiter automatically.
 - Email: depend on `Mailer` (`get_mailer`) and send from `BackgroundTasks`. Tests get an in-memory `outbox` fixture.
 - Object storage: depend on `Storage` (`get_storage`, `app/core/storage.py`; MinIO SDK in a thread). Tests get an in-memory `storage` fixture. Keys are `users/{user_id}/{kind}/{file_id}`; `files` rows record them. Uploads are read with a size cap (`files.service.read_upload`) and type-checked by bytes (`require_pdf`).
-- PDF parser (`app/workouts/parser`): `extract.py` is the only pdfplumber code; everything else is pure and tested with `tests/workouts/layout.py` (`to_lines` for unit tests, `to_pdf` renders a real PDF). CPU-bound parsing runs in `asyncio.to_thread`. Real-world typos live in the rules on purpose ("mintuo", "PullDonw", "Desevolvimento").
+- PDF reading (`app/workouts/parser`) is done by an LLM, not by rules (the user's decision). `extract.py` turns the PDF into text with pdfplumber (in `asyncio.to_thread`), in two views: layout text (keeps each exercise on its rest time's line) plus table cells when the PDF draws a grid (the only reliable way to map the summary's focus to its weekday; layout mode squeezes those columns together); `agent.py` runs a Google ADK `LlmAgent` over it through ADK's `OpenAILlm` pointed at DeepSeek (`LLM_*` settings); `output.py` validates and bounds the JSON reply (pure). DeepSeek is text-only and only guarantees `json_object` mode, so the agent has no `output_schema`: the shape is in `prompt.py` and validated with Pydantic. Thinking must stay off (`effort="none"` via `_EffortConfig`): at any other effort a week's plan takes 90–120 s and runs out of tokens. The instruction is a callable so ADK doesn't template the JSON example's braces. Services get the reader through the `get_plan_parser` dependency; tests override it with `FakePlanParser` (conftest) and `test_agent.py` drives the real agent with a scripted `BaseLlm`. conftest removes `LLM_API_KEY` from the environment so no test calls the API by accident; only `-m llm` with `LLM_LIVE_TESTS=1` does.
 - Relationships use `lazy="raise"`: load collections with `selectinload` (see `workouts.service.get_plan`).
 - Models: UUID primary keys (`UUIDPrimaryKey`), `timestamptz` everywhere (UTC). Enums are `str_enum(E)` (VARCHAR) paired with `enum_check(col, E)` in `__table_args__`. Don't use `Enum(create_constraint=True)`: Alembic autogenerate duplicates its CHECK. Autogenerate also misses new CHECK constraints: add them by hand.
 - Weights are always stored in kg; `users.unit` is display-only. Emails are stored lower-cased (CHECK enforced).
@@ -81,7 +82,7 @@ Migrations: `initial schema` (all tables), `auth password tracking and persisten
 
 - [x] **Phase 1: scaffold and infra.** Compose, `/health`, error format, full data model, shadcn dark theme.
 - [x] **Phase 2: auth and users** (branch `feat/phase-2-auth`). Design imported (Nocturne theme, Inter, Phosphor). Backend: register/login/refresh/logout/forgot/reset/change password, `/users/me`, rate limits, Mailpit. Frontend: welcome, login, sign-up (strength meter), forgot/reset password, protected shell with bottom tabs, settings (change password, log out), i18n pt/en/es.
-- [x] **Phase 3: PDF upload and parsing** (branch `feat/phase-3-pdf-import`). Parser (all 9 samples parse, 517 exercises, 2 need manual sets because of typos in the PDFs), storage in MinIO, import preview → review (edit/move/reorder/delete/add) → confirm, Treinos list, read-only plan detail.
+- [x] **Phase 3: PDF upload and parsing** (branch `feat/phase-3-pdf-import`). PDFs read by an LLM (DeepSeek `deepseek-flash`, thinking off, through a Google ADK agent): all 9 samples read in 10–16 s each, 506 exercises, day labels right, 1 flagged for manual sets. Storage in MinIO, import preview → review (edit/move/reorder/delete/add) → confirm, Treinos list, read-only plan detail.
 - [ ] Phase 4: workout flow and weight logging
 - [ ] Phase 5: progress and charts
 - [ ] Phase 6: settings, i18n (language switcher, date formats), PWA
@@ -92,6 +93,7 @@ Migrations: `initial schema` (all tables), `auth password tracking and persisten
 - Designed but not built: Apple/Google sign-in buttons (not in the brief), the terms checkbox at sign-up (no terms content exists), post-signup onboarding (3 steps), profile fields (body weight, height, photo), delete account.
 - Hoje and Progresso show empty states until phases 4–5. The plan detail is read-only; phase 4 turns it into days → day → exercise screens.
 - Uploads left behind by an abandoned review (the tab closed before confirming or cancelling) stay in MinIO. A cleanup of files not linked to any plan after N days is pending. Deleting an account doesn't delete its objects yet.
-- Designed but not built in phase 3: OCR for scanned PDFs, drag-and-drop reordering (replaced by the menu, as the user chose), renaming a whole muscle group, and the imported-PDFs management screen (phase 6).
+- Scanned PDFs are refused (`pdf_no_text`): DeepSeek can't read images. OCR (Tesseract) would need a new dependency.
+- Designed but not built in phase 3: drag-and-drop reordering (replaced by the menu, as the user chose), renaming a whole muscle group, and the imported-PDFs management screen (phase 6).
 - Frontend `Dockerfile` has only a `dev` target. The production build (nginx + PWA) comes in phase 6. In production, set `COOKIE_SECURE=true` (the default) and `FORWARDED_ALLOW_IPS` to the reverse proxy.
 - Rate-limit counters are in-memory (single backend instance). Move them to Redis if the backend is ever scaled out.
