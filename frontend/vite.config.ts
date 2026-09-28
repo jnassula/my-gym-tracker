@@ -53,6 +53,8 @@ export default defineConfig({
   server: {
     // File events don't reliably cross the Docker bind mount on macOS: poll inside the container.
     watch: process.env.VITE_WATCH_POLLING === 'true' ? { usePolling: true, interval: 300 } : undefined,
+    // Extra host names the dev server answers to, such as an ngrok domain for testing on a phone.
+    allowedHosts: process.env.DEV_ALLOWED_HOSTS?.split(',').map((host) => host.trim()).filter(Boolean),
     // Same-origin proxy: the refresh-token cookie stays first-party (SameSite=Lax) and no CORS.
     proxy: {
       // xfwd: forward the client IP (X-Forwarded-For) for the backend's rate limits.

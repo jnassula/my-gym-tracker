@@ -100,6 +100,7 @@ services:
     environment:
       API_PROXY_TARGET: http://backend:8000
       VITE_WATCH_POLLING: "true"
+      DEV_ALLOWED_HOSTS: ${DEV_ALLOWED_HOSTS:-}
     volumes:
       - ./frontend:/app
       # Keep the container's Linux node_modules; the host's (macOS) build would not run here.
