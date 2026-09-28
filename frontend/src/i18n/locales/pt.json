@@ -91,6 +91,37 @@
       "submit": "Guardar alterações",
       "submitting": "A guardar…",
       "success": "Palavra-passe alterada. Terminámos a sessão nos outros dispositivos."
+    },
+    "preferences": "Preferências",
+    "language": "Idioma",
+    "units": "Unidades",
+    "darkTheme": "Tema escuro",
+    "autoRest": "Descanso automático",
+    "autoRestHint": "Registar uma série inicia o descanso",
+    "timezone": "Fuso horário",
+    "data": "Dados",
+    "pdfs": "PDFs importados",
+    "notifications": "Notificações",
+    "profileLink": "Perfil de {{name}}",
+    "saveError": "Não foi possível guardar. Tenta outra vez.",
+    "profile": {
+      "title": "Perfil",
+      "name": "Nome",
+      "email": "Email",
+      "memberSince": "Membro desde {{date}}",
+      "save": "Guardar alterações",
+      "saving": "A guardar…",
+      "saved": "Perfil guardado.",
+      "workouts_one": "{{count}} treino",
+      "workouts_other": "{{count}} treinos",
+      "password": "Palavra-passe"
+    },
+    "timezonePage": {
+      "title": "Fuso horário",
+      "search": "Procurar cidade ou região",
+      "device": "Usar o do dispositivo · {{zone}}",
+      "current": "atual",
+      "none": "Nenhum fuso horário encontrado."
     }
   },
   "empty": {
@@ -458,5 +489,29 @@
       "noToday": "Hoje não há treino no plano.",
       "weekShort": "S{{week}}"
     }
+  },
+  "pdfs": {
+    "title": "PDFs importados",
+    "emptyTitle": "Ainda sem PDFs importados",
+    "emptyDescription": "Os planos que importares aparecem aqui para os poderes rever, renomear ou apagar.",
+    "file": "{{file}} · {{size}} · importado {{date}}",
+    "noFile": "Sem PDF · criado {{date}}",
+    "days_one": "{{count}} dia",
+    "days_other": "{{count}} dias",
+    "validUntil": "trocar até {{date}}",
+    "view": "Ver PDF",
+    "rename": "Renomear",
+    "delete": "Apagar",
+    "makeActive": "Tornar ativo",
+    "more": "Mais ações para {{name}}",
+    "renameTitle": "Renomear plano",
+    "name": "Nome",
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "deleteTitle": "Apagar “{{name}}”?",
+    "deleteBody": "O PDF e a estrutura extraída são removidos. O histórico de cargas dos exercícios mantém-se.",
+    "deleteConfirm": "Apagar",
+    "deleted": "Plano apagado.",
+    "activated": "“{{name}}” é agora o treino ativo."
   }
 }

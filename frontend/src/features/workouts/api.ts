@@ -37,3 +37,44 @@ export function useCreatePlan() {
     },
   })
 }
+
+export function useUpdatePlan() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, ...changes }: { id: string; name?: string; is_active?: boolean }) =>
+      api<Plan>(`/api/workouts/${id}`, { method: 'PATCH', body: changes }),
+    onSuccess: (plan) => {
+      queryClient.setQueryData(workoutKeys.detail(plan.id), plan)
+      // The active plan drives Hoje, the week and progress.
+      return queryClient.invalidateQueries()
+    },
+  })
+}
+
+export function useDeletePlan() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (id: string) => api<void>(`/api/workouts/${id}`, { method: 'DELETE' }),
+    onSuccess: (_, id) => {
+      queryClient.removeQueries({ queryKey: workoutKeys.detail(id) })
+      return queryClient.invalidateQueries()
+    },
+  })
+}
+
+/** "Ver PDF": fetches it with the session and opens it in a new tab. */
+export async function openFile(fileId: string) {
+  // Opened before the request, so the browser counts it as a direct result of the tap.
+  const tab = window.open('', '_blank')
+  try {
+    const blob = await api<Blob>(`/api/files/${fileId}/content`, { responseType: 'blob' })
+    const url = URL.createObjectURL(blob)
+    if (tab) tab.location.href = url
+    else window.location.href = url
+    // Long enough for the viewer to load it.
+    setTimeout(() => URL.revokeObjectURL(url), 60_000)
+  } catch (error) {
+    tab?.close()
+    throw error
+  }
+}

@@ -1,3 +1,5 @@
+import { intlLocale } from '@/i18n'
+
 /**
  * Weights are stored in kg; lb users see and type pounds. Steps (+5 … +25, ±2.5) are in the
  * unit on screen: "+5" on a lb screen adds 5 lb.
@@ -33,7 +35,7 @@ export function clampWeight(value: number, unit: Unit): number {
 }
 
 export function formatNumber(value: number, locale: string): string {
-  return new Intl.NumberFormat(locale, { maximumFractionDigits: 2 }).format(value)
+  return new Intl.NumberFormat(intlLocale(locale), { maximumFractionDigits: 2 }).format(value)
 }
 
 /** 57.5 kg → "57,5 kg" (pt), "126.8 lb" for a lb user. */
@@ -43,8 +45,8 @@ export function formatWeight(kg: number, unit: Unit, locale: string): string {
 
 /** Session volume: tonnes from 1000 kg ("9,8 t"), as in the design; lb users get lb. */
 export function formatVolume(kg: number, unit: Unit, locale: string): string {
-  if (unit === 'lb') return `${new Intl.NumberFormat(locale, { maximumFractionDigits: 0 }).format(toUnit(kg, 'lb'))} lb`
-  if (kg >= 1000) return `${new Intl.NumberFormat(locale, { maximumFractionDigits: 1 }).format(kg / 1000)} t`
+  if (unit === 'lb') return `${new Intl.NumberFormat(intlLocale(locale), { maximumFractionDigits: 0 }).format(toUnit(kg, 'lb'))} lb`
+  if (kg >= 1000) return `${new Intl.NumberFormat(intlLocale(locale), { maximumFractionDigits: 1 }).format(kg / 1000)} t`
   return `${formatNumber(kg, locale)} kg`
 }
 

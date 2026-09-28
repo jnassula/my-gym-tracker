@@ -10,6 +10,13 @@ export type Language = (typeof LANGUAGES)[number]
 
 const STORAGE_KEY = 'mygymtracker-lang'
 
+/** Dates and numbers follow the language's home region: PT-PT, not pt-BR ("10 000", not "10.000"). */
+const INTL_LOCALES: Record<Language, string> = { pt: 'pt-PT', en: 'en-GB', es: 'es-ES' }
+
+export function intlLocale(language: string): string {
+  return isLanguage(language) ? INTL_LOCALES[language] : INTL_LOCALES.pt
+}
+
 export function isLanguage(value: unknown): value is Language {
   return typeof value === 'string' && (LANGUAGES as readonly string[]).includes(value)
 }

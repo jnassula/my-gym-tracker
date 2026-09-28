@@ -22,6 +22,9 @@ import { Route as AppProgressCalendarRouteImport } from './routes/_app/progress/
 import { Route as AppProgressWeeksRouteImport } from './routes/_app/progress/weeks'
 import { Route as AppSettingsIndexRouteImport } from './routes/_app/settings/index'
 import { Route as AppSettingsPasswordRouteImport } from './routes/_app/settings/password'
+import { Route as AppSettingsPdfsRouteImport } from './routes/_app/settings/pdfs'
+import { Route as AppSettingsProfileRouteImport } from './routes/_app/settings/profile'
+import { Route as AppSettingsTimezoneRouteImport } from './routes/_app/settings/timezone'
 import { Route as AppWorkoutsIndexRouteImport } from './routes/_app/workouts/index'
 import { Route as AppWorkoutsImportRouteImport } from './routes/_app/workouts/import'
 import { Route as AppProgressExercisesExerciseIdRouteImport } from './routes/_app/progress/exercises/$exerciseId'
@@ -92,6 +95,21 @@ const AppSettingsPasswordRoute = AppSettingsPasswordRouteImport.update({
   path: '/settings/password',
   getParentRoute: () => AppRoute,
 } as any)
+const AppSettingsPdfsRoute = AppSettingsPdfsRouteImport.update({
+  id: '/settings/pdfs',
+  path: '/settings/pdfs',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppSettingsProfileRoute = AppSettingsProfileRouteImport.update({
+  id: '/settings/profile',
+  path: '/settings/profile',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppSettingsTimezoneRoute = AppSettingsTimezoneRouteImport.update({
+  id: '/settings/timezone',
+  path: '/settings/timezone',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppWorkoutsIndexRoute = AppWorkoutsIndexRouteImport.update({
   id: '/workouts/',
   path: '/workouts/',
@@ -136,6 +154,9 @@ export interface FileRoutesByFullPath {
   '/progress/calendar': typeof AppProgressCalendarRoute
   '/progress/weeks': typeof AppProgressWeeksRoute
   '/settings/password': typeof AppSettingsPasswordRoute
+  '/settings/pdfs': typeof AppSettingsPdfsRoute
+  '/settings/profile': typeof AppSettingsProfileRoute
+  '/settings/timezone': typeof AppSettingsTimezoneRoute
   '/workouts/import': typeof AppWorkoutsImportRoute
   '/progress/': typeof AppProgressIndexRoute
   '/settings/': typeof AppSettingsIndexRoute
@@ -155,6 +176,9 @@ export interface FileRoutesByTo {
   '/progress/calendar': typeof AppProgressCalendarRoute
   '/progress/weeks': typeof AppProgressWeeksRoute
   '/settings/password': typeof AppSettingsPasswordRoute
+  '/settings/pdfs': typeof AppSettingsPdfsRoute
+  '/settings/profile': typeof AppSettingsProfileRoute
+  '/settings/timezone': typeof AppSettingsTimezoneRoute
   '/workouts/import': typeof AppWorkoutsImportRoute
   '/progress': typeof AppProgressIndexRoute
   '/settings': typeof AppSettingsIndexRoute
@@ -177,6 +201,9 @@ export interface FileRoutesById {
   '/_app/progress/calendar': typeof AppProgressCalendarRoute
   '/_app/progress/weeks': typeof AppProgressWeeksRoute
   '/_app/settings/password': typeof AppSettingsPasswordRoute
+  '/_app/settings/pdfs': typeof AppSettingsPdfsRoute
+  '/_app/settings/profile': typeof AppSettingsProfileRoute
+  '/_app/settings/timezone': typeof AppSettingsTimezoneRoute
   '/_app/workouts/import': typeof AppWorkoutsImportRoute
   '/_app/progress/': typeof AppProgressIndexRoute
   '/_app/settings/': typeof AppSettingsIndexRoute
@@ -198,6 +225,9 @@ export interface FileRouteTypes {
     | '/progress/calendar'
     | '/progress/weeks'
     | '/settings/password'
+    | '/settings/pdfs'
+    | '/settings/profile'
+    | '/settings/timezone'
     | '/workouts/import'
     | '/progress/'
     | '/settings/'
@@ -217,6 +247,9 @@ export interface FileRouteTypes {
     | '/progress/calendar'
     | '/progress/weeks'
     | '/settings/password'
+    | '/settings/pdfs'
+    | '/settings/profile'
+    | '/settings/timezone'
     | '/workouts/import'
     | '/progress'
     | '/settings'
@@ -238,6 +271,9 @@ export interface FileRouteTypes {
     | '/_app/progress/calendar'
     | '/_app/progress/weeks'
     | '/_app/settings/password'
+    | '/_app/settings/pdfs'
+    | '/_app/settings/profile'
+    | '/_app/settings/timezone'
     | '/_app/workouts/import'
     | '/_app/progress/'
     | '/_app/settings/'
@@ -347,6 +383,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppSettingsPasswordRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/settings/pdfs': {
+      id: '/_app/settings/pdfs'
+      path: '/settings/pdfs'
+      fullPath: '/settings/pdfs'
+      preLoaderRoute: typeof AppSettingsPdfsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/settings/profile': {
+      id: '/_app/settings/profile'
+      path: '/settings/profile'
+      fullPath: '/settings/profile'
+      preLoaderRoute: typeof AppSettingsProfileRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/settings/timezone': {
+      id: '/_app/settings/timezone'
+      path: '/settings/timezone'
+      fullPath: '/settings/timezone'
+      preLoaderRoute: typeof AppSettingsTimezoneRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/workouts/': {
       id: '/_app/workouts/'
       path: '/workouts'
@@ -397,6 +454,9 @@ interface AppRouteChildren {
   AppProgressCalendarRoute: typeof AppProgressCalendarRoute
   AppProgressWeeksRoute: typeof AppProgressWeeksRoute
   AppSettingsPasswordRoute: typeof AppSettingsPasswordRoute
+  AppSettingsPdfsRoute: typeof AppSettingsPdfsRoute
+  AppSettingsProfileRoute: typeof AppSettingsProfileRoute
+  AppSettingsTimezoneRoute: typeof AppSettingsTimezoneRoute
   AppWorkoutsImportRoute: typeof AppWorkoutsImportRoute
   AppProgressIndexRoute: typeof AppProgressIndexRoute
   AppSettingsIndexRoute: typeof AppSettingsIndexRoute
@@ -412,6 +472,9 @@ const AppRouteChildren: AppRouteChildren = {
   AppProgressCalendarRoute: AppProgressCalendarRoute,
   AppProgressWeeksRoute: AppProgressWeeksRoute,
   AppSettingsPasswordRoute: AppSettingsPasswordRoute,
+  AppSettingsPdfsRoute: AppSettingsPdfsRoute,
+  AppSettingsProfileRoute: AppSettingsProfileRoute,
+  AppSettingsTimezoneRoute: AppSettingsTimezoneRoute,
   AppWorkoutsImportRoute: AppWorkoutsImportRoute,
   AppProgressIndexRoute: AppProgressIndexRoute,
   AppSettingsIndexRoute: AppSettingsIndexRoute,

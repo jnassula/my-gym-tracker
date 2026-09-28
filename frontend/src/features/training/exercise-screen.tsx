@@ -17,6 +17,7 @@ import { formatRest } from '@/features/workouts/format'
 import { useWorkoutLabels } from '@/features/workouts/labels'
 import type { Day, Exercise, Plan } from '@/features/workouts/types'
 import { useRequiredSession } from '@/lib/auth'
+import { formatDayMonth } from '@/lib/format'
 
 import { dayLogQuery, historyQuery, useLogSet } from './api'
 import { LogSetSheet } from './log-set-sheet'
@@ -128,7 +129,8 @@ function ExerciseLogger({ day, exercise, log }: { day: Day; exercise: Exercise; 
               ? t('training.rest.next', { name: following.name })
               : t('training.rest.nextSet', { name: exercise.name, n: count + 1 }),
           )
-          restTimer.start(restSeconds(exercise))
+          // "Descanso automático" (Definições) decides whether logging starts the rest.
+          if (user.auto_rest) restTimer.start(restSeconds(exercise))
         },
       },
     )
@@ -312,7 +314,6 @@ type HistoryCardProps = {
 
 function HistoryCard({ history, pending, best, unit }: HistoryCardProps) {
   const { t, i18n } = useTranslation()
-  const date = new Intl.DateTimeFormat(i18n.language, { day: 'numeric', month: 'short' })
   return (
     <Card className="gap-2 px-4 py-3">
       <div className="flex items-baseline justify-between gap-3">
@@ -332,7 +333,7 @@ function HistoryCard({ history, pending, best, unit }: HistoryCardProps) {
           {history.sessions.map((session, index) => (
             <li key={`${session.date}-${index}`} className="flex gap-3 text-sm">
               <span className="w-14 shrink-0 text-muted-foreground">
-                {date.format(new Date(`${session.date}T00:00:00`))}
+                {formatDayMonth(session.date, i18n.language)}
               </span>
               <span className="tabular-nums">{formatSets(session.sets, unit, i18n.language)}</span>
             </li>

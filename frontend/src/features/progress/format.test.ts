@@ -25,7 +25,7 @@ describe('progress formatting', () => {
   })
 
   it('formats and moves between months', () => {
-    expect(formatShortDate('2026-09-23', 'pt')).toBe('23 de set.')
+    expect(formatShortDate('2026-09-23', 'pt')).toBe('23 set.')
     expect(formatMonth('2026-09-01', 'pt')).toBe('setembro de 2026')
     expect(shiftMonth('2026-01-01', -1)).toBe('2025-12-01')
     expect(shiftMonth('2026-12-01', 1)).toBe('2027-01-01')

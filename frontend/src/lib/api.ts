@@ -90,10 +90,12 @@ type RequestOptions = {
   body?: unknown
   /** Attach the access token and refresh it on 401 (default true). */
   auth?: boolean
+  /** "blob" for files (e.g. a PDF to show); JSON otherwise. */
+  responseType?: 'json' | 'blob'
 }
 
 export async function api<T>(path: string, options: RequestOptions = {}): Promise<T> {
-  const { method = 'GET', body, auth = true } = options
+  const { method = 'GET', body, auth = true, responseType = 'json' } = options
 
   // FormData (file uploads) goes as multipart; the browser sets the boundary header.
   const isForm = body instanceof FormData
@@ -118,5 +120,6 @@ export async function api<T>(path: string, options: RequestOptions = {}): Promis
   }
   if (!response.ok) throw await toApiError(response)
   if (response.status === 204 || response.status === 202) return undefined as T
+  if (responseType === 'blob') return (await response.blob()) as T
   return (await response.json()) as T
 }

@@ -1,5 +1,7 @@
 /** Formatting for the progress screens (pure). Weights arrive in kg; see training/weight.ts. */
 import { formatNumber, toUnit, type Unit } from '@/features/training/weight'
+import { intlLocale } from '@/i18n'
+import { formatDayMonth } from '@/lib/format'
 
 /** 3120 → "52 min"; 18720 → "5 h 12". */
 export function formatDuration(seconds: number): string {
@@ -21,12 +23,12 @@ export function formatWeightChange(kg: number, unit: Unit, locale: string): stri
 
 /** "2026-09-23" → "23 set." (pt), "Sep 23" (en). */
 export function formatShortDate(iso: string, locale: string): string {
-  return new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'short' }).format(new Date(`${iso}T00:00:00`))
+  return formatDayMonth(iso, locale)
 }
 
 /** "2026-09-01" → "setembro de 2026". */
 export function formatMonth(iso: string, locale: string): string {
-  return new Intl.DateTimeFormat(locale, { month: 'long', year: 'numeric' }).format(new Date(`${iso}T00:00:00`))
+  return new Intl.DateTimeFormat(intlLocale(locale), { month: 'long', year: 'numeric' }).format(new Date(`${iso}T00:00:00`))
 }
 
 /** First day of the month `offset` months from `iso`'s: ("2026-09-01", -1) → "2026-08-01". */

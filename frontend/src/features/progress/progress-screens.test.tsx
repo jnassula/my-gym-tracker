@@ -127,8 +127,8 @@ describe('ExerciseProgressScreen', () => {
     const rows = within(screen.getByRole('table')).getAllByRole('row')
     expect(rows.map((row) => row.textContent)).toEqual([
       'DataMelhorVolume',
-      '23 de set.82,5 × 81.980 kg',
-      '9 de set.70 × 102.100 kg',
+      '23 set.82,5 × 81980 kg', // pt-PT groups from 5 digits
+      '9 set.70 × 102100 kg',
     ])
   })
 
@@ -248,8 +248,8 @@ describe('WeeksScreen', () => {
     const [byDay] = screen.getAllByRole('table')
     expect(within(byDay).getAllByRole('row').map((row) => row.textContent)).toEqual([
       'Diasemana 39semana 40',
-      'Seg9.0009.800',
-      'Qua10.0004.000',
+      'Seg90009800',
+      'Qua10\u00a00004000', // pt-PT: "10 000" with a no-break space
     ])
   })
 })

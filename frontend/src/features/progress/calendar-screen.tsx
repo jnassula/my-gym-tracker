@@ -12,6 +12,7 @@ import { FormAlert } from '@/features/auth/form-parts'
 import { weekdayOf } from '@/features/training/plan'
 import { useWorkoutLabels } from '@/features/workouts/labels'
 import { WEEKDAYS, type Weekday } from '@/features/workouts/types'
+import { intlLocale } from '@/i18n'
 
 import { calendarQuery } from './api'
 import { formatDuration, formatMonth, shiftMonth } from './format'
@@ -87,7 +88,7 @@ function Month({ data, onMonthChange }: { data: ProgressCalendar; onMonthChange:
   const locale = i18n.language
   const current = `${data.today.slice(0, 7)}-01`
   const blanks = weekdayOf(data.month)
-  const dayLabel = new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'long' })
+  const dayLabel = new Intl.DateTimeFormat(intlLocale(locale), { day: 'numeric', month: 'long' })
 
   return (
     <Card className="gap-3 px-3 py-3">

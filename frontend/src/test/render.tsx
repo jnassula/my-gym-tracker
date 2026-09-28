@@ -31,6 +31,7 @@ export const user = {
   language: 'pt',
   timezone: 'Europe/Lisbon',
   unit: 'kg',
+  auto_rest: true,
   created_at: '2026-09-28T10:00:00Z',
 } as const
 

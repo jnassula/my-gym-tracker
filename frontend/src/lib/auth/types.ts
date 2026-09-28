@@ -7,6 +7,8 @@ export type User = {
   language: Language
   timezone: string
   unit: 'kg' | 'lb'
+  /** "Descanso automático": logging a set starts the rest timer. */
+  auto_rest: boolean
   created_at: string
 }
 

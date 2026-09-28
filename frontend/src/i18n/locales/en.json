@@ -91,6 +91,37 @@
       "submit": "Save changes",
       "submitting": "Saving…",
       "success": "Password changed. We signed you out on your other devices."
+    },
+    "preferences": "Preferences",
+    "language": "Language",
+    "units": "Units",
+    "darkTheme": "Dark theme",
+    "autoRest": "Auto rest timer",
+    "autoRestHint": "Logging a set starts the rest",
+    "timezone": "Time zone",
+    "data": "Data",
+    "pdfs": "Imported PDFs",
+    "notifications": "Notifications",
+    "profileLink": "{{name}}'s profile",
+    "saveError": "Couldn't save. Try again.",
+    "profile": {
+      "title": "Profile",
+      "name": "Name",
+      "email": "Email",
+      "memberSince": "Member since {{date}}",
+      "save": "Save changes",
+      "saving": "Saving…",
+      "saved": "Profile saved.",
+      "workouts_one": "{{count}} workout",
+      "workouts_other": "{{count}} workouts",
+      "password": "Password"
+    },
+    "timezonePage": {
+      "title": "Time zone",
+      "search": "Search a city or region",
+      "device": "Use this device's · {{zone}}",
+      "current": "current",
+      "none": "No time zone found."
     }
   },
   "empty": {
@@ -458,5 +489,29 @@
       "noToday": "No workout in the plan today.",
       "weekShort": "W{{week}}"
     }
+  },
+  "pdfs": {
+    "title": "Imported PDFs",
+    "emptyTitle": "No imported PDFs yet",
+    "emptyDescription": "Plans you import show up here, to review, rename or delete.",
+    "file": "{{file}} · {{size}} · imported {{date}}",
+    "noFile": "No PDF · created {{date}}",
+    "days_one": "{{count}} day",
+    "days_other": "{{count}} days",
+    "validUntil": "swap by {{date}}",
+    "view": "View PDF",
+    "rename": "Rename",
+    "delete": "Delete",
+    "makeActive": "Make active",
+    "more": "More actions for {{name}}",
+    "renameTitle": "Rename plan",
+    "name": "Name",
+    "save": "Save",
+    "cancel": "Cancel",
+    "deleteTitle": "Delete “{{name}}”?",
+    "deleteBody": "The PDF and the structure read from it are removed. Your exercises' weight history stays.",
+    "deleteConfirm": "Delete",
+    "deleted": "Plan deleted.",
+    "activated": "“{{name}}” is now the active workout."
   }
 }

@@ -200,6 +200,25 @@ describe('ExerciseScreen', () => {
   })
 })
 
+describe('ExerciseScreen without automatic rest', () => {
+  it('logs a set without starting the rest', async () => {
+    sessionStore.set({ accessToken: 'access-1', user: { ...user, auto_rest: false } })
+    serve({
+      'GET /api/logs/days/day-1': () => json(dayLog(null)),
+      'GET /api/logs/exercises/ex-2/history': () => json({ sessions: [], best_weight: 50, recent: [] }),
+      'POST /api/logs/exercises/ex-2/sets': () => json(session([loggedSet(1, 50, 12)]), 201),
+    })
+    renderWithRouter(<ExerciseScreen plan={plan} dayId="day-1" exerciseId="ex-2" backLink={null} />)
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Registar série · 50 kg × 12' }))
+    await userEvent.click(within(await screen.findByRole('dialog')).getByRole('button', { name: /Confirmar/ }))
+
+    expect(await screen.findByRole('button', { name: /Série 1: 50 kg × 12/ })).toBeInTheDocument()
+    expect(screen.queryByRole('dialog', { name: 'Descanso' })).not.toBeInTheDocument()
+    expect(restTimer.get().endsAt).toBeNull()
+  })
+})
+
 describe('ExerciseScreen extras', () => {
   it('links its progression and works out the plates', async () => {
     serve({

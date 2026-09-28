@@ -13,11 +13,11 @@ function ChangePassword() {
   const { t } = useTranslation()
   const navigate = useNavigate()
   return (
-    <Page title={t('settings.password.title')} back="/settings">
+    <Page title={t('settings.password.title')} back="/settings/profile">
       <ChangePasswordForm
         onSuccess={() => {
           toast.success(t('settings.password.success'))
-          void navigate({ to: '/settings' })
+          void navigate({ to: '/settings/profile' })
         }}
       />
     </Page>

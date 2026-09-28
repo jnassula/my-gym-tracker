@@ -78,4 +78,10 @@ export type Plan = {
   days: Day[]
 }
 
-export type PlanSummary = Omit<Plan, 'days'> & { weekdays: Weekday[]; exercise_count: number }
+export type PlanSummary = Omit<Plan, 'days'> & {
+  weekdays: Weekday[]
+  day_count: number
+  exercise_count: number
+  /** The PDF it was imported from; null for plans made by hand or whose PDF is gone. */
+  source_file: { id: string; filename: string; size_bytes: number } | null
+}

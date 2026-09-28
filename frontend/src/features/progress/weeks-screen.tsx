@@ -21,6 +21,7 @@ import { FormAlert } from '@/features/auth/form-parts'
 import { formatNumber, formatVolume, toUnit, type Unit } from '@/features/training/weight'
 import { useWorkoutLabels } from '@/features/workouts/labels'
 import type { Weekday } from '@/features/workouts/types'
+import { intlLocale } from '@/i18n'
 import { useRequiredSession } from '@/lib/auth'
 
 import { weeksQuery } from './api'
@@ -132,7 +133,7 @@ function VolumeByDay({ data }: { data: WeekComparison }) {
   const [showTable, setShowTable] = useState(false)
   const locale = i18n.language
   const unit: Unit = user.unit
-  const compact = new Intl.NumberFormat(locale, { notation: 'compact', maximumFractionDigits: 1 })
+  const compact = new Intl.NumberFormat(intlLocale(locale), { notation: 'compact', maximumFractionDigits: 1 })
 
   const config = {
     last: {

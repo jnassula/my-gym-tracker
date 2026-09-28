@@ -91,6 +91,37 @@
       "submit": "Guardar cambios",
       "submitting": "Guardando…",
       "success": "Contraseña cambiada. Hemos cerrado la sesión en tus otros dispositivos."
+    },
+    "preferences": "Preferencias",
+    "language": "Idioma",
+    "units": "Unidades",
+    "darkTheme": "Tema oscuro",
+    "autoRest": "Descanso automático",
+    "autoRestHint": "Registrar una serie inicia el descanso",
+    "timezone": "Zona horaria",
+    "data": "Datos",
+    "pdfs": "PDFs importados",
+    "notifications": "Notificaciones",
+    "profileLink": "Perfil de {{name}}",
+    "saveError": "No se ha podido guardar. Inténtalo de nuevo.",
+    "profile": {
+      "title": "Perfil",
+      "name": "Nombre",
+      "email": "Email",
+      "memberSince": "Miembro desde {{date}}",
+      "save": "Guardar cambios",
+      "saving": "Guardando…",
+      "saved": "Perfil guardado.",
+      "workouts_one": "{{count}} entreno",
+      "workouts_other": "{{count}} entrenos",
+      "password": "Contraseña"
+    },
+    "timezonePage": {
+      "title": "Zona horaria",
+      "search": "Buscar ciudad o región",
+      "device": "Usar la del dispositivo · {{zone}}",
+      "current": "actual",
+      "none": "No se ha encontrado ninguna zona horaria."
     }
   },
   "empty": {
@@ -458,5 +489,29 @@
       "noToday": "Hoy no hay entreno en el plan.",
       "weekShort": "S{{week}}"
     }
+  },
+  "pdfs": {
+    "title": "PDFs importados",
+    "emptyTitle": "Aún sin PDFs importados",
+    "emptyDescription": "Los planes que importes aparecen aquí para revisarlos, renombrarlos o borrarlos.",
+    "file": "{{file}} · {{size}} · importado {{date}}",
+    "noFile": "Sin PDF · creado {{date}}",
+    "days_one": "{{count}} día",
+    "days_other": "{{count}} días",
+    "validUntil": "cambiar antes del {{date}}",
+    "view": "Ver PDF",
+    "rename": "Renombrar",
+    "delete": "Borrar",
+    "makeActive": "Activar",
+    "more": "Más acciones para {{name}}",
+    "renameTitle": "Renombrar plan",
+    "name": "Nombre",
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "deleteTitle": "¿Borrar «{{name}}»?",
+    "deleteBody": "Se borran el PDF y la estructura extraída. El historial de cargas de los ejercicios se mantiene.",
+    "deleteConfirm": "Borrar",
+    "deleted": "Plan borrado.",
+    "activated": "«{{name}}» es ahora el entreno activo."
   }
 }

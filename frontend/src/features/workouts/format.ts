@@ -1,3 +1,6 @@
+import { intlLocale } from '@/i18n'
+import { formatDayMonth } from '@/lib/format'
+
 import type { ExerciseFields, MuscleGroup } from './types'
 
 /** 80 → "1:20"; 3725 → "1:02:05". */
@@ -45,7 +48,7 @@ export function formatScheme(
 export function formatFileSize(bytes: number, locale: string): string {
   const megabytes = bytes / (1024 * 1024)
   if (megabytes < 1) return `${Math.max(1, Math.round(bytes / 1024))} KB`
-  return `${new Intl.NumberFormat(locale, { maximumFractionDigits: 1 }).format(megabytes)} MB`
+  return `${new Intl.NumberFormat(intlLocale(locale), { maximumFractionDigits: 1 }).format(megabytes)} MB`
 }
 
 /** Consecutive-by-first-appearance grouping, as the design lists exercises under group headings. */
@@ -63,7 +66,5 @@ export function groupByMuscle<T extends { muscle_group: MuscleGroup | null }>(
 
 /** A calendar date from the API ("2026-04-15") in the user's language, e.g. "15 abr. 2026". */
 export function formatDate(iso: string, locale: string): string {
-  return new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'short', year: 'numeric' }).format(
-    new Date(`${iso}T00:00:00`),
-  )
+  return formatDayMonth(iso, locale, true)
 }
