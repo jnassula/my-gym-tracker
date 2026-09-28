@@ -1,0 +1,98 @@
+"""Test fixtures.
+
+Tests run against a dedicated ``<db>_test`` Postgres database, rebuilt from the Alembic
+migrations once per run (so the migrations themselves are exercised). Each test runs inside a
+transaction that is rolled back afterwards.
+"""
+
+import os
+from collections.abc import AsyncIterator
+from pathlib import Path
+
+import pytest
+from alembic import command
+from alembic.config import Config
+from httpx import ASGITransport, AsyncClient
+from sqlalchemy import Connection, text
+from sqlalchemy.engine import make_url
+from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, create_async_engine
+from sqlalchemy.pool import NullPool
+
+BACKEND_DIR = Path(__file__).resolve().parents[1]
+
+
+def _test_database_url() -> str:
+    if explicit := os.environ.get("TEST_DATABASE_URL"):
+        return explicit
+    if "DATABASE_URL" not in os.environ:
+        pytest.exit("Set DATABASE_URL (or TEST_DATABASE_URL) to run the tests", returncode=2)
+    url = make_url(os.environ["DATABASE_URL"])
+    return url.set(database=f"{url.database}_test").render_as_string(hide_password=False)
+
+
+TEST_DATABASE_URL = _test_database_url()
+# The app builds its engine from settings on import: make sure it can only see the test DB.
+os.environ["DATABASE_URL"] = TEST_DATABASE_URL
+os.environ["ENVIRONMENT"] = "test"
+
+
+async def _create_database_if_missing(url: str) -> None:
+    target = make_url(url)
+    admin = create_async_engine(
+        target.set(database="postgres"), isolation_level="AUTOCOMMIT", poolclass=NullPool
+    )
+    async with admin.connect() as conn:
+        exists = await conn.scalar(
+            text("SELECT 1 FROM pg_database WHERE datname = :name"), {"name": target.database}
+        )
+        if not exists:
+            await conn.execute(text(f'CREATE DATABASE "{target.database}"'))
+    await admin.dispose()
+
+
+def _upgrade_to_head(connection: Connection) -> None:
+    config = Config(BACKEND_DIR / "alembic.ini")
+    config.attributes["connection"] = connection
+    config.attributes["configure_logger"] = False
+    command.upgrade(config, "head")
+
+
+@pytest.fixture(scope="session")
+async def engine() -> AsyncIterator[AsyncEngine]:
+    await _create_database_if_missing(TEST_DATABASE_URL)
+    engine = create_async_engine(TEST_DATABASE_URL, poolclass=NullPool)
+    async with engine.begin() as conn:
+        await conn.execute(text("DROP SCHEMA public CASCADE"))
+        await conn.execute(text("CREATE SCHEMA public"))
+        await conn.run_sync(_upgrade_to_head)
+    yield engine
+    await engine.dispose()
+
+
+@pytest.fixture
+async def db_session(engine: AsyncEngine) -> AsyncIterator[AsyncSession]:
+    async with engine.connect() as conn:
+        await conn.begin()
+        # Service-level commits become savepoints; the outer transaction is always rolled back.
+        session = AsyncSession(
+            bind=conn, join_transaction_mode="create_savepoint", expire_on_commit=False
+        )
+        try:
+            yield session
+        finally:
+            await session.close()
+            await conn.rollback()
+
+
+@pytest.fixture
+async def client(db_session: AsyncSession) -> AsyncIterator[AsyncClient]:
+    from app.core.db import get_session  # noqa: PLC0415  # imported after env is set
+    from app.main import app  # noqa: PLC0415
+
+    async def override_session() -> AsyncIterator[AsyncSession]:
+        yield db_session
+
+    app.dependency_overrides[get_session] = override_session
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        yield client
+    app.dependency_overrides.clear()
