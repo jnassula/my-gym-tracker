@@ -8,7 +8,9 @@ App mobile-first para registar treinos de ginásio: importa o plano a partir de 
 | Base de dados | PostgreSQL 17 |
 | Ficheiros | MinIO (compatível com S3), SDK `minio` |
 | PDF | pdfplumber (texto) + agente LLM com Google ADK, DeepSeek por omissão (`backend/app/workouts/parser`) |
-| Frontend | React 19, Vite 8, TypeScript, Tailwind CSS 4, shadcn/ui (Base UI), TanStack Router + Query, react-hook-form + zod, i18next (pt/en/es), Recharts (gráficos) |
+| Frontend | React 19, Vite 8, TypeScript, Tailwind CSS 4, shadcn/ui (Base UI), TanStack Router + Query, react-hook-form + zod, i18next (pt/en/es), Recharts (gráficos), vite-plugin-pwa (Workbox) |
+| Notificações | Web Push com VAPID (pywebpush) |
+| Produção | nginx a servir o build do frontend (`docker-compose.prod.yml`) |
 | Autenticação | JWT (PyJWT) + refresh token rotativo, Argon2id (pwdlib), rate limit (slowapi) |
 | Testes | pytest + pytest-asyncio (backend), Vitest + Testing Library (frontend) |
 | Qualidade | ruff + mypy `--strict` (backend), oxlint + `tsc` (frontend) |
@@ -120,6 +122,64 @@ Os números de progresso ignoram as séries de aquecimento e seguem cada exercí
 | `GET /api/progress/calendar?month=2026-09-01` | um mês (por omissão, o atual) |
 | `GET /api/progress/weeks` | esta semana contra a passada |
 
+## Definições
+
+- **Perfil** (nome), **idioma** (pt/en/es), **unidades** (kg/lb), **tema escuro**, **descanso automático** (registar uma série inicia o descanso) e **fuso horário** (pesquisa, ou o do dispositivo). As alterações aplicam-se logo e gravam-se em segundo plano.
+- Datas e números seguem o idioma: pt → pt-PT, en → en-GB, es → es-ES (`intlLocale()` em `src/i18n`).
+- **PDFs importados**: renomear o plano, torná-lo ativo, abrir o PDF original e apagar. Apagar esconde o plano e apaga o PDF do MinIO; as cargas registadas continuam no histórico e no progresso.
+- **Notificações**: ver abaixo.
+
+| Endpoint | |
+| --- | --- |
+| `PATCH /api/users/me` | `{name?, language?, timezone?, unit?, auto_rest?}` |
+| `PATCH /api/workouts/{id}` | `{name?, is_active?}` |
+| `DELETE /api/workouts/{id}` | esconde o plano e apaga o PDF; o histórico fica |
+| `GET /api/files/{id}/content` | o PDF original (inline) |
+
+## Notificações (Web Push)
+
+O backend envia Web Push com [pywebpush](https://github.com/web-push-libs/pywebpush) e uma chave VAPID. Para ativar, gera a chave uma vez, põe-na no `.env` e reinicia o backend:
+
+```bash
+docker compose exec backend python -m app.notifications.keys   # imprime VAPID_PRIVATE_KEY=...
+docker compose up -d backend
+```
+
+Guarda a chave: uma chave nova invalida as subscrições de todos os dispositivos. Sem ela a app funciona, o ecrã de notificações diz que o servidor não as tem configuradas e o agendador não corre.
+
+Cada dispositivo ativa-as em **Definições → Notificações** (o browser pede autorização). O Web Push precisa de HTTPS (em desenvolvimento, `localhost` conta como seguro). No iPhone só funciona com a app instalada no ecrã principal (iOS 16.4 ou mais recente).
+
+| Notificação | Quando |
+| --- | --- |
+| Lembrete de treino | nos dias do plano ativo, à hora escolhida (17:30 por omissão, no fuso do utilizador), se ainda não treinou; não sai com mais de 3 h de atraso |
+| Resumo semanal | domingo às 20:00: treinos e toneladas da semana (desligado por omissão) |
+| Plano a expirar | uma vez, 14 dias antes da data "trocar até" |
+| Fim do descanso | só com a app em segundo plano: ao sair a meio de um descanso a app pede-o ao servidor, e ao voltar cancela-o. Com a app aberta, vibra e toca um sinal |
+| Novo recorde | aviso na app ao registar a série |
+
+O agendador corre dentro do backend, uma vez por minuto (`app/notifications/scheduler.py`). Cada lembrete é reservado em `notification_deliveries` antes de sair, por isso não se repete mesmo com dois backends. O fim do descanso fica num temporizador em memória: se o backend reiniciar a meio, essa notificação perde-se.
+
+| Endpoint | |
+| --- | --- |
+| `GET /api/notifications` | a chave pública VAPID (`null` sem configuração) e as definições |
+| `PATCH /api/notifications/settings` | liga/desliga cada notificação e a hora do lembrete |
+| `POST /api/notifications/subscriptions` | a subscrição do browser (`{endpoint, keys}`) |
+| `DELETE /api/notifications/subscriptions?endpoint=…` | esquece este dispositivo |
+| `POST /api/notifications/test` | envia uma notificação de teste |
+| `POST`/`DELETE /api/notifications/rest` | agenda/cancela o fim do descanso (`{ends_at}`) |
+
+## App instalável (PWA) e produção
+
+O frontend é uma PWA ([vite-plugin-pwa](https://vite-pwa-org.netlify.app/)) com um service worker próprio (`frontend/src/sw/`): guarda em cache os ficheiros do build, abre a app sem rede e mostra as notificações. Quando há uma versão nova, a app mostra um aviso com "Atualizar". O service worker também corre no dev server.
+
+Para correr a stack como em produção (o frontend compilado servido pelo nginx, que faz proxy de `/api` e `/health`; o backend sem `--reload` nem bind mounts):
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.prod.yml up --build
+```
+
+Em produção a sério falta um proxy com HTTPS à frente: os cookies `Secure`, o Web Push e a instalação da PWA precisam dele. Mantém `COOKIE_SECURE=true` e define `FORWARDED_ALLOW_IPS` com o IP do proxy.
+
 ## Testes e linters
 
 Com a stack a correr:
@@ -166,7 +226,7 @@ Revê sempre o ficheiro gerado em `backend/alembic/versions/`. O teste `test_mig
 backend/
   app/
     core/           config, sessão de BD, formato de erros, healthcheck, email, rate limit
-    auth/ users/ workouts/ exercises/ logs/ files/ health/
+    auth/ users/ workouts/ exercises/ logs/ files/ progress/ notifications/ health/
                     um domínio por pasta: router.py, schemas.py, models.py, service.py
     models.py       regista todos os modelos (Alembic e testes)
     main.py         app FastAPI; os routers dos domínios ficam em /api
@@ -175,7 +235,8 @@ backend/
 frontend/
   src/
     routes/         rotas (TanStack Router, file-based); _auth = só visitantes, _app = autenticado
-    features/       código por funcionalidade (auth, workouts: import, revisão, planos)
+    features/       código por funcionalidade (auth, workouts, training, progress, settings, notifications)
+    sw/             service worker (cache da PWA e Web Push)
     components/ui/  componentes shadcn (gerados pela CLI; ajustes do design notados em CLAUDE.md)
     components/     componentes partilhados (shell da app, logótipo)
     lib/            cliente da API e sessão em memória
