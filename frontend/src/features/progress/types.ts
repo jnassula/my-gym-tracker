@@ -80,3 +80,43 @@ export type WeekComparison = {
     exercises: Array<{ exercise_id: string; name: string; last_week: number | null; this_week: number | null }>
   } | null
 }
+
+export type HeartRatePoint = { at: string; bpm: number }
+
+export type SessionExercise = {
+  exercise_id: string
+  name: string
+  muscle_group: MuscleGroup | null
+  sets: number
+  top_weight: number
+  first_set_at: string
+  /** The highest heart rate around any of its sets; null without watch data. */
+  peak_heart_rate: number | null
+}
+
+/** What the Apple Watch recorded during the session, once the shortcut synced. */
+export type SessionHealth = {
+  /** The session's window: a little before the first set to after the last. */
+  starts_at: string
+  ends_at: string
+  avg_heart_rate: number | null
+  max_heart_rate: number | null
+  /** Active kcal. */
+  calories: number | null
+  heart_rate: HeartRatePoint[]
+}
+
+export type SessionDetail = {
+  session_id: string
+  date: string
+  label: string
+  started_at: string
+  ended_at: string | null
+  duration_seconds: number
+  /** Working sets. */
+  sets: number
+  volume: number
+  /** In the order they were first logged. */
+  exercises: SessionExercise[]
+  health: SessionHealth | null
+}

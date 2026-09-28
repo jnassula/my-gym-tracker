@@ -13,3 +13,10 @@ export function formatDayMonthLong(iso: string, language: string): string {
     new Date(`${iso}T00:00:00`),
   )
 }
+
+/** An instant's wall-clock time in a time zone: "18:02". */
+export function formatTime(iso: string, language: string, timeZone?: string): string {
+  return new Intl.DateTimeFormat(intlLocale(language), { hour: 'numeric', minute: '2-digit', timeZone }).format(
+    new Date(iso),
+  )
+}

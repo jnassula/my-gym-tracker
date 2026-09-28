@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button'
 import { Spinner } from '@/components/ui/spinner'
 import { logout } from '@/features/auth/api'
 import { errorKey } from '@/features/auth/errors'
+import { healthQuery } from '@/features/health/api'
 import { useUpdateMe, type UserChanges } from '@/features/settings/api'
 import { LinkRow, Segmented, SettingsGroup, SettingsRow, SwitchRow } from '@/features/settings/rows'
 import { plansQuery } from '@/features/workouts/api'
@@ -25,6 +26,7 @@ export function SettingsScreen() {
   const update = useUpdateMe()
   const { resolvedTheme, setTheme } = useTheme()
   const plans = useQuery(plansQuery())
+  const health = useQuery(healthQuery())
   const [loggingOut, setLoggingOut] = useState(false)
 
   const save = (changes: UserChanges) =>
@@ -96,6 +98,21 @@ export function SettingsScreen() {
         </SettingsGroup>
 
         <SettingsGroup title={t('settings.data')}>
+          <LinkRow
+            to="/settings/health"
+            label="Apple Health"
+            value={
+              health.data &&
+              (health.data.connected ? (
+                <span className="flex items-center gap-1.5">
+                  <span aria-hidden className="size-1.5 rounded-full bg-primary" />
+                  {t('health.connected')}
+                </span>
+              ) : (
+                t('health.notConnected')
+              ))
+            }
+          />
           <LinkRow to="/settings/pdfs" label={t('settings.pdfs')} value={plans.data?.length} />
           <LinkRow to="/settings/notifications" label={t('settings.notifications')} />
         </SettingsGroup>

@@ -1,5 +1,6 @@
 import { CaretLeftIcon, CaretRightIcon, CheckIcon } from '@phosphor-icons/react'
 import { useQuery } from '@tanstack/react-query'
+import { Link } from '@tanstack/react-router'
 import { cn } from 'cn'
 import { useTranslation } from 'react-i18next'
 
@@ -166,13 +167,15 @@ function ThisWeek({ sessions, today }: { sessions: WeekSession[]; today: string 
             const complete = session.exercises_total > 0 && session.exercises_done === session.exercises_total
             const title = [labels.weekdayShort(session.weekday as Weekday), session.label].filter(Boolean).join(' · ')
             return (
-              <li
-                key={session.session_id}
-                className={cn(
-                  'flex min-h-11 items-center gap-2 rounded-xl bg-card px-3 py-2 text-[13px]',
-                  isToday && 'bg-accent ring-1 ring-primary',
-                )}
-              >
+              <li key={session.session_id}>
+                <Link
+                  to="/progress/sessions/$sessionId"
+                  params={{ sessionId: session.session_id }}
+                  className={cn(
+                    'flex min-h-11 items-center gap-2 rounded-xl bg-card px-3 py-2 text-[13px]',
+                    isToday && 'bg-accent ring-1 ring-primary',
+                  )}
+                >
                 {complete ? (
                   <CheckIcon weight="bold" className="size-4 shrink-0 text-primary" aria-hidden />
                 ) : (
@@ -186,7 +189,8 @@ function ThisWeek({ sessions, today }: { sessions: WeekSession[]; today: string 
                         duration: formatDuration(session.duration_seconds),
                         sets: session.sets,
                       })}
-                </span>
+                  </span>
+                </Link>
               </li>
             )
           })}

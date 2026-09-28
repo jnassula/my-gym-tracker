@@ -26,6 +26,7 @@
     --color-border: var(--border);
     --color-destructive: var(--destructive);
     --color-warning: var(--warning);
+    --color-heart: var(--heart);
     --color-accent-foreground: var(--accent-foreground);
     --color-accent: var(--accent);
     --color-muted-foreground: var(--muted-foreground);
@@ -70,6 +71,7 @@
     --accent-foreground: #423a6a;    /* accent-800 */
     --destructive: #b8505d;
     --warning: #8a6d3b;              /* low-confidence parses (design) */
+    --heart: #b8505d;                /* heart rate (design); validated on --card */
     --border: #cfd3e5;
     --input: #b2b6ca;                /* neutral-400 */
     --ring: #796cbf;
@@ -106,6 +108,7 @@
     --accent-foreground: #e7e5fe;    /* accent-200 */
     --destructive: #e07a86;
     --warning: #d9b36b;              /* low-confidence parses (design) */
+    --heart: #d9707d;                /* heart rate (design #e07a86, stepped into the dark band) */
     --border: #3f424d;               /* neutral-800 */
     --input: #3f424d;
     --ring: #9184d9;

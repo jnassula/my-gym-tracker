@@ -2,7 +2,14 @@ import { keepPreviousData, queryOptions } from '@tanstack/react-query'
 
 import { api } from '@/lib/api'
 
-import type { ExerciseProgress, ProgressCalendar, ProgressOverview, Range, WeekComparison } from './types'
+import type {
+  ExerciseProgress,
+  ProgressCalendar,
+  ProgressOverview,
+  Range,
+  SessionDetail,
+  WeekComparison,
+} from './types'
 
 export const progressKeys = {
   all: ['progress'] as const,
@@ -10,6 +17,7 @@ export const progressKeys = {
   exercise: (id: string, range: Range) => ['progress', 'exercise', id, range] as const,
   calendar: (month: string) => ['progress', 'calendar', month] as const,
   weeks: ['progress', 'weeks'] as const,
+  session: (id: string) => ['progress', 'session', id] as const,
 }
 
 export const overviewQuery = () =>
@@ -33,3 +41,10 @@ export const calendarQuery = (month: string) =>
 
 export const weeksQuery = () =>
   queryOptions({ queryKey: progressKeys.weeks, queryFn: () => api<WeekComparison>('/api/progress/weeks') })
+
+/** One session's exercises and, once the shortcut synced, the Apple Watch's data. */
+export const sessionDetailQuery = (id: string) =>
+  queryOptions({
+    queryKey: progressKeys.session(id),
+    queryFn: () => api<SessionDetail>(`/api/progress/sessions/${id}`),
+  })

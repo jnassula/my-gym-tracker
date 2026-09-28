@@ -194,7 +194,9 @@
     "day_not_found": "Este día ya no existe en el plan.",
     "exercise_not_found": "Este ejercicio ya no existe en el plan.",
     "set_not_found": "Esta serie ya no existe.",
-    "session_not_found": "Este entreno ya no existe."
+    "session_not_found": "Este entreno ya no existe.",
+    "health_token_invalid": "Este código de Apple Health ya no es válido.",
+    "health_not_connected": "Apple Health no está conectado."
   },
   "weekdays": {
     "short": {
@@ -414,6 +416,7 @@
       "sets": "series registradas",
       "volume": "Volumen",
       "duration": "Duración",
+      "avgHr": "FC media",
       "record": "Nuevo PR: {{name}} — {{weight}}",
       "close": "Cerrar"
     },
@@ -588,5 +591,88 @@
     "planExpiringHint": "14 días antes de la fecha de cambio",
     "footer": "Con la app cerrada, las notificaciones llegan por Web Push (en iPhone, con la app en la pantalla de inicio, iOS 16.4+).",
     "recordToast": "Nuevo PR: {{name}} — {{weight}}"
+  },
+  "health": {
+    "connect": "Conectar Apple Health",
+    "connected": "Conectado",
+    "notConnected": "Desconectado",
+    "syncNow": "Sincronizar ahora",
+    "intro": {
+      "title": "Los datos del Apple Watch en tus entrenamientos",
+      "body": "Un atajo en el iPhone lee la frecuencia cardiaca, las calorías activas y la duración que registra el Apple Watch, y las envía aquí. Cada entrenamiento muestra la FC media, las calorías y el pico de cada ejercicio.",
+      "privacy": "Solo guardamos lo registrado durante tus entrenamientos. El resto del día se queda en el iPhone."
+    },
+    "webLimitation": "App web: la sincronización pasa por la app Salud del iPhone, con el atajo «myGymTracker». Desde el navegador no hay acceso directo al reloj.",
+    "lastSync": "Última sincronización {{when}}",
+    "waiting": "Esperando la primera sincronización",
+    "weekSynced": "{{synced}} de {{total}} entrenamientos de esta semana con datos del reloj",
+    "reads": "Qué leemos del reloj",
+    "heartRate": "Frecuencia cardiaca",
+    "heartRateHint": "FC media y picos por ejercicio",
+    "calories": "Calorías activas",
+    "caloriesHint": "Durante el entrenamiento",
+    "readsFooter": "Desactivar uno de estos borra lo que ya se importó de ese tipo.",
+    "newToken": "Generar un código nuevo",
+    "newTokenTitle": "¿Generar un código nuevo?",
+    "newTokenBody": "El código actual deja de funcionar: tendrás que pegar el nuevo en el atajo. Los datos importados se quedan.",
+    "newTokenConfirm": "Generar",
+    "disconnect": "Desconectar Apple Health",
+    "disconnectTitle": "¿Desconectar Apple Health?",
+    "disconnectBody": "El atajo deja de funcionar y borramos la frecuencia cardiaca, las calorías y las duraciones importadas. Tus entrenamientos se quedan.",
+    "disconnectConfirm": "Desconectar",
+    "disconnected": "Apple Health desconectado.",
+    "cancel": "Cancelar",
+    "session": {
+      "untitled": "Entrenamiento",
+      "synced": "sinc.",
+      "duration": "Duración",
+      "avgHr": "FC media",
+      "calories": "Calorías",
+      "heartRate": "Frecuencia cardiaca",
+      "max": "máx {{value}}",
+      "bpm": "{{value}} lpm",
+      "kcal": "{{value}} kcal",
+      "setsPeaks": "Series · picos de FC",
+      "sets": "Series",
+      "exerciseSets_one": "{{name}} · {{count}} serie",
+      "exerciseSets_other": "{{name}} · {{count}} series",
+      "peak": "Pico de {{value}} lpm",
+      "noData": "Sin datos del Apple Watch en este entrenamiento. Conecta Apple Health para ver la frecuencia cardiaca y las calorías.",
+      "noDataConnected": "Aún no hay datos del Apple Watch en este entrenamiento. Ejecuta el atajo para traerlos.",
+      "showTable": "Ver tabla",
+      "hideTable": "Ocultar tabla",
+      "time": "Hora",
+      "exercise": "Ejercicio"
+    },
+    "setup": {
+      "title": "Crear el atajo en el iPhone",
+      "intro": "Hazlo en el iPhone, con esta página abierta: vas a pegar la dirección y el encabezado de abajo en el atajo «{{name}}». Solo una vez.",
+      "address": "Dirección (URL)",
+      "header": "Encabezado Authorization",
+      "tokenOnce": "El código solo aparece ahora. Si lo pierdes, genera otro en Apple Health.",
+      "copy": "Copiar {{what}}",
+      "copied": "Copiado",
+      "copyFailed": "No se ha podido copiar.",
+      "stepsTitle": "Pasos",
+      "steps": {
+        "name": "En la app Atajos, toca + y llama al atajo «{{name}}», exactamente así: «Sincronizar ahora» lo abre por este nombre.",
+        "heartRate": "Añade «Buscar muestras de Salud»: tipo Frecuencia cardiaca, con la fecha de inicio en los últimos 3 días.",
+        "heartRateDates": "Añade «Formatear fecha». En la fecha, elige las muestras del paso 2 y tócalas para elegir Fecha de inicio. Formato ISO 8601, con «Incluir hora ISO 8601» activado.",
+        "energy": "Añade otra vez «Buscar muestras de Salud»: tipo Energía activa (o Calorías activas), en los últimos 3 días.",
+        "energyDates": "Añade «Formatear fecha» para las muestras del paso 4, como en el paso 3.",
+        "post": "Añade «Obtener contenido de URL» con la dirección de arriba. En Mostrar más: método POST; en Encabezados, Authorization con el valor copiado arriba; cuerpo de la solicitud JSON con estos cuatro campos de texto:",
+        "firstRun": "Ejecuta el atajo una vez a mano. Permite el acceso a Frecuencia cardiaca y Energía activa y, cuando pregunte si puede enviar los datos a esta dirección, elige «Permitir siempre». Si avisa de una gran cantidad de datos, activa compartir grandes cantidades de datos en Ajustes → Atajos → Avanzado.",
+        "automation": "Opcional: en Automatización, + → Hora del día (por ejemplo a las 21:00, a diario) → Ejecutar inmediatamente → atajo «{{name}}». Con el iPhone bloqueado no se pueden leer los datos de Salud: lo que falle un día se envía al siguiente."
+      },
+      "fields": {
+        "hr_t": "la fecha formateada del paso 3",
+        "hr_v": "las muestras del paso 2 → Valor",
+        "ae_t": "la fecha formateada del paso 5",
+        "ae_v": "las muestras del paso 4 → Valor"
+      },
+      "ngrok": "¿Pruebas con ngrok? Añade también el encabezado ngrok-skip-browser-warning con el valor 1.",
+      "run": "Ejecutar el atajo ahora",
+      "done": "Hecho"
+    }
   }
 }

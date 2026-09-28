@@ -21,6 +21,7 @@ import { Route as AppProgressIndexRouteImport } from './routes/_app/progress/ind
 import { Route as AppProgressCalendarRouteImport } from './routes/_app/progress/calendar'
 import { Route as AppProgressWeeksRouteImport } from './routes/_app/progress/weeks'
 import { Route as AppSettingsIndexRouteImport } from './routes/_app/settings/index'
+import { Route as AppSettingsHealthRouteImport } from './routes/_app/settings/health'
 import { Route as AppSettingsNotificationsRouteImport } from './routes/_app/settings/notifications'
 import { Route as AppSettingsPasswordRouteImport } from './routes/_app/settings/password'
 import { Route as AppSettingsPdfsRouteImport } from './routes/_app/settings/pdfs'
@@ -29,6 +30,7 @@ import { Route as AppSettingsTimezoneRouteImport } from './routes/_app/settings/
 import { Route as AppWorkoutsIndexRouteImport } from './routes/_app/workouts/index'
 import { Route as AppWorkoutsImportRouteImport } from './routes/_app/workouts/import'
 import { Route as AppProgressExercisesExerciseIdRouteImport } from './routes/_app/progress/exercises/$exerciseId'
+import { Route as AppProgressSessionsSessionIdRouteImport } from './routes/_app/progress/sessions/$sessionId'
 import { Route as AppWorkoutsPlanIdIndexRouteImport } from './routes/_app/workouts/$planId/index'
 import { Route as AppWorkoutsPlanIdDaysDayIdIndexRouteImport } from './routes/_app/workouts/$planId/days/$dayId/index'
 import { Route as AppWorkoutsPlanIdDaysDayIdExerciseIdRouteImport } from './routes/_app/workouts/$planId/days/$dayId/$exerciseId'
@@ -91,6 +93,11 @@ const AppSettingsIndexRoute = AppSettingsIndexRouteImport.update({
   path: '/settings/',
   getParentRoute: () => AppRoute,
 } as any)
+const AppSettingsHealthRoute = AppSettingsHealthRouteImport.update({
+  id: '/settings/health',
+  path: '/settings/health',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppSettingsNotificationsRoute =
   AppSettingsNotificationsRouteImport.update({
     id: '/settings/notifications',
@@ -133,6 +140,12 @@ const AppProgressExercisesExerciseIdRoute =
     path: '/progress/exercises/$exerciseId',
     getParentRoute: () => AppRoute,
   } as any)
+const AppProgressSessionsSessionIdRoute =
+  AppProgressSessionsSessionIdRouteImport.update({
+    id: '/progress/sessions/$sessionId',
+    path: '/progress/sessions/$sessionId',
+    getParentRoute: () => AppRoute,
+  } as any)
 const AppWorkoutsPlanIdIndexRoute = AppWorkoutsPlanIdIndexRouteImport.update({
   id: '/workouts/$planId/',
   path: '/workouts/$planId/',
@@ -160,6 +173,7 @@ export interface FileRoutesByFullPath {
   '/welcome': typeof AuthWelcomeRoute
   '/progress/calendar': typeof AppProgressCalendarRoute
   '/progress/weeks': typeof AppProgressWeeksRoute
+  '/settings/health': typeof AppSettingsHealthRoute
   '/settings/notifications': typeof AppSettingsNotificationsRoute
   '/settings/password': typeof AppSettingsPasswordRoute
   '/settings/pdfs': typeof AppSettingsPdfsRoute
@@ -170,6 +184,7 @@ export interface FileRoutesByFullPath {
   '/settings/': typeof AppSettingsIndexRoute
   '/workouts/': typeof AppWorkoutsIndexRoute
   '/progress/exercises/$exerciseId': typeof AppProgressExercisesExerciseIdRoute
+  '/progress/sessions/$sessionId': typeof AppProgressSessionsSessionIdRoute
   '/workouts/$planId/': typeof AppWorkoutsPlanIdIndexRoute
   '/workouts/$planId/days/$dayId/$exerciseId': typeof AppWorkoutsPlanIdDaysDayIdExerciseIdRoute
   '/workouts/$planId/days/$dayId/': typeof AppWorkoutsPlanIdDaysDayIdIndexRoute
@@ -183,6 +198,7 @@ export interface FileRoutesByTo {
   '/welcome': typeof AuthWelcomeRoute
   '/progress/calendar': typeof AppProgressCalendarRoute
   '/progress/weeks': typeof AppProgressWeeksRoute
+  '/settings/health': typeof AppSettingsHealthRoute
   '/settings/notifications': typeof AppSettingsNotificationsRoute
   '/settings/password': typeof AppSettingsPasswordRoute
   '/settings/pdfs': typeof AppSettingsPdfsRoute
@@ -193,6 +209,7 @@ export interface FileRoutesByTo {
   '/settings': typeof AppSettingsIndexRoute
   '/workouts': typeof AppWorkoutsIndexRoute
   '/progress/exercises/$exerciseId': typeof AppProgressExercisesExerciseIdRoute
+  '/progress/sessions/$sessionId': typeof AppProgressSessionsSessionIdRoute
   '/workouts/$planId': typeof AppWorkoutsPlanIdIndexRoute
   '/workouts/$planId/days/$dayId/$exerciseId': typeof AppWorkoutsPlanIdDaysDayIdExerciseIdRoute
   '/workouts/$planId/days/$dayId': typeof AppWorkoutsPlanIdDaysDayIdIndexRoute
@@ -209,6 +226,7 @@ export interface FileRoutesById {
   '/_app/': typeof AppIndexRoute
   '/_app/progress/calendar': typeof AppProgressCalendarRoute
   '/_app/progress/weeks': typeof AppProgressWeeksRoute
+  '/_app/settings/health': typeof AppSettingsHealthRoute
   '/_app/settings/notifications': typeof AppSettingsNotificationsRoute
   '/_app/settings/password': typeof AppSettingsPasswordRoute
   '/_app/settings/pdfs': typeof AppSettingsPdfsRoute
@@ -219,6 +237,7 @@ export interface FileRoutesById {
   '/_app/settings/': typeof AppSettingsIndexRoute
   '/_app/workouts/': typeof AppWorkoutsIndexRoute
   '/_app/progress/exercises/$exerciseId': typeof AppProgressExercisesExerciseIdRoute
+  '/_app/progress/sessions/$sessionId': typeof AppProgressSessionsSessionIdRoute
   '/_app/workouts/$planId/': typeof AppWorkoutsPlanIdIndexRoute
   '/_app/workouts/$planId/days/$dayId/$exerciseId': typeof AppWorkoutsPlanIdDaysDayIdExerciseIdRoute
   '/_app/workouts/$planId/days/$dayId/': typeof AppWorkoutsPlanIdDaysDayIdIndexRoute
@@ -234,6 +253,7 @@ export interface FileRouteTypes {
     | '/welcome'
     | '/progress/calendar'
     | '/progress/weeks'
+    | '/settings/health'
     | '/settings/notifications'
     | '/settings/password'
     | '/settings/pdfs'
@@ -244,6 +264,7 @@ export interface FileRouteTypes {
     | '/settings/'
     | '/workouts/'
     | '/progress/exercises/$exerciseId'
+    | '/progress/sessions/$sessionId'
     | '/workouts/$planId/'
     | '/workouts/$planId/days/$dayId/$exerciseId'
     | '/workouts/$planId/days/$dayId/'
@@ -257,6 +278,7 @@ export interface FileRouteTypes {
     | '/welcome'
     | '/progress/calendar'
     | '/progress/weeks'
+    | '/settings/health'
     | '/settings/notifications'
     | '/settings/password'
     | '/settings/pdfs'
@@ -267,6 +289,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/workouts'
     | '/progress/exercises/$exerciseId'
+    | '/progress/sessions/$sessionId'
     | '/workouts/$planId'
     | '/workouts/$planId/days/$dayId/$exerciseId'
     | '/workouts/$planId/days/$dayId'
@@ -282,6 +305,7 @@ export interface FileRouteTypes {
     | '/_app/'
     | '/_app/progress/calendar'
     | '/_app/progress/weeks'
+    | '/_app/settings/health'
     | '/_app/settings/notifications'
     | '/_app/settings/password'
     | '/_app/settings/pdfs'
@@ -292,6 +316,7 @@ export interface FileRouteTypes {
     | '/_app/settings/'
     | '/_app/workouts/'
     | '/_app/progress/exercises/$exerciseId'
+    | '/_app/progress/sessions/$sessionId'
     | '/_app/workouts/$planId/'
     | '/_app/workouts/$planId/days/$dayId/$exerciseId'
     | '/_app/workouts/$planId/days/$dayId/'
@@ -389,6 +414,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppSettingsIndexRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/settings/health': {
+      id: '/_app/settings/health'
+      path: '/settings/health'
+      fullPath: '/settings/health'
+      preLoaderRoute: typeof AppSettingsHealthRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/settings/notifications': {
       id: '/_app/settings/notifications'
       path: '/settings/notifications'
@@ -445,6 +477,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppProgressExercisesExerciseIdRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/progress/sessions/$sessionId': {
+      id: '/_app/progress/sessions/$sessionId'
+      path: '/progress/sessions/$sessionId'
+      fullPath: '/progress/sessions/$sessionId'
+      preLoaderRoute: typeof AppProgressSessionsSessionIdRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/workouts/$planId/': {
       id: '/_app/workouts/$planId/'
       path: '/workouts/$planId'
@@ -473,6 +512,7 @@ interface AppRouteChildren {
   AppIndexRoute: typeof AppIndexRoute
   AppProgressCalendarRoute: typeof AppProgressCalendarRoute
   AppProgressWeeksRoute: typeof AppProgressWeeksRoute
+  AppSettingsHealthRoute: typeof AppSettingsHealthRoute
   AppSettingsNotificationsRoute: typeof AppSettingsNotificationsRoute
   AppSettingsPasswordRoute: typeof AppSettingsPasswordRoute
   AppSettingsPdfsRoute: typeof AppSettingsPdfsRoute
@@ -483,6 +523,7 @@ interface AppRouteChildren {
   AppSettingsIndexRoute: typeof AppSettingsIndexRoute
   AppWorkoutsIndexRoute: typeof AppWorkoutsIndexRoute
   AppProgressExercisesExerciseIdRoute: typeof AppProgressExercisesExerciseIdRoute
+  AppProgressSessionsSessionIdRoute: typeof AppProgressSessionsSessionIdRoute
   AppWorkoutsPlanIdIndexRoute: typeof AppWorkoutsPlanIdIndexRoute
   AppWorkoutsPlanIdDaysDayIdExerciseIdRoute: typeof AppWorkoutsPlanIdDaysDayIdExerciseIdRoute
   AppWorkoutsPlanIdDaysDayIdIndexRoute: typeof AppWorkoutsPlanIdDaysDayIdIndexRoute
@@ -492,6 +533,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppIndexRoute: AppIndexRoute,
   AppProgressCalendarRoute: AppProgressCalendarRoute,
   AppProgressWeeksRoute: AppProgressWeeksRoute,
+  AppSettingsHealthRoute: AppSettingsHealthRoute,
   AppSettingsNotificationsRoute: AppSettingsNotificationsRoute,
   AppSettingsPasswordRoute: AppSettingsPasswordRoute,
   AppSettingsPdfsRoute: AppSettingsPdfsRoute,
@@ -502,6 +544,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppSettingsIndexRoute: AppSettingsIndexRoute,
   AppWorkoutsIndexRoute: AppWorkoutsIndexRoute,
   AppProgressExercisesExerciseIdRoute: AppProgressExercisesExerciseIdRoute,
+  AppProgressSessionsSessionIdRoute: AppProgressSessionsSessionIdRoute,
   AppWorkoutsPlanIdIndexRoute: AppWorkoutsPlanIdIndexRoute,
   AppWorkoutsPlanIdDaysDayIdExerciseIdRoute:
     AppWorkoutsPlanIdDaysDayIdExerciseIdRoute,

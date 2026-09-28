@@ -194,7 +194,9 @@
     "day_not_found": "This day is no longer in the plan.",
     "exercise_not_found": "This exercise is no longer in the plan.",
     "set_not_found": "This set no longer exists.",
-    "session_not_found": "This workout no longer exists."
+    "session_not_found": "This workout no longer exists.",
+    "health_token_invalid": "This Apple Health code is no longer valid.",
+    "health_not_connected": "Apple Health isn't connected."
   },
   "weekdays": {
     "short": {
@@ -414,6 +416,7 @@
       "sets": "sets logged",
       "volume": "Volume",
       "duration": "Duration",
+      "avgHr": "Avg HR",
       "record": "New PR: {{name}} — {{weight}}",
       "close": "Close"
     },
@@ -588,5 +591,88 @@
     "planExpiringHint": "14 days before the “swap by” date",
     "footer": "With the app closed, notifications arrive by Web Push (on iPhone, with the app on the home screen, iOS 16.4+).",
     "recordToast": "New PR: {{name}} — {{weight}}"
+  },
+  "health": {
+    "connect": "Connect Apple Health",
+    "connected": "Connected",
+    "notConnected": "Off",
+    "syncNow": "Sync now",
+    "intro": {
+      "title": "Your Apple Watch data in your workouts",
+      "body": "A shortcut on your iPhone reads the heart rate, active calories and duration your Apple Watch records and sends them here. Each workout then shows the average heart rate, the calories and each exercise's peak.",
+      "privacy": "Only what was recorded during your workouts is kept. The rest of your day stays on the iPhone."
+    },
+    "webLimitation": "Web app: syncing goes through the Health app on the iPhone, with the “myGymTracker” shortcut. A browser can't reach the watch directly.",
+    "lastSync": "Last synced {{when}}",
+    "waiting": "Waiting for the first sync",
+    "weekSynced": "{{synced}} of {{total}} workouts this week with watch data",
+    "reads": "What we read from the watch",
+    "heartRate": "Heart rate",
+    "heartRateHint": "Average, and the peak per exercise",
+    "calories": "Active calories",
+    "caloriesHint": "During the workout",
+    "readsFooter": "Turning one of these off deletes what was imported of it.",
+    "newToken": "Create a new code",
+    "newTokenTitle": "Create a new code?",
+    "newTokenBody": "The current code stops working: you'll need to paste the new one into the shortcut. Imported data stays.",
+    "newTokenConfirm": "Create",
+    "disconnect": "Disconnect Apple Health",
+    "disconnectTitle": "Disconnect Apple Health?",
+    "disconnectBody": "The shortcut stops working and the imported heart rate, calories and durations are deleted. Your workouts stay.",
+    "disconnectConfirm": "Disconnect",
+    "disconnected": "Apple Health disconnected.",
+    "cancel": "Cancel",
+    "session": {
+      "untitled": "Workout",
+      "synced": "synced",
+      "duration": "Duration",
+      "avgHr": "Avg HR",
+      "calories": "Calories",
+      "heartRate": "Heart rate",
+      "max": "max {{value}}",
+      "bpm": "{{value}} bpm",
+      "kcal": "{{value}} kcal",
+      "setsPeaks": "Sets · heart-rate peaks",
+      "sets": "Sets",
+      "exerciseSets_one": "{{name}} · {{count}} set",
+      "exerciseSets_other": "{{name}} · {{count}} sets",
+      "peak": "Peak of {{value}} bpm",
+      "noData": "No Apple Watch data for this workout. Connect Apple Health to see heart rate and calories.",
+      "noDataConnected": "No Apple Watch data for this workout yet. Run the shortcut to bring it in.",
+      "showTable": "Show table",
+      "hideTable": "Hide table",
+      "time": "Time",
+      "exercise": "Exercise"
+    },
+    "setup": {
+      "title": "Create the shortcut on your iPhone",
+      "intro": "Do this on your iPhone, with this page open: you'll paste the address and header below into the “{{name}}” shortcut. Just once.",
+      "address": "Address (URL)",
+      "header": "Authorization header",
+      "tokenOnce": "The code is only shown now. If you lose it, create another in Apple Health.",
+      "copy": "Copy {{what}}",
+      "copied": "Copied",
+      "copyFailed": "Couldn't copy.",
+      "stepsTitle": "Steps",
+      "steps": {
+        "name": "In the Shortcuts app, tap + and name the shortcut “{{name}}”, exactly: “Sync now” opens it by this name.",
+        "heartRate": "Add “Find Health Samples”: type Heart Rate, with the start date in the last 3 days.",
+        "heartRateDates": "Add “Format Date”. For the date, pick the samples from step 2 and tap them to choose Start Date. Format ISO 8601, with “Include ISO 8601 Time” on.",
+        "energy": "Add “Find Health Samples” again: type Active Energy (or Active Calories), in the last 3 days.",
+        "energyDates": "Add “Format Date” for the samples from step 4, as in step 3.",
+        "post": "Add “Get Contents of URL” with the address above. Under Show More: method POST; under Headers, Authorization with the value copied above; request body JSON with these four Text fields:",
+        "firstRun": "Run the shortcut once by hand. Allow access to Heart Rate and Active Energy and, when it asks whether to send the data to this address, choose “Always Allow”. If it warns about a large amount of data, turn on sharing large amounts of data in Settings → Shortcuts → Advanced.",
+        "automation": "Optional: in Automation, + → Time of Day (say 9 pm, daily) → Run Immediately → the “{{name}}” shortcut. The Health app can't be read while the iPhone is locked: what fails one day goes the next."
+      },
+      "fields": {
+        "hr_t": "the formatted date from step 3",
+        "hr_v": "the samples from step 2 → Value",
+        "ae_t": "the formatted date from step 5",
+        "ae_v": "the samples from step 4 → Value"
+      },
+      "ngrok": "Testing through ngrok? Also add the header ngrok-skip-browser-warning with the value 1.",
+      "run": "Run the shortcut now",
+      "done": "Done"
+    }
   }
 }

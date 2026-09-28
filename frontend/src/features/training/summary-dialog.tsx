@@ -1,4 +1,5 @@
-import { StarIcon } from '@phosphor-icons/react'
+import { StarIcon, WatchIcon } from '@phosphor-icons/react'
+import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 
 import { Button } from '@/components/ui/button'
@@ -10,6 +11,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import { healthQuery, shortcutUrl } from '@/features/health/api'
+import { sessionDetailQuery } from '@/features/progress/api'
 import { clock } from '@/features/workouts/format'
 
 import type { SessionSummary } from './types'
@@ -21,6 +24,30 @@ function Tile({ value, label }: { value: string; label: string }) {
       <span className="text-2xl tabular-nums">{value}</span>
       <span className="text-xs text-muted-foreground">{label}</span>
     </div>
+  )
+}
+
+/** "FC média" once the shortcut synced the watch's data; until then, a way to sync. Coming back
+ * from the Shortcuts app refetches (window focus), so the tile fills in by itself. */
+function HeartRateTile({ sessionId }: { sessionId: string }) {
+  const { t } = useTranslation()
+  const health = useQuery(healthQuery())
+  const connected = health.data?.connected === true
+  const detail = useQuery({ ...sessionDetailQuery(sessionId), enabled: connected })
+  if (!connected) return null
+  const average = detail.data?.health?.avg_heart_rate
+  if (average) return <Tile value={t('health.session.bpm', { value: average })} label={t('training.summary.avgHr')} />
+  return (
+    <a
+      href={shortcutUrl()}
+      className="grid gap-0.5 rounded-xl bg-background px-3 py-3 outline-none focus-visible:ring-2 focus-visible:ring-ring"
+    >
+      <span className="flex items-center gap-1.5 text-[15px] leading-8 text-primary">
+        <WatchIcon aria-hidden weight="bold" className="size-4" />
+        {t('health.syncNow')}
+      </span>
+      <span className="text-xs text-muted-foreground">{t('training.summary.avgHr')}</span>
+    </a>
   )
 }
 
@@ -53,6 +80,7 @@ export function SummaryDialog({ summary, title, unit, onClose }: SummaryDialogPr
                 label={t('training.summary.volume')}
               />
               <Tile value={clock(summary.duration_seconds)} label={t('training.summary.duration')} />
+              <HeartRateTile sessionId={summary.session_id} />
             </div>
             {summary.records.length > 0 && (
               <ul className="grid gap-1">

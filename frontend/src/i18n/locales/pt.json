@@ -194,7 +194,9 @@
     "day_not_found": "Este dia já não existe no plano.",
     "exercise_not_found": "Este exercício já não existe no plano.",
     "set_not_found": "Esta série já não existe.",
-    "session_not_found": "Este treino já não existe."
+    "session_not_found": "Este treino já não existe.",
+    "health_token_invalid": "Este código do Apple Health já não é válido.",
+    "health_not_connected": "O Apple Health não está ligado."
   },
   "weekdays": {
     "short": {
@@ -414,6 +416,7 @@
       "sets": "séries registadas",
       "volume": "Volume",
       "duration": "Duração",
+      "avgHr": "FC média",
       "record": "Novo PR: {{name}} — {{weight}}",
       "close": "Fechar"
     },
@@ -588,5 +591,88 @@
     "planExpiringHint": "14 dias antes da data “trocar até”",
     "footer": "Com a app fechada, as notificações chegam por Web Push (no iPhone, com a app instalada no ecrã inicial, iOS 16.4+).",
     "recordToast": "Novo PR: {{name}} — {{weight}}"
+  },
+  "health": {
+    "connect": "Ligar Apple Health",
+    "connected": "Ligado",
+    "notConnected": "Desligado",
+    "syncNow": "Sincronizar agora",
+    "intro": {
+      "title": "Os dados do Apple Watch nos teus treinos",
+      "body": "Um atalho no iPhone lê a frequência cardíaca, as calorias ativas e a duração que o Apple Watch regista, e envia-as para aqui. Cada treino passa a mostrar a FC média, as calorias e o pico de cada exercício.",
+      "privacy": "Só guardamos o que foi registado durante os teus treinos. O resto do dia fica no iPhone."
+    },
+    "webLimitation": "Web app: a sincronização passa pela app Saúde no iPhone, com o atalho “myGymTracker”. Sem acesso direto ao relógio a partir do browser.",
+    "lastSync": "Última sincronização {{when}}",
+    "waiting": "À espera da primeira sincronização",
+    "weekSynced": "{{synced}} de {{total}} treinos desta semana com dados do relógio",
+    "reads": "O que lemos do relógio",
+    "heartRate": "Frequência cardíaca",
+    "heartRateHint": "FC média e picos por exercício",
+    "calories": "Calorias ativas",
+    "caloriesHint": "Durante o treino",
+    "readsFooter": "Desligar um destes apaga o que já foi importado desse tipo.",
+    "newToken": "Gerar novo código",
+    "newTokenTitle": "Gerar um novo código?",
+    "newTokenBody": "O código atual deixa de funcionar: vais ter de colar o novo no atalho. Os dados importados ficam.",
+    "newTokenConfirm": "Gerar",
+    "disconnect": "Desligar Apple Health",
+    "disconnectTitle": "Desligar o Apple Health?",
+    "disconnectBody": "O atalho deixa de funcionar e apagamos a frequência cardíaca, as calorias e as durações importadas. Os teus treinos ficam.",
+    "disconnectConfirm": "Desligar",
+    "disconnected": "Apple Health desligado.",
+    "cancel": "Cancelar",
+    "session": {
+      "untitled": "Treino",
+      "synced": "sinc.",
+      "duration": "Duração",
+      "avgHr": "FC média",
+      "calories": "Calorias",
+      "heartRate": "Frequência cardíaca",
+      "max": "máx {{value}}",
+      "bpm": "{{value}} bpm",
+      "kcal": "{{value}} kcal",
+      "setsPeaks": "Séries · picos de FC",
+      "sets": "Séries",
+      "exerciseSets_one": "{{name}} · {{count}} série",
+      "exerciseSets_other": "{{name}} · {{count}} séries",
+      "peak": "Pico de {{value}} bpm",
+      "noData": "Sem dados do Apple Watch neste treino. Liga o Apple Health para ver a frequência cardíaca e as calorias.",
+      "noDataConnected": "Ainda sem dados do Apple Watch neste treino. Corre o atalho para os trazer.",
+      "showTable": "Ver tabela",
+      "hideTable": "Esconder tabela",
+      "time": "Hora",
+      "exercise": "Exercício"
+    },
+    "setup": {
+      "title": "Criar o atalho no iPhone",
+      "intro": "Faz isto no iPhone, com esta página aberta: vais colar o endereço e o cabeçalho abaixo no atalho “{{name}}”. É só uma vez.",
+      "address": "Endereço (URL)",
+      "header": "Cabeçalho Authorization",
+      "tokenOnce": "O código só aparece agora. Se o perderes, gera outro em Apple Health.",
+      "copy": "Copiar {{what}}",
+      "copied": "Copiado",
+      "copyFailed": "Não foi possível copiar.",
+      "stepsTitle": "Passos",
+      "steps": {
+        "name": "Na app Atalhos, toca em + e dá ao atalho o nome “{{name}}”, exatamente assim: é por este nome que o botão “Sincronizar agora” o abre.",
+        "heartRate": "Adiciona “Procurar amostras de Saúde”: tipo Frequência cardíaca, com a data de início nos últimos 3 dias.",
+        "heartRateDates": "Adiciona “Formatar data”. Na data, escolhe as amostras do passo 2 e toca nelas para escolher Data de início. Formato ISO 8601, com “Incluir hora ISO 8601” ligado.",
+        "energy": "Adiciona outra vez “Procurar amostras de Saúde”: tipo Energia ativa (ou Calorias ativas), nos últimos 3 dias.",
+        "energyDates": "Adiciona “Formatar data” para as amostras do passo 4, como no passo 3.",
+        "post": "Adiciona “Obter conteúdo do URL” com o endereço acima. Em Mostrar mais: método POST; em Cabeçalhos, Authorization com o valor copiado acima; corpo do pedido JSON com estes quatro campos de texto:",
+        "firstRun": "Corre o atalho uma vez à mão. Permite o acesso à Frequência cardíaca e à Energia ativa e, quando perguntar se pode enviar os dados para este endereço, escolhe “Permitir sempre”. Se avisar que são muitos dados, ativa a partilha de grandes quantidades de dados em Definições → Atalhos → Avançado.",
+        "automation": "Opcional: em Automação, + → Hora do dia (por exemplo 21:00, todos os dias) → Executar imediatamente → atalho “{{name}}”. Com o iPhone bloqueado a Saúde não deixa ler os dados: o que falhar num dia vai no seguinte."
+      },
+      "fields": {
+        "hr_t": "a data formatada do passo 3",
+        "hr_v": "as amostras do passo 2 → Valor",
+        "ae_t": "a data formatada do passo 5",
+        "ae_v": "as amostras do passo 4 → Valor"
+      },
+      "ngrok": "A testar com o ngrok? Junta também o cabeçalho ngrok-skip-browser-warning com o valor 1.",
+      "run": "Correr o atalho agora",
+      "done": "Concluído"
+    }
   }
 }
