@@ -110,6 +110,7 @@ Uma sessão é um dia do plano treinado numa data (a data local do utilizador): 
 - **Visão geral:** semanas seguidas (toca para o calendário), volume da semana (toca para a comparação semanal), PRs deste mês, séries por grupo muscular esta semana e cada exercício com a evolução das últimas 8 sessões.
 - **Exercício:** 4 semanas, 3 meses ou 1 ano; gráfico da carga máxima por sessão (por semana no ano), PR, volume, tendência e as últimas sessões. Abre também a partir do cartão "Progressão" no ecrã do exercício.
 - **Consistência:** o mês com dias treinados, falhados e de descanso face ao plano ativo, o plano cumprido nos últimos 30 dias e os treinos desta semana.
+- **Treino:** toca num treino desta semana (na Consistência) para ver a duração, as séries e a carga máxima de cada exercício e, com o Apple Health ligado, a FC média, as calorias, o gráfico da frequência cardíaca e o pico de cada exercício.
 - **Comparação semanal:** esta semana contra a passada até ao mesmo dia da semana, o volume por dia e os exercícios de hoje contra há uma semana.
 - **Anilhas:** no ecrã do exercício, as anilhas por lado para a carga no ecrã (barra de 20, 15 ou 10 kg; anilhas em lb para quem usa lb).
 
@@ -121,6 +122,7 @@ Os números de progresso ignoram as séries de aquecimento e seguem cada exercí
 | `GET /api/progress/exercises/{id}?range=4w\|3m\|1y` | um exercício ao longo do tempo |
 | `GET /api/progress/calendar?month=2026-09-01` | um mês (por omissão, o atual) |
 | `GET /api/progress/weeks` | esta semana contra a passada |
+| `GET /api/progress/sessions/{id}` | um treino, com os dados do Apple Watch quando os há |
 
 ## Definições
 
@@ -167,6 +169,42 @@ O agendador corre dentro do backend, uma vez por minuto (`app/notifications/sche
 | `DELETE /api/notifications/subscriptions?endpoint=…` | esquece este dispositivo |
 | `POST /api/notifications/test` | envia uma notificação de teste |
 | `POST`/`DELETE /api/notifications/rest` | agenda/cancela o fim do descanso (`{ends_at}`) |
+
+## Apple Health
+
+A web não tem acesso ao HealthKit: só apps instaladas no iPhone leem a app Saúde. Por isso a ligação é um **atalho** da app Atalhos, que lê a frequência cardíaca e a energia ativa dos últimos 3 dias e as envia para a API com um código pessoal.
+
+1. Em **Definições → Apple Health**, toca em "Ligar Apple Health". A app mostra o endereço e o cabeçalho `Authorization` a colar no atalho (o código só aparece dessa vez; "Gerar novo código" substitui-o).
+2. No iPhone, cria o atalho **myGymTracker** seguindo os passos no ecrã: duas vezes "Procurar amostras de Saúde" + "Formatar data" (ISO 8601 com hora) e um "Obter conteúdo do URL" (POST, JSON com `hr_t`, `hr_v`, `ae_t`, `ae_v`).
+3. Corre-o uma vez à mão para autorizar a leitura na Saúde e escolher "Permitir sempre" no envio para o endereço.
+4. Depois: "Sincronizar agora" (no ecrã Apple Health, no resumo do treino ou num treino sem dados) abre o atalho; uma automação diária em Atalhos serve de reserva.
+
+O que a app guarda:
+
+- Só as amostras que caem dentro de um treino: de 5 minutos antes da primeira série até "Terminar treino" (ou 3 minutos depois da última série, no máximo 20). O resto do dia fica no iPhone.
+- Reenviar as mesmas amostras não duplica nada (cada corrida do atalho sobrepõe-se à anterior).
+- Desligar a frequência cardíaca ou as calorias apaga o que já foi importado desse tipo; "Desligar Apple Health" revoga o código e apaga tudo o que veio da Saúde. Os treinos ficam.
+
+Limitações: com o iPhone bloqueado a Saúde não deixa ler os dados, por isso uma automação a essa hora pode não enviar nada (a seguinte recupera). A app Atalhos não lê os treinos do Apple Watch, por isso a duração é a do treino registado na app.
+
+| Endpoint | |
+| --- | --- |
+| `GET /api/health` | ligado ou não, última sincronização, treinos desta semana com dados do relógio |
+| `POST /api/health/connection` | gera o código do atalho (mostrado uma vez); de novo, substitui-o |
+| `DELETE /api/health/connection` | revoga o código e apaga os dados importados |
+| `PATCH /api/health/settings` | `{heart_rate?, calories?}` |
+| `POST /api/health/sync` | o atalho: `Authorization: Bearer <código>`; listas (ou texto com um item por linha) de datas ISO 8601 e valores |
+
+## Testar no telemóvel (ngrok)
+
+O Web Push, a instalação da PWA e o atalho do Apple Health precisam de HTTPS e de um endereço a que o telemóvel chegue. Para testar sem servidor, um túnel [ngrok](https://ngrok.com) serve:
+
+1. Cria uma conta grátis, instala o ngrok (`brew install ngrok`) e liga-o à conta (`ngrok config add-authtoken …`).
+2. Em **Domains**, reserva o domínio estático grátis (por exemplo `nome.ngrok-free.app`): a PWA instalada, as notificações e o atalho ficam presos ao endereço.
+3. No `.env`, `DEV_ALLOWED_HOSTS=nome.ngrok-free.app`, e recria o frontend: `docker compose up -d frontend`.
+4. `ngrok http --url=https://nome.ngrok-free.app 5173` (só o frontend fica exposto; ele encaminha `/api`).
+
+O plano grátis mostra uma página de aviso do ngrok na primeira visita (no Safari e outra vez na app instalada): toca em "Visit Site". No atalho, junta o cabeçalho `ngrok-skip-browser-warning: 1` (o ecrã de configuração lembra-o quando está aberto num domínio ngrok).
 
 ## App instalável (PWA) e produção
 
@@ -235,7 +273,7 @@ backend/
 frontend/
   src/
     routes/         rotas (TanStack Router, file-based); _auth = só visitantes, _app = autenticado
-    features/       código por funcionalidade (auth, workouts, training, progress, settings, notifications)
+    features/       código por funcionalidade (auth, workouts, training, progress, settings, notifications, health)
     sw/             service worker (cache da PWA e Web Push)
     components/ui/  componentes shadcn (gerados pela CLI; ajustes do design notados em CLAUDE.md)
     components/     componentes partilhados (shell da app, logótipo)
