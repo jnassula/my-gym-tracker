@@ -1,6 +1,7 @@
+from datetime import datetime
 from enum import StrEnum
 
-from sqlalchemy import String
+from sqlalchemy import CheckConstraint, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.db import Base, CreatedAt, UUIDPrimaryKey, enum_check, str_enum
@@ -19,11 +20,17 @@ class WeightUnit(StrEnum):
 
 class User(UUIDPrimaryKey, CreatedAt, Base):
     __tablename__ = "users"
-    __table_args__ = (enum_check("language", Language), enum_check("unit", WeightUnit))
+    __table_args__ = (
+        enum_check("language", Language),
+        enum_check("unit", WeightUnit),
+        CheckConstraint("email = lower(email)", name="email_lowercase"),
+    )
 
-    # Stored lower-cased by the service so the unique constraint is case-insensitive in practice.
+    # Always lower-cased (enforced by a CHECK), so the unique constraint is case-insensitive.
     email: Mapped[str] = mapped_column(String(320), unique=True)
     password_hash: Mapped[str] = mapped_column(String(255))
+    # Access tokens issued before this instant are rejected (password change/reset).
+    password_changed_at: Mapped[datetime | None]
     name: Mapped[str] = mapped_column(String(100))
     language: Mapped[Language] = mapped_column(
         str_enum(Language), default=Language.PT, server_default=Language.PT.value

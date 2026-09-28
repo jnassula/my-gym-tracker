@@ -18,6 +18,8 @@ from sqlalchemy.engine import make_url
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, create_async_engine
 from sqlalchemy.pool import NullPool
 
+from app.core.email import EmailMessage
+
 BACKEND_DIR = Path(__file__).resolve().parents[1]
 
 
@@ -34,6 +36,9 @@ TEST_DATABASE_URL = _test_database_url()
 # The app builds its engine from settings on import: make sure it can only see the test DB.
 os.environ["DATABASE_URL"] = TEST_DATABASE_URL
 os.environ["ENVIRONMENT"] = "test"
+os.environ.setdefault("JWT_SECRET", "test-secret-" + "x" * 32)
+# The test client talks plain http, so Secure cookies would never be sent back.
+os.environ["COOKIE_SECURE"] = "false"
 
 
 async def _create_database_if_missing(url: str) -> None:
@@ -84,15 +89,39 @@ async def db_session(engine: AsyncEngine) -> AsyncIterator[AsyncSession]:
             await conn.rollback()
 
 
+class Outbox:
+    """In-memory ``Mailer``: tests read what would have been emailed."""
+
+    def __init__(self) -> None:
+        self.messages: list[EmailMessage] = []
+
+    async def send(self, message: EmailMessage) -> None:
+        self.messages.append(message)
+
+
 @pytest.fixture
-async def client(db_session: AsyncSession) -> AsyncIterator[AsyncClient]:
+def outbox() -> Outbox:
+    return Outbox()
+
+
+@pytest.fixture(autouse=True)
+def _reset_rate_limits() -> None:
+    from app.core.rate_limit import limiter  # noqa: PLC0415  # imported after env is set
+
+    limiter.reset()
+
+
+@pytest.fixture
+async def client(db_session: AsyncSession, outbox: Outbox) -> AsyncIterator[AsyncClient]:
     from app.core.db import get_session  # noqa: PLC0415  # imported after env is set
+    from app.core.email import get_mailer  # noqa: PLC0415
     from app.main import app  # noqa: PLC0415
 
     async def override_session() -> AsyncIterator[AsyncSession]:
         yield db_session
 
     app.dependency_overrides[get_session] = override_session
+    app.dependency_overrides[get_mailer] = lambda: outbox
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         yield client
     app.dependency_overrides.clear()
