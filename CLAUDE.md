@@ -37,6 +37,7 @@ Host ports (127.0.0.1): frontend 5173, backend 8200, Postgres 5440, MinIO 9100/9
 - Email: depend on `Mailer` (`get_mailer`) and send from `BackgroundTasks`. Tests get an in-memory `outbox` fixture.
 - Object storage: depend on `Storage` (`get_storage`, `app/core/storage.py`; MinIO SDK in a thread). Tests get an in-memory `storage` fixture. Keys are `users/{user_id}/{kind}/{file_id}`; `files` rows record them. Uploads are read with a size cap (`files.service.read_upload`) and type-checked by bytes (`require_pdf`).
 - PDF reading (`app/workouts/parser`) is done by an LLM, not by rules (the user's decision). `extract.py` turns the PDF into text with pdfplumber (in `asyncio.to_thread`), in two views: layout text (keeps each exercise on its rest time's line) plus table cells when the PDF draws a grid (the only reliable way to map the summary's focus to its weekday; layout mode squeezes those columns together); `agent.py` runs a Google ADK `LlmAgent` over it through ADK's `OpenAILlm` pointed at DeepSeek (`LLM_*` settings); `output.py` validates and bounds the JSON reply (pure). DeepSeek is text-only and only guarantees `json_object` mode, so the agent has no `output_schema`: the shape is in `prompt.py` and validated with Pydantic. Thinking must stay off (`effort="none"` via `_EffortConfig`): at any other effort a week's plan takes 90–120 s and runs out of tokens. The instruction is a callable so ADK doesn't template the JSON example's braces. Services get the reader through the `get_plan_parser` dependency; tests override it with `FakePlanParser` (conftest) and `test_agent.py` drives the real agent with a scripted `BaseLlm`. conftest removes `LLM_API_KEY` from the environment so no test calls the API by accident; only `-m llm` with `LLM_LIVE_TESTS=1` does.
+- Training log (`app/logs`): a session is one plan day on one date, the user's **local** date (`users.timezone`; `local_date` column, unique per user + day + date). The first set logged or exercise ticked starts it (`INSERT … ON CONFLICT DO NOTHING`, then `SELECT … FOR UPDATE` so concurrent taps get contiguous set numbers); "Terminar treino" sets `ended_at`, and a later set clears it. Emptying a session (last set deleted, tick removed) deletes it, so endpoints can answer `null`. "Last time" and history exclude today, and match an exercise by id or, for the trainer's next plan, by lower-cased name + muscle group (the group keeps a warm-up "Cadeira Extensora" apart from the working one); a session where the exercise itself was logged only shows its own sets. The clock is `logs.service.now()`: tests move it (`tests/logs/test_log_api.py`, `clock` fixture).
 - Relationships use `lazy="raise"`: load collections with `selectinload` (see `workouts.service.get_plan`).
 - Models: UUID primary keys (`UUIDPrimaryKey`), `timestamptz` everywhere (UTC). Enums are `str_enum(E)` (VARCHAR) paired with `enum_check(col, E)` in `__table_args__`. Don't use `Enum(create_constraint=True)`: Alembic autogenerate duplicates its CHECK. Autogenerate also misses new CHECK constraints: add them by hand.
 - Weights are always stored in kg; `users.unit` is display-only. Emails are stored lower-cased (CHECK enforced).
@@ -60,11 +61,12 @@ Host ports (127.0.0.1): frontend 5173, backend 8200, Postgres 5440, MinIO 9100/9
 - Tests: Vitest + Testing Library, co-located as `*.test.ts(x)`. Globals are off; cleanup and `pt` language are set in `src/test/setup.ts`. Use `renderWithRouter` (`src/test/render.tsx`) for components with Links.
 - Muscle groups and weekdays are keys (`chest`, 0–6) translated via `useWorkoutLabels()` (`features/workouts/labels.ts`). Exercise names stay exactly as the PDF wrote them.
 - The import review state is a pure reducer (`features/workouts/import-draft.ts`); keep editing rules there, with tests.
+- Workout flow (`features/training`): the rules (done, planned reps, pre-filled weight, next exercise, dates) are pure in `plan.ts`; weight units in `weight.ts` (the screen works in the user's unit, the API always gets kg; steps are in the unit on screen). Every log write returns today's session, which goes straight into the day's query cache (`useSessionWrite`). The rest timer is one module-level store (`rest-timer.ts`) that keeps the end instant, ticks its own `now` while running (so render stays pure) and persists to localStorage. Sub-screens with route params use `<Page backLink={<BackLink to=… params=… />}>`; `kicker` is the small line above the title. Exercise links from Hoje carry `?from=today` so back returns there.
 - Vite dev may show "Failed to fetch dynamically imported module" once after new deps are first imported (it re-optimises them): a reload fixes it.
 
 ## Data model
 
-Migrations: `initial schema` (all tables), `auth password tracking and persistent sessions`, `files, plan source file and exercise rest`. Differences from the original brief:
+Migrations: `initial schema` (all tables), `auth password tracking and persistent sessions`, `files, plan source file and exercise rest`, `session local date and done exercises`. Differences from the original brief:
 
 - `workout_sessions` added: `health_samples.session_id` needed a target, and progress is aggregated per session.
 - `exercise_logs.session_id` added (NOT NULL).
@@ -77,13 +79,14 @@ Migrations: `initial schema` (all tables), `auth password tracking and persisten
 - No table for password-reset tokens: they are signed JWTs carrying a fingerprint of the password hash, so they become single-use once the password changes.
 - `files` table (uploads exist before the plan they produce); `workout_plans.source_file_id` (FK, SET NULL) replaces `source_file_key`; `workout_plans.valid_until` ("Trocar até").
 - `exercises.rest_seconds`/`rest_max_seconds` (the rest timer in phase 4 needs them) and `exercises.muscle_group` as a key enum.
+- `workout_sessions.local_date` (the user's date; unique per user + day + date) and `workout_sessions.done_exercise_ids` (UUID[]; exercises ticked off without sets, such as a treadmill warm-up).
 
 ## Phase status
 
 - [x] **Phase 1: scaffold and infra.** Compose, `/health`, error format, full data model, shadcn dark theme.
 - [x] **Phase 2: auth and users** (branch `feat/phase-2-auth`). Design imported (Nocturne theme, Inter, Phosphor). Backend: register/login/refresh/logout/forgot/reset/change password, `/users/me`, rate limits, Mailpit. Frontend: welcome, login, sign-up (strength meter), forgot/reset password, protected shell with bottom tabs, settings (change password, log out), i18n pt/en/es.
 - [x] **Phase 3: PDF upload and parsing** (branch `feat/phase-3-pdf-import`). PDFs read by an LLM (DeepSeek `deepseek-flash`, thinking off, through a Google ADK agent): all 9 samples read in 10–16 s each, 506 exercises, day labels right, 1 flagged for manual sets. Storage in MinIO, import preview → review (edit/move/reorder/delete/add) → confirm, Treinos list, read-only plan detail.
-- [ ] Phase 4: workout flow and weight logging
+- [x] **Phase 4: workout flow and weight logging** (branch `feat/phase-4-workout-flow`). Backend `/api/logs/*`: day log (today's session + last time per exercise), log/correct/delete sets, tick exercises, exercise history (4 sessions + best), plan week, finish with summary (sets, volume, duration, PRs). Frontend (design 1a): Hoje = today's day of the active plan (rest-day state otherwise), plan → week of days, day → exercises by group with progress and ticks, exercise → weight stepper (+5…+25, − mode, "Usar última"), log-set sheet (±2.5, ±1), rest timer sheet (ring, ±15 s, pause, skip, vibration), set correction dialog, history card, finish summary dialog.
 - [ ] Phase 5: progress and charts
 - [ ] Phase 6: settings, i18n (language switcher, date formats), PWA
 - [ ] Phase 7: Apple Health
@@ -91,7 +94,9 @@ Migrations: `initial schema` (all tables), `auth password tracking and persisten
 ## Open items
 
 - Designed but not built: Apple/Google sign-in buttons (not in the brief), the terms checkbox at sign-up (no terms content exists), post-signup onboarding (3 steps), profile fields (body weight, height, photo), delete account.
-- Hoje and Progresso show empty states until phases 4–5. The plan detail is read-only; phase 4 turns it into days → day → exercise screens.
+- Progresso shows an empty state until phase 5. The exercise screen's "Progressão" chart (Recharts via shadcn chart, a new dependency) and the plate calculator also wait for phase 5.
+- Designed but not built in phase 4: the log Drawer (a bottom Sheet instead: Drawer needs `vaul`), the weight "haptic flash", the "Descanso automático" setting (always on; settings are phase 6), rest-end sound and notifications (phase 6, PWA), FC média in the summary (phase 7). Not in the design but added: correcting/deleting a logged set.
+- Deleting a plan would cascade to its exercises' logs; plans can't be deleted yet (imported-PDFs management, phase 6), so decide then whether history must survive (e.g. soft delete).
 - Uploads left behind by an abandoned review (the tab closed before confirming or cancelling) stay in MinIO. A cleanup of files not linked to any plan after N days is pending. Deleting an account doesn't delete its objects yet.
 - Scanned PDFs are refused (`pdf_no_text`): DeepSeek can't read images. OCR (Tesseract) would need a new dependency.
 - Designed but not built in phase 3: drag-and-drop reordering (replaced by the menu, as the user chose), renaming a whole muscle group, and the imported-PDFs management screen (phase 6).

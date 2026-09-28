@@ -84,6 +84,25 @@ Os PDFs pessoais em `samples/` **não são commitados** (estão no `.gitignore`)
 docker compose exec -e LLM_LIVE_TESTS=1 backend pytest -m llm
 ```
 
+## Treinar e registar cargas
+
+- **Hoje** abre logo o dia de hoje do plano ativo (pelo fuso horário do utilizador). Num dia sem treino mostra o próximo; sem plano, convida a importar um PDF.
+- **Treinos → plano** mostra a semana: cada dia com a data, o foco e o que já foi feito.
+- **Dia**: exercícios por grupo muscular, séries feitas/planeadas e a carga da última vez. Os aquecimentos (e qualquer exercício) podem ser marcados como feitos sem registar séries. "Terminar treino" fecha a sessão e mostra o resumo: séries, volume, duração e recordes pessoais.
+- **Exercício**: a carga começa na da última vez e as reps no que o plano prescreve para a série seguinte. Os botões +5 … +25 (ou −, com "− diminuir") ajustam a carga, e "Registar série" abre uma folha para afinar (±2,5 e ±1) e confirmar. Confirmar arranca o descanso do plano (90 s se o plano não tiver) com ±15 s, pausa e saltar, e o telemóvel vibra no fim. Tocar numa série registada permite corrigi-la ou apagá-la.
+
+Uma sessão é um dia do plano treinado numa data (a data local do utilizador): começa com a primeira série registada, "Terminar treino" fecha-a e uma série registada depois reabre-a. As cargas são guardadas sempre em kg; quem usa lb vê e escreve libras. O histórico de um exercício continua no plano seguinte quando o nome e o grupo muscular coincidem.
+
+| Endpoint | |
+| --- | --- |
+| `GET /api/logs/days/{day_id}` | sessão de hoje desse dia e a última vez de cada exercício |
+| `GET /api/logs/plans/{plan_id}/week` | a semana atual (segunda a domingo) do plano |
+| `POST /api/logs/exercises/{id}/sets` | `{weight, reps}` (kg); a primeira do dia cria a sessão |
+| `PUT`/`DELETE /api/logs/exercises/{id}/done` | marcar/desmarcar como feito sem séries |
+| `GET /api/logs/exercises/{id}/history` | últimas 4 sessões e a carga máxima |
+| `PATCH`/`DELETE /api/logs/sets/{id}` | corrigir ou apagar uma série (as seguintes são renumeradas) |
+| `POST /api/logs/sessions/{id}/finish` | termina a sessão e devolve o resumo |
+
 ## Testes e linters
 
 Com a stack a correr:
