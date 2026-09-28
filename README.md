@@ -8,7 +8,7 @@ App mobile-first para registar treinos de ginásio: importa o plano a partir de 
 | Base de dados | PostgreSQL 17 |
 | Ficheiros | MinIO (compatível com S3), SDK `minio` |
 | PDF | pdfplumber (texto) + agente LLM com Google ADK, DeepSeek por omissão (`backend/app/workouts/parser`) |
-| Frontend | React 19, Vite 8, TypeScript, Tailwind CSS 4, shadcn/ui (Base UI), TanStack Router + Query, react-hook-form + zod, i18next (pt/en/es) |
+| Frontend | React 19, Vite 8, TypeScript, Tailwind CSS 4, shadcn/ui (Base UI), TanStack Router + Query, react-hook-form + zod, i18next (pt/en/es), Recharts (gráficos) |
 | Autenticação | JWT (PyJWT) + refresh token rotativo, Argon2id (pwdlib), rate limit (slowapi) |
 | Testes | pytest + pytest-asyncio (backend), Vitest + Testing Library (frontend) |
 | Qualidade | ruff + mypy `--strict` (backend), oxlint + `tsc` (frontend) |
@@ -102,6 +102,23 @@ Uma sessão é um dia do plano treinado numa data (a data local do utilizador): 
 | `GET /api/logs/exercises/{id}/history` | últimas 4 sessões e a carga máxima |
 | `PATCH`/`DELETE /api/logs/sets/{id}` | corrigir ou apagar uma série (as seguintes são renumeradas) |
 | `POST /api/logs/sessions/{id}/finish` | termina a sessão e devolve o resumo |
+
+## Progresso
+
+- **Visão geral:** semanas seguidas (toca para o calendário), volume da semana (toca para a comparação semanal), PRs deste mês, séries por grupo muscular esta semana e cada exercício com a evolução das últimas 8 sessões.
+- **Exercício:** 4 semanas, 3 meses ou 1 ano; gráfico da carga máxima por sessão (por semana no ano), PR, volume, tendência e as últimas sessões. Abre também a partir do cartão "Progressão" no ecrã do exercício.
+- **Consistência:** o mês com dias treinados, falhados e de descanso face ao plano ativo, o plano cumprido nos últimos 30 dias e os treinos desta semana.
+- **Comparação semanal:** esta semana contra a passada até ao mesmo dia da semana, o volume por dia e os exercícios de hoje contra há uma semana.
+- **Anilhas:** no ecrã do exercício, as anilhas por lado para a carga no ecrã (barra de 20, 15 ou 10 kg; anilhas em lb para quem usa lb).
+
+Os números de progresso ignoram as séries de aquecimento e seguem cada exercício de plano para plano (mesmo nome e grupo muscular). Um recorde é uma sessão mais pesada do que qualquer data anterior; a primeira vez não conta.
+
+| Endpoint | |
+| --- | --- |
+| `GET /api/progress` | visão geral |
+| `GET /api/progress/exercises/{id}?range=4w\|3m\|1y` | um exercício ao longo do tempo |
+| `GET /api/progress/calendar?month=2026-09-01` | um mês (por omissão, o atual) |
+| `GET /api/progress/weeks` | esta semana contra a passada |
 
 ## Testes e linters
 
