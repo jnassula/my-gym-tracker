@@ -175,7 +175,9 @@ async def _ensure_session(session: AsyncSession, user: User, day_id: uuid.UUID) 
     return created
 
 
-async def _read(session: AsyncSession, workout: WorkoutSession) -> SessionRead:
+async def _read(
+    session: AsyncSession, workout: WorkoutSession, *, new_record: bool = False
+) -> SessionRead:
     logs = await session.scalars(
         select(ExerciseLog)
         .where(ExerciseLog.session_id == workout.id)
@@ -190,6 +192,7 @@ async def _read(session: AsyncSession, workout: WorkoutSession) -> SessionRead:
         ended_at=workout.ended_at,
         done_exercise_ids=list(workout.done_exercise_ids),
         sets=[SetRead.model_validate(log) for log in logs],
+        new_record=new_record,
     )
 
 
@@ -232,7 +235,33 @@ async def log_set(
     )
     workout.ended_at = None  # a set after "Terminar treino" continues the session
     await session.commit()
-    return await _read(session, workout)
+    record = await _is_record(session, user, exercise, workout, data.weight)
+    return await _read(session, workout, new_record=record)
+
+
+async def _is_record(
+    session: AsyncSession, user: User, exercise: Exercise, workout: WorkoutSession, weight: Decimal
+) -> bool:
+    """Heavier than every earlier date and than today's sets so far (a first time isn't one)."""
+    if weight <= 0:
+        return False
+    key = exercise_key(exercise.name, exercise.muscle_group)
+    earlier = [
+        log.weight
+        for log in await _past_logs(session, user.id, [exercise], before=workout.local_date)
+        if log.exercise_id == exercise.id or log.key == key
+    ]
+    if not earlier or weight <= max(earlier):
+        return False
+    today = list(
+        await session.scalars(
+            select(ExerciseLog.weight).where(
+                ExerciseLog.session_id == workout.id, ExerciseLog.exercise_id == exercise.id
+            )
+        )
+    )
+    today.remove(weight)  # the set just logged
+    return all(other < weight for other in today)
 
 
 async def update_set(

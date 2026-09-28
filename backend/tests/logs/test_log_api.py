@@ -89,6 +89,16 @@ async def test_sets_are_validated(gym: Gym, body: dict[str, Any]) -> None:
     assert response.json()["code"] == "validation_error"
 
 
+async def test_a_set_heavier_than_every_earlier_date_is_a_record(gym: Gym, clock: Clock) -> None:
+    assert (await gym.log("0/2", 45, 12))["new_record"] is False  # a first time isn't one
+    clock.advance(days=7)
+
+    assert (await gym.log("0/2", 45, 12))["new_record"] is False  # equal
+    assert (await gym.log("0/2", 50, 10))["new_record"] is True
+    assert (await gym.log("0/2", 50, 8))["new_record"] is False  # already today
+    assert (await gym.log("0/2", 52.5, 6))["new_record"] is True  # heavier again
+
+
 # --- editing and undoing -------------------------------------------------------------------------
 
 

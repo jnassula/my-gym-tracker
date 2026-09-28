@@ -64,6 +64,9 @@ services:
       LLM_API_KEY: ${LLM_API_KEY:-}
       LLM_BASE_URL: ${LLM_BASE_URL:-https://api.deepseek.com}
       LLM_MODEL: ${LLM_MODEL:-deepseek-flash}
+      # Web Push. Empty key: notifications are off (the rest of the app works).
+      VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY:-}
+      VAPID_SUBJECT: ${VAPID_SUBJECT:-mailto:admin@mygymtracker.local}
       # Trust X-Forwarded-For from the Vite proxy so rate limits see the real client IP.
       FORWARDED_ALLOW_IPS: "*"
     volumes:

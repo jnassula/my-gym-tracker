@@ -6,6 +6,7 @@ from app.exercises.models import Exercise
 from app.files.models import StoredFile
 from app.health.models import HealthSample
 from app.logs.models import ExerciseLog, WorkoutSession
+from app.notifications.models import NotificationDelivery, NotificationSettings, PushSubscription
 from app.users.models import User
 from app.workouts.models import WorkoutDay, WorkoutPlan
 
@@ -14,6 +15,9 @@ __all__ = [
     "Exercise",
     "ExerciseLog",
     "HealthSample",
+    "NotificationDelivery",
+    "NotificationSettings",
+    "PushSubscription",
     "RefreshToken",
     "StoredFile",
     "User",

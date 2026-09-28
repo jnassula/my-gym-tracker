@@ -159,6 +159,30 @@ def plan_parser() -> FakePlanParser:
     return FakePlanParser()
 
 
+class FakePushSender:
+    """Stands in for the push services: records what each endpoint was sent. Endpoints in
+    ``gone`` answer like an expired subscription."""
+
+    public_key = "BTest-application-server-key"
+
+    def __init__(self) -> None:
+        self.sent: list[tuple[str, Any]] = []
+        self.gone: set[str] = set()
+
+    async def send(self, endpoint: Any, message: Any) -> Any:
+        from app.notifications.sender import SendResult  # noqa: PLC0415
+
+        if endpoint.endpoint in self.gone:
+            return SendResult.GONE
+        self.sent.append((endpoint.endpoint, message))
+        return SendResult.SENT
+
+
+@pytest.fixture
+def push_sender() -> FakePushSender:
+    return FakePushSender()
+
+
 @pytest.fixture(autouse=True)
 def _reset_rate_limits() -> None:
     from app.core.rate_limit import limiter  # noqa: PLC0415  # imported after env is set
@@ -168,12 +192,17 @@ def _reset_rate_limits() -> None:
 
 @pytest.fixture
 async def client(
-    db_session: AsyncSession, outbox: Outbox, storage: MemoryStorage, plan_parser: FakePlanParser
+    db_session: AsyncSession,
+    outbox: Outbox,
+    storage: MemoryStorage,
+    plan_parser: FakePlanParser,
+    push_sender: FakePushSender,
 ) -> AsyncIterator[AsyncClient]:
     from app.core.db import get_session  # noqa: PLC0415  # imported after env is set
     from app.core.email import get_mailer  # noqa: PLC0415
     from app.core.storage import get_storage  # noqa: PLC0415
     from app.main import app  # noqa: PLC0415
+    from app.notifications.sender import get_push_sender  # noqa: PLC0415
     from app.workouts.parser import get_plan_parser  # noqa: PLC0415
 
     async def override_session() -> AsyncIterator[AsyncSession]:
@@ -183,6 +212,7 @@ async def client(
     app.dependency_overrides[get_mailer] = lambda: outbox
     app.dependency_overrides[get_storage] = lambda: storage
     app.dependency_overrides[get_plan_parser] = lambda: plan_parser
+    app.dependency_overrides[get_push_sender] = lambda: push_sender
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         yield client
     app.dependency_overrides.clear()

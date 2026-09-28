@@ -38,6 +38,10 @@ class Settings(BaseSettings):
     llm_model: str = "deepseek-flash"
     llm_timeout_seconds: float = 120.0
 
+    # --- Web Push (VAPID). Empty key: notifications are off. `python -m app.notifications.keys`
+    vapid_private_key: SecretStr = SecretStr("")
+    vapid_subject: str = "mailto:admin@mygymtracker.local"
+
     # --- email (password recovery) ---
     frontend_url: str = "http://localhost:5173"
     smtp_host: str = "localhost"

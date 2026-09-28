@@ -48,6 +48,8 @@ class SessionRead(BaseModel):
     ended_at: datetime | None
     done_exercise_ids: list[uuid.UUID]
     sets: list[SetRead]
+    # Only on logging a set: it beat the exercise's heaviest on every earlier date.
+    new_record: bool = False
 
 
 class PastSet(BaseModel):
