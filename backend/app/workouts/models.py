@@ -1,9 +1,11 @@
 import uuid
+from datetime import date
 
 from sqlalchemy import CheckConstraint, ForeignKey, Index, SmallInteger, String, text
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.db import Base, CreatedAt, UUIDPrimaryKey
+from app.exercises.models import Exercise
 
 
 class WorkoutPlan(UUIDPrimaryKey, CreatedAt, Base):
@@ -22,9 +24,18 @@ class WorkoutPlan(UUIDPrimaryKey, CreatedAt, Base):
         ForeignKey("users.id", ondelete="CASCADE"), index=True
     )
     name: Mapped[str] = mapped_column(String(120))
-    # Object key in MinIO; null for plans created by hand.
-    source_file_key: Mapped[str | None] = mapped_column(String(512))
+    # The PDF it was imported from; null for plans created by hand or whose PDF was deleted.
+    source_file_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("files.id", ondelete="SET NULL"), index=True
+    )
+    # "Trocar até": when the trainer expects the plan to be replaced.
+    valid_until: Mapped[date | None]
     is_active: Mapped[bool] = mapped_column(default=False, server_default="false")
+
+    # lazy="raise": async code must load collections explicitly (selectinload).
+    days: Mapped[list["WorkoutDay"]] = relationship(
+        order_by="WorkoutDay.position", cascade="all, delete-orphan", lazy="raise"
+    )
 
 
 class WorkoutDay(UUIDPrimaryKey, Base):
@@ -38,3 +49,7 @@ class WorkoutDay(UUIDPrimaryKey, Base):
     weekday: Mapped[int | None] = mapped_column(SmallInteger)
     label: Mapped[str] = mapped_column(String(120))
     position: Mapped[int] = mapped_column(SmallInteger)
+
+    exercises: Mapped[list[Exercise]] = relationship(
+        order_by=Exercise.position, cascade="all, delete-orphan", lazy="raise"
+    )

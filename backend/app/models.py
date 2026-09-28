@@ -3,6 +3,7 @@
 from app.auth.models import RefreshToken
 from app.core.db import Base
 from app.exercises.models import Exercise
+from app.files.models import StoredFile
 from app.health.models import HealthSample
 from app.logs.models import ExerciseLog, WorkoutSession
 from app.users.models import User
@@ -14,6 +15,7 @@ __all__ = [
     "ExerciseLog",
     "HealthSample",
     "RefreshToken",
+    "StoredFile",
     "User",
     "WorkoutDay",
     "WorkoutPlan",
