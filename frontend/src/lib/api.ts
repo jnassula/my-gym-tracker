@@ -92,10 +92,12 @@ type RequestOptions = {
   auth?: boolean
   /** "blob" for files (e.g. a PDF to show); JSON otherwise. */
   responseType?: 'json' | 'blob'
+  /** Let the request finish even if the page is hidden or closing (e.g. on visibilitychange). */
+  keepalive?: boolean
 }
 
 export async function api<T>(path: string, options: RequestOptions = {}): Promise<T> {
-  const { method = 'GET', body, auth = true, responseType = 'json' } = options
+  const { method = 'GET', body, auth = true, responseType = 'json', keepalive } = options
 
   // FormData (file uploads) goes as multipart; the browser sets the boundary header.
   const isForm = body instanceof FormData
@@ -106,6 +108,7 @@ export async function api<T>(path: string, options: RequestOptions = {}): Promis
     if (token) headers.Authorization = `Bearer ${token}`
     return send(path, {
       method,
+      keepalive,
       headers,
       body: body === undefined ? undefined : isForm ? body : JSON.stringify(body),
     })

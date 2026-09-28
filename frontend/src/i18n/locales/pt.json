@@ -517,5 +517,41 @@
   "pwa": {
     "updateAvailable": "Há uma nova versão da app.",
     "update": "Atualizar"
+  },
+  "notifications": {
+    "title": "Notificações",
+    "expiring_one": "Este plano expira em {{count}} dia",
+    "expiring_other": "Este plano expira em {{count}} dias",
+    "expiringToday": "Este plano expira hoje",
+    "expiringBody": "“{{name}}” devia ser trocado até {{date}}. Pede o próximo PDF ao teu PT e importa-o aqui.",
+    "expiringAction": "Importar novo plano",
+    "device": {
+      "title": "Este dispositivo",
+      "unsupported": "Este browser não suporta notificações.",
+      "iosInstall": "No iPhone, as notificações precisam da app instalada: Partilhar → Adicionar ao ecrã principal (iOS 16.4 ou mais recente).",
+      "denied": "As notificações estão bloqueadas nas definições do browser para este site.",
+      "serverOff": "O servidor não tem as notificações configuradas.",
+      "enable": "Ativar notificações neste dispositivo",
+      "enabling": "A ativar…",
+      "enabled": "Ativas neste dispositivo.",
+      "test": "Enviar notificação de teste",
+      "testSent": "Notificação de teste enviada.",
+      "disable": "Desativar neste dispositivo",
+      "failed": "Não foi possível ativar as notificações."
+    },
+    "reminders": "Lembretes",
+    "trainingReminder": "Lembrete de treino",
+    "trainingReminderHint": "Dias do plano · {{time}}",
+    "reminderTime": "Hora do lembrete",
+    "restEnd": "Fim do descanso",
+    "restEndHint": "Vibração + som quando o temporizador chega a 0",
+    "weeklySummary": "Resumo semanal",
+    "weeklySummaryHint": "Domingo · 20:00",
+    "newRecord": "Novo recorde pessoal",
+    "newRecordHint": "Quando bates um PR",
+    "planExpiring": "Plano a expirar",
+    "planExpiringHint": "14 dias antes da data “trocar até”",
+    "footer": "Com a app fechada, as notificações chegam por Web Push (no iPhone, com a app instalada no ecrã inicial, iOS 16.4+).",
+    "recordToast": "Novo PR: {{name}} — {{weight}}"
   }
 }

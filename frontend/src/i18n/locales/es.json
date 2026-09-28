@@ -517,5 +517,41 @@
   "pwa": {
     "updateAvailable": "Hay una nueva versión de la app.",
     "update": "Actualizar"
+  },
+  "notifications": {
+    "title": "Notificaciones",
+    "expiring_one": "Este plan caduca en {{count}} día",
+    "expiring_other": "Este plan caduca en {{count}} días",
+    "expiringToday": "Este plan caduca hoy",
+    "expiringBody": "«{{name}}» debería cambiarse antes del {{date}}. Pide el siguiente PDF a tu entrenador e impórtalo aquí.",
+    "expiringAction": "Importar un plan nuevo",
+    "device": {
+      "title": "Este dispositivo",
+      "unsupported": "Este navegador no admite notificaciones.",
+      "iosInstall": "En iPhone, las notificaciones necesitan la app instalada: Compartir → Añadir a pantalla de inicio (iOS 16.4 o posterior).",
+      "denied": "Las notificaciones están bloqueadas para este sitio en los ajustes del navegador.",
+      "serverOff": "El servidor no tiene las notificaciones configuradas.",
+      "enable": "Activar notificaciones en este dispositivo",
+      "enabling": "Activando…",
+      "enabled": "Activas en este dispositivo.",
+      "test": "Enviar notificación de prueba",
+      "testSent": "Notificación de prueba enviada.",
+      "disable": "Desactivar en este dispositivo",
+      "failed": "No se han podido activar las notificaciones."
+    },
+    "reminders": "Recordatorios",
+    "trainingReminder": "Recordatorio de entreno",
+    "trainingReminderHint": "Días del plan · {{time}}",
+    "reminderTime": "Hora del recordatorio",
+    "restEnd": "Fin del descanso",
+    "restEndHint": "Vibración + sonido cuando el temporizador llega a 0",
+    "weeklySummary": "Resumen semanal",
+    "weeklySummaryHint": "Domingo · 20:00",
+    "newRecord": "Nuevo récord personal",
+    "newRecordHint": "Cuando superas un PR",
+    "planExpiring": "Plan a punto de caducar",
+    "planExpiringHint": "14 días antes de la fecha de cambio",
+    "footer": "Con la app cerrada, las notificaciones llegan por Web Push (en iPhone, con la app en la pantalla de inicio, iOS 16.4+).",
+    "recordToast": "Nuevo PR: {{name}} — {{weight}}"
   }
 }

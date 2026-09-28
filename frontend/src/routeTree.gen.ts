@@ -21,6 +21,7 @@ import { Route as AppProgressIndexRouteImport } from './routes/_app/progress/ind
 import { Route as AppProgressCalendarRouteImport } from './routes/_app/progress/calendar'
 import { Route as AppProgressWeeksRouteImport } from './routes/_app/progress/weeks'
 import { Route as AppSettingsIndexRouteImport } from './routes/_app/settings/index'
+import { Route as AppSettingsNotificationsRouteImport } from './routes/_app/settings/notifications'
 import { Route as AppSettingsPasswordRouteImport } from './routes/_app/settings/password'
 import { Route as AppSettingsPdfsRouteImport } from './routes/_app/settings/pdfs'
 import { Route as AppSettingsProfileRouteImport } from './routes/_app/settings/profile'
@@ -90,6 +91,12 @@ const AppSettingsIndexRoute = AppSettingsIndexRouteImport.update({
   path: '/settings/',
   getParentRoute: () => AppRoute,
 } as any)
+const AppSettingsNotificationsRoute =
+  AppSettingsNotificationsRouteImport.update({
+    id: '/settings/notifications',
+    path: '/settings/notifications',
+    getParentRoute: () => AppRoute,
+  } as any)
 const AppSettingsPasswordRoute = AppSettingsPasswordRouteImport.update({
   id: '/settings/password',
   path: '/settings/password',
@@ -153,6 +160,7 @@ export interface FileRoutesByFullPath {
   '/welcome': typeof AuthWelcomeRoute
   '/progress/calendar': typeof AppProgressCalendarRoute
   '/progress/weeks': typeof AppProgressWeeksRoute
+  '/settings/notifications': typeof AppSettingsNotificationsRoute
   '/settings/password': typeof AppSettingsPasswordRoute
   '/settings/pdfs': typeof AppSettingsPdfsRoute
   '/settings/profile': typeof AppSettingsProfileRoute
@@ -175,6 +183,7 @@ export interface FileRoutesByTo {
   '/welcome': typeof AuthWelcomeRoute
   '/progress/calendar': typeof AppProgressCalendarRoute
   '/progress/weeks': typeof AppProgressWeeksRoute
+  '/settings/notifications': typeof AppSettingsNotificationsRoute
   '/settings/password': typeof AppSettingsPasswordRoute
   '/settings/pdfs': typeof AppSettingsPdfsRoute
   '/settings/profile': typeof AppSettingsProfileRoute
@@ -200,6 +209,7 @@ export interface FileRoutesById {
   '/_app/': typeof AppIndexRoute
   '/_app/progress/calendar': typeof AppProgressCalendarRoute
   '/_app/progress/weeks': typeof AppProgressWeeksRoute
+  '/_app/settings/notifications': typeof AppSettingsNotificationsRoute
   '/_app/settings/password': typeof AppSettingsPasswordRoute
   '/_app/settings/pdfs': typeof AppSettingsPdfsRoute
   '/_app/settings/profile': typeof AppSettingsProfileRoute
@@ -224,6 +234,7 @@ export interface FileRouteTypes {
     | '/welcome'
     | '/progress/calendar'
     | '/progress/weeks'
+    | '/settings/notifications'
     | '/settings/password'
     | '/settings/pdfs'
     | '/settings/profile'
@@ -246,6 +257,7 @@ export interface FileRouteTypes {
     | '/welcome'
     | '/progress/calendar'
     | '/progress/weeks'
+    | '/settings/notifications'
     | '/settings/password'
     | '/settings/pdfs'
     | '/settings/profile'
@@ -270,6 +282,7 @@ export interface FileRouteTypes {
     | '/_app/'
     | '/_app/progress/calendar'
     | '/_app/progress/weeks'
+    | '/_app/settings/notifications'
     | '/_app/settings/password'
     | '/_app/settings/pdfs'
     | '/_app/settings/profile'
@@ -376,6 +389,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppSettingsIndexRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/settings/notifications': {
+      id: '/_app/settings/notifications'
+      path: '/settings/notifications'
+      fullPath: '/settings/notifications'
+      preLoaderRoute: typeof AppSettingsNotificationsRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/settings/password': {
       id: '/_app/settings/password'
       path: '/settings/password'
@@ -453,6 +473,7 @@ interface AppRouteChildren {
   AppIndexRoute: typeof AppIndexRoute
   AppProgressCalendarRoute: typeof AppProgressCalendarRoute
   AppProgressWeeksRoute: typeof AppProgressWeeksRoute
+  AppSettingsNotificationsRoute: typeof AppSettingsNotificationsRoute
   AppSettingsPasswordRoute: typeof AppSettingsPasswordRoute
   AppSettingsPdfsRoute: typeof AppSettingsPdfsRoute
   AppSettingsProfileRoute: typeof AppSettingsProfileRoute
@@ -471,6 +492,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppIndexRoute: AppIndexRoute,
   AppProgressCalendarRoute: AppProgressCalendarRoute,
   AppProgressWeeksRoute: AppProgressWeeksRoute,
+  AppSettingsNotificationsRoute: AppSettingsNotificationsRoute,
   AppSettingsPasswordRoute: AppSettingsPasswordRoute,
   AppSettingsPdfsRoute: AppSettingsPdfsRoute,
   AppSettingsProfileRoute: AppSettingsProfileRoute,

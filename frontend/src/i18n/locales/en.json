@@ -517,5 +517,41 @@
   "pwa": {
     "updateAvailable": "A new version of the app is ready.",
     "update": "Update"
+  },
+  "notifications": {
+    "title": "Notifications",
+    "expiring_one": "This plan expires in {{count}} day",
+    "expiring_other": "This plan expires in {{count}} days",
+    "expiringToday": "This plan expires today",
+    "expiringBody": "“{{name}}” should be swapped by {{date}}. Ask your trainer for the next PDF and import it here.",
+    "expiringAction": "Import a new plan",
+    "device": {
+      "title": "This device",
+      "unsupported": "This browser doesn't support notifications.",
+      "iosInstall": "On iPhone, notifications need the app installed: Share → Add to Home Screen (iOS 16.4 or later).",
+      "denied": "Notifications are blocked for this site in the browser settings.",
+      "serverOff": "Notifications aren't set up on the server.",
+      "enable": "Turn on notifications on this device",
+      "enabling": "Turning on…",
+      "enabled": "On for this device.",
+      "test": "Send a test notification",
+      "testSent": "Test notification sent.",
+      "disable": "Turn off on this device",
+      "failed": "Couldn't turn notifications on."
+    },
+    "reminders": "Reminders",
+    "trainingReminder": "Workout reminder",
+    "trainingReminderHint": "Plan days · {{time}}",
+    "reminderTime": "Reminder time",
+    "restEnd": "End of rest",
+    "restEndHint": "Vibration + sound when the timer reaches 0",
+    "weeklySummary": "Weekly summary",
+    "weeklySummaryHint": "Sunday · 20:00",
+    "newRecord": "New personal record",
+    "newRecordHint": "When you beat a PR",
+    "planExpiring": "Plan expiring",
+    "planExpiringHint": "14 days before the “swap by” date",
+    "footer": "With the app closed, notifications arrive by Web Push (on iPhone, with the app on the home screen, iOS 16.4+).",
+    "recordToast": "New PR: {{name}} — {{weight}}"
   }
 }

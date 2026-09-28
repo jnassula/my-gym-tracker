@@ -97,6 +97,7 @@ export function SettingsScreen() {
 
         <SettingsGroup title={t('settings.data')}>
           <LinkRow to="/settings/pdfs" label={t('settings.pdfs')} value={plans.data?.length} />
+          <LinkRow to="/settings/notifications" label={t('settings.notifications')} />
         </SettingsGroup>
 
         <Button

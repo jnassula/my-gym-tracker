@@ -16,6 +16,8 @@ export type TrainingSession = {
   started_at: string
   ended_at: string | null
   done_exercise_ids: string[]
+  /** Only on logging a set: it beat every earlier date's heaviest (a personal record). */
+  new_record?: boolean
   sets: LoggedSet[]
 }
 

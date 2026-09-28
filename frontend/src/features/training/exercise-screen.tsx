@@ -4,6 +4,7 @@ import { Link } from '@tanstack/react-router'
 import { cn } from 'cn'
 import { useId, useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
+import { toast } from 'sonner'
 
 import { Page } from '@/components/app-shell/page'
 import { Button } from '@/components/ui/button'
@@ -12,6 +13,7 @@ import { Spinner } from '@/components/ui/spinner'
 import { Toggle } from '@/components/ui/toggle'
 import { errorKey } from '@/features/auth/errors'
 import { FormAlert } from '@/features/auth/form-parts'
+import { notificationsQuery } from '@/features/notifications/api'
 import { Sparkline } from '@/features/progress/sparkline'
 import { formatRest } from '@/features/workouts/format'
 import { useWorkoutLabels } from '@/features/workouts/labels'
@@ -83,6 +85,7 @@ function ExerciseLogger({ day, exercise, log }: { day: Day; exercise: Exercise; 
   const unit = user.unit
   const inputId = useId()
   const history = useQuery(historyQuery(exercise.id))
+  const notifications = useQuery(notificationsQuery())
   const logSet = useLogSet(day.id)
 
   const today = setsOf(log.session, exercise.id)
@@ -122,6 +125,14 @@ function ExerciseLogger({ day, exercise, log }: { day: Day; exercise: Exercise; 
         onSuccess: (session) => {
           setLogging(false)
           changeWeight(setWeightValue)
+          if (session?.new_record && notifications.data?.settings.new_record !== false) {
+            toast.success(
+              t('notifications.recordToast', {
+                name: exercise.name,
+                weight: formatWeight(toKg(setWeightValue, unit), unit, locale),
+              }),
+            )
+          }
           const count = setsOf(session, exercise.id).length
           const following = nextExercise(day, exercise.id)
           setAfterRest(

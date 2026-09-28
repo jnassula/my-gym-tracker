@@ -4,6 +4,7 @@
  * shell so it opens offline, serves index.html to every navigation, and lets a new version
  * take over when the user accepts the update. Push notifications are handled in ./push.ts.
  */
+import './push'
 import { cleanupOutdatedCaches, createHandlerBoundToURL, precacheAndRoute } from 'workbox-precaching'
 import { NavigationRoute, registerRoute } from 'workbox-routing'
 
