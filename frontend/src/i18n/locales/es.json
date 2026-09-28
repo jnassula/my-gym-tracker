@@ -1,0 +1,128 @@
+{
+  "app": {
+    "name": "myGymTracker",
+    "tagline": "Tu plan en PDF se convierte en un entrenamiento guiado. Registra cargas con un toque y mira tu progresión.",
+    "loading": "Cargando…"
+  },
+  "nav": {
+    "today": "Hoy",
+    "workouts": "Entrenos",
+    "progress": "Progreso",
+    "settings": "Ajustes",
+    "back": "Volver",
+    "main": "Navegación principal"
+  },
+  "welcome": {
+    "createAccount": "Crear cuenta",
+    "haveAccount": "Ya tengo cuenta"
+  },
+  "auth": {
+    "email": "Email",
+    "password": "Contraseña",
+    "name": "Nombre",
+    "show": "mostrar",
+    "hide": "ocultar",
+    "showPassword": "Mostrar contraseña",
+    "hidePassword": "Ocultar contraseña",
+    "login": {
+      "title": "Entrar",
+      "subtitle": "Bienvenido de nuevo.",
+      "remember": "Recordarme",
+      "forgot": "He olvidado la contraseña",
+      "submit": "Entrar",
+      "submitting": "Entrando…",
+      "noAccount": "¿No tienes cuenta?",
+      "createAccount": "Crear cuenta"
+    },
+    "register": {
+      "title": "Crear cuenta",
+      "subtitle": "Tarda menos de un minuto.",
+      "submit": "Crear cuenta",
+      "submitting": "Creando cuenta…",
+      "haveAccount": "¿Ya tienes cuenta?",
+      "login": "Entrar"
+    },
+    "forgot": {
+      "back": "Entrar",
+      "title": "Recuperar contraseña",
+      "subtitle": "Te enviamos un enlace para establecer una nueva contraseña.",
+      "submit": "Enviar enlace",
+      "submitting": "Enviando…",
+      "sentTitle": "Correo enviado",
+      "sentBody": "Revisa tu bandeja de entrada (y el spam). El enlace caduca en 30 minutos.",
+      "resend": "Reenviar"
+    },
+    "reset": {
+      "title": "Nueva contraseña",
+      "for": "Para {{email}}",
+      "newPassword": "Nueva contraseña",
+      "confirm": "Confirmar",
+      "submit": "Guardar y entrar",
+      "submitting": "Guardando…",
+      "checking": "Comprobando el enlace…",
+      "invalidTitle": "Enlace no válido o caducado",
+      "invalidBody": "Pide un nuevo enlace para recuperar la contraseña.",
+      "requestNew": "Pedir un nuevo enlace"
+    },
+    "strength": {
+      "label": "Seguridad de la contraseña",
+      "1": "Débil",
+      "2": "Media",
+      "3": "Fuerte",
+      "4": "Muy fuerte",
+      "missing": {
+        "length": "usa al menos 8 caracteres",
+        "number": "añade un número",
+        "symbol": "añade un símbolo"
+      },
+      "criteriaMet": "8+ caracteres, número y símbolo"
+    }
+  },
+  "settings": {
+    "title": "Ajustes",
+    "account": "Cuenta",
+    "changePassword": "Cambiar contraseña",
+    "logout": "Cerrar sesión",
+    "password": {
+      "title": "Cambiar contraseña",
+      "current": "Contraseña actual",
+      "new": "Nueva contraseña",
+      "confirm": "Confirmar nueva contraseña",
+      "submit": "Guardar cambios",
+      "submitting": "Guardando…",
+      "success": "Contraseña cambiada. Hemos cerrado la sesión en tus otros dispositivos."
+    }
+  },
+  "empty": {
+    "today": {
+      "title": "Hoy no hay entreno",
+      "description": "Cuando importes tu plan en PDF, el entreno del día aparecerá aquí."
+    },
+    "workouts": {
+      "title": "Aún no tienes entrenos",
+      "description": "Los planes que importes en PDF aparecerán aquí."
+    },
+    "progress": {
+      "title": "Aún sin progreso",
+      "description": "Registra tus primeras series para ver la evolución de tus cargas."
+    }
+  },
+  "validation": {
+    "required": "Campo obligatorio.",
+    "email": "Introduce un email válido.",
+    "passwordMin": "Usa al menos 8 caracteres.",
+    "passwordMax": "Usa como máximo 128 caracteres.",
+    "nameMax": "Usa como máximo 100 caracteres.",
+    "passwordsMismatch": "Las contraseñas no coinciden."
+  },
+  "errors": {
+    "invalid_credentials": "Email o contraseña incorrectos.",
+    "email_taken": "Ya existe una cuenta con este email.",
+    "invalid_current_password": "La contraseña actual es incorrecta.",
+    "invalid_reset_token": "El enlace no es válido o ha caducado.",
+    "rate_limited": "Demasiados intentos. Vuelve a intentarlo en un momento.",
+    "validation_error": "Revisa los campos marcados.",
+    "network": "No se puede conectar con el servidor. Revisa tu conexión e inténtalo de nuevo.",
+    "unknown": "Algo ha salido mal. Inténtalo de nuevo."
+  }
+}
