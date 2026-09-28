@@ -1,0 +1,20 @@
+# Production-like stack on top of docker-compose.yml: the built app behind nginx and the
+# backend without reload or bind mounts.
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml up --build
+# Real production also needs HTTPS in front (Secure cookies, Web Push, installing the PWA).
+services:
+  backend:
+    build:
+      target: prod
+    environment:
+      ENVIRONMENT: production
+      COOKIE_SECURE: ${COOKIE_SECURE:-true}
+    volumes: !reset []
+
+  frontend:
+    build:
+      target: prod
+    environment: !reset {}
+    volumes: !reset []
+    ports: !override
+      - "127.0.0.1:${FRONTEND_PORT:-5173}:80"
