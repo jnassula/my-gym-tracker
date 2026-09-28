@@ -16,6 +16,19 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.exercises.models import Exercise, MuscleGroup
+from app.health import service as health
+from app.health.metrics import (
+    Sample,
+    SessionTimes,
+    average,
+    chart,
+    peak,
+    session_window,
+    set_peak,
+    total,
+)
+from app.health.models import HealthSampleType
+from app.logs.errors import SessionNotFoundError
 from app.logs.models import ExerciseLog, WorkoutSession
 from app.logs.schemas import WeightPoint
 from app.logs.service import count_done, exercise_key, get_exercise, local_today
@@ -38,11 +51,15 @@ from app.progress.schemas import (
     ExerciseProgress,
     ExerciseTrend,
     GroupSets,
+    HeartRatePoint,
     LastRecord,
     ProgressCalendar,
     ProgressOverview,
     Range,
     SessionBest,
+    SessionDetail,
+    SessionExercise,
+    SessionHealth,
     TodayComparison,
     Totals,
     WeekComparison,
@@ -372,3 +389,78 @@ def _today_comparison(
             )
         )
     return TodayComparison(day_id=day.id, label=day.label, exercises=rows)
+
+
+# --- one session (with the Apple Watch's data, once synced) --------------------------------------
+
+
+async def session_detail(session: AsyncSession, user: User, session_id: uuid.UUID) -> SessionDetail:
+    workout = await session.scalar(
+        select(WorkoutSession).where(
+            WorkoutSession.id == session_id, WorkoutSession.user_id == user.id
+        )
+    )
+    if workout is None:
+        raise SessionNotFoundError
+    day = await session.get(WorkoutDay, workout.day_id) if workout.day_id else None
+    sets = [
+        s
+        for s in await _sets(session, user.id, since=workout.local_date)
+        if s.session_id == workout.id
+    ]
+    samples = await health.samples_of(session, user.id, workout.id)
+    heart_rate = samples[HealthSampleType.HEART_RATE]
+
+    by_exercise: dict[uuid.UUID, list[LoggedSet]] = {}
+    for s in sorted(sets, key=lambda s: s.performed_at):
+        by_exercise.setdefault(s.exercise_id, []).append(s)
+    working = [s for s in sets if s.working]
+    return SessionDetail(
+        session_id=workout.id,
+        date=workout.local_date,
+        label=day.label if day else "",
+        started_at=workout.started_at,
+        ended_at=workout.ended_at,
+        duration_seconds=duration_seconds(
+            workout.started_at,
+            workout.ended_at,
+            max((s.performed_at for s in sets), default=None),
+        ),
+        sets=len(working),
+        volume=volume(working),
+        exercises=[
+            SessionExercise(
+                exercise_id=exercise_id,
+                name=logged[0].name,
+                muscle_group=logged[0].muscle_group,
+                sets=len(logged),
+                top_weight=max(s.weight for s in logged),
+                first_set_at=logged[0].performed_at,
+                peak_heart_rate=set_peak(heart_rate, [s.performed_at for s in logged]),
+            )
+            for exercise_id, logged in by_exercise.items()
+        ],
+        health=_session_health(workout, sets, samples),
+    )
+
+
+def _session_health(
+    workout: WorkoutSession,
+    sets: list[LoggedSet],
+    samples: dict[HealthSampleType, list[Sample]],
+) -> SessionHealth | None:
+    if not any(samples.values()):
+        return None
+    set_times = [s.performed_at for s in sets]
+    window = session_window(
+        SessionTimes(workout.id, workout.started_at, workout.ended_at, set_times)
+    )
+    heart_rate = samples[HealthSampleType.HEART_RATE]
+    return SessionHealth(
+        starts_at=window.start,
+        ends_at=window.end,
+        avg_heart_rate=average(heart_rate),
+        max_heart_rate=peak(heart_rate),
+        calories=total(samples[HealthSampleType.CALORIES]),
+        heart_rate=[HeartRatePoint(at=p.at, bpm=round(p.value)) for p in chart(heart_rate, window)],
+    )

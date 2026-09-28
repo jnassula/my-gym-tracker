@@ -1,7 +1,7 @@
 """Response schemas for the progress screens. Weights are kilograms, as stored."""
 
 import uuid
-from datetime import date
+from datetime import date, datetime
 from typing import Literal
 
 from pydantic import BaseModel
@@ -135,3 +135,42 @@ class WeekComparison(BaseModel):
     last_week: Totals
     days: list[DayVolume]  # both whole weeks, for the chart
     today: TodayComparison | None  # when the active plan trains today
+
+
+class HeartRatePoint(BaseModel):
+    at: datetime
+    bpm: int
+
+
+class SessionExercise(BaseModel):
+    exercise_id: uuid.UUID
+    name: str
+    muscle_group: MuscleGroup | None
+    sets: int
+    top_weight: Kg
+    first_set_at: datetime
+    peak_heart_rate: int | None  # the highest around any of its sets
+
+
+class SessionHealth(BaseModel):
+    """What the Apple Watch recorded during the session (after a shortcut sync)."""
+
+    starts_at: datetime  # the session's window (a little before the first set to after the last)
+    ends_at: datetime
+    avg_heart_rate: int | None
+    max_heart_rate: int | None
+    calories: int | None  # active kcal
+    heart_rate: list[HeartRatePoint]  # averaged for the chart
+
+
+class SessionDetail(BaseModel):
+    session_id: uuid.UUID
+    date: date
+    label: str
+    started_at: datetime
+    ended_at: datetime | None
+    duration_seconds: int
+    sets: int  # working sets
+    volume: Kg  # working sets, weight times reps
+    exercises: list[SessionExercise]  # in the order they were first logged
+    health: SessionHealth | None

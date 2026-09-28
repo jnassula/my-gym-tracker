@@ -11,6 +11,7 @@ from app.progress.schemas import (
     ProgressCalendar,
     ProgressOverview,
     Range,
+    SessionDetail,
     WeekComparison,
 )
 
@@ -42,3 +43,11 @@ async def calendar(
 @router.get("/weeks")
 async def week_comparison(user: CurrentUser, session: SessionDep) -> WeekComparison:
     return await service.week_comparison(session, user)
+
+
+@router.get("/sessions/{session_id}")
+async def session_detail(
+    session_id: uuid.UUID, user: CurrentUser, session: SessionDep
+) -> SessionDetail:
+    """One session's exercises and, once the shortcut has synced, the Apple Watch's data."""
+    return await service.session_detail(session, user, session_id)
