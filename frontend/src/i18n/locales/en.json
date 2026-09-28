@@ -369,6 +369,94 @@
       "seeWeek": "See the week",
       "chooseTitle": "Pick today's workout",
       "chooseDescription": "Your plan has no fixed weekdays: pick the workout from the list."
+    },
+    "plates": {
+      "open": "Plates",
+      "title": "Plates per side · {{weight}}",
+      "bar": "bar {{weight}}",
+      "barLabel": "Bar",
+      "plate": "{{count}} × {{weight}}",
+      "onlyBar": "Just the bar.",
+      "belowBar": "The weight is lighter than the bar.",
+      "remainder": "{{weight}} per side short: these plates can't make it exactly.",
+      "close": "Close"
+    }
+  },
+  "progress": {
+    "streak": "week streak",
+    "weekVolume": "volume · week",
+    "recordsMonth": "PRs this month",
+    "byGroup": "Sets by muscle group",
+    "byGroupHint": "This week, warm-ups left out.",
+    "byGroupEmpty": "No sets yet this week.",
+    "byExercise": "By exercise",
+    "exerciseRow": "{{group}} · PR {{weight}}",
+    "trend": "Trend {{trend}}",
+    "startTraining": "Train today",
+    "rangeLabel": "Period",
+    "range": {
+      "4w": "4 wk",
+      "3m": "3 mo",
+      "1y": "1 yr"
+    },
+    "detail": {
+      "chartTitle": "Heaviest set per session",
+      "chartTitleWeekly": "Heaviest set per week",
+      "heaviest": "Heaviest",
+      "pr": "PR",
+      "volume": "Volume",
+      "trend": "Trend",
+      "date": "Date",
+      "best": "Best",
+      "sessionVolume": "Volume",
+      "empty": "No sessions in this period.",
+      "sessions": "Sessions in the period"
+    },
+    "card": {
+      "title": "Progression",
+      "sessions_one": "{{count}} session · from {{min}}",
+      "sessions_other": "{{count}} sessions · from {{min}}",
+      "record": "PR {{weight}}",
+      "open": "See progress",
+      "empty": "Progress shows from the second session."
+    },
+    "calendar": {
+      "title": "Consistency",
+      "streak": "week streak",
+      "total": "workouts · total",
+      "adherence": "plan done · 30 d",
+      "previous": "Previous month",
+      "next": "Next month",
+      "status": {
+        "trained": "trained",
+        "missed": "missed",
+        "rest": "rest",
+        "today": "today, to train",
+        "future": "upcoming"
+      },
+      "thisWeek": "This week",
+      "noSessions": "No workouts yet this week.",
+      "session": "{{duration}} · {{sets}} sets",
+      "today": "today · {{done}}/{{total}}"
+    },
+    "weeks": {
+      "title": "Week comparison",
+      "kicker": "Week {{week}} vs. {{last}}",
+      "until": "Monday to {{weekday}}, in both weeks.",
+      "volume": "Volume",
+      "sets": "Sets",
+      "time": "Time",
+      "byDay": "Volume by day",
+      "week": "week {{week}}",
+      "showTable": "Show values",
+      "hideTable": "Hide values",
+      "day": "Day",
+      "today": "Today vs. a week ago",
+      "exercise": "Exercise",
+      "delta": "Δ",
+      "pending": "to do",
+      "noToday": "No workout in the plan today.",
+      "weekShort": "W{{week}}"
     }
   }
 }

@@ -1,4 +1,4 @@
-import { screen, waitFor, within } from '@testing-library/react'
+import { cleanup, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -104,6 +104,7 @@ beforeEach(() => {
 })
 
 afterEach(() => {
+  cleanup() // before the session goes: screens under the app layout need it
   restTimer.skip()
   fetchMock.mockReset()
   sessionStore.set(null)
@@ -196,6 +197,35 @@ describe('ExerciseScreen', () => {
 
     await waitFor(() => expect(requests('PATCH /api/logs/sets/set-ex-2-1')).toEqual([{ weight: 50, reps: 10 }]))
     expect(await screen.findByRole('button', { name: /Série 1: 50 kg × 10/ })).toBeInTheDocument()
+  })
+})
+
+describe('ExerciseScreen extras', () => {
+  it('links its progression and works out the plates', async () => {
+    serve({
+      'GET /api/logs/days/day-1': () => json(dayLog(null)),
+      'GET /api/logs/exercises/ex-2/history': () =>
+        json({
+          sessions: [],
+          best_weight: 50,
+          recent: [
+            { date: '2026-09-16', weight: 47.5 },
+            { date: '2026-09-23', weight: 50 },
+          ],
+        }),
+    })
+    renderWithRouter(<ExerciseScreen plan={plan} dayId="day-1" exerciseId="ex-2" backLink={null} />)
+
+    const progression = await screen.findByRole('link', { name: /Progressão/ })
+    expect(progression).toHaveAttribute('href', '/progress/exercises/ex-2')
+    expect(await within(progression).findByText('2 sessões · desde 47,5 kg')).toBeInTheDocument()
+    expect(within(progression).getByText('PR 50 kg')).toBeInTheDocument()
+
+    await userEvent.click(screen.getByRole('button', { name: 'Anilhas' }))
+    const sheet = await screen.findByRole('dialog', { name: 'Anilhas por lado · 50 kg' })
+    expect(within(sheet).getByText('1 × 15')).toBeInTheDocument() // (50 − 20) / 2
+    await userEvent.click(within(sheet).getByRole('button', { name: '15 kg' }))
+    expect(within(sheet).getByText('1 × 2,5')).toBeInTheDocument() // (50 − 15) / 2 = 15 + 2,5
   })
 })
 

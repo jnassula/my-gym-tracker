@@ -1,4 +1,6 @@
+import { CaretRightIcon } from '@phosphor-icons/react'
 import { useQuery } from '@tanstack/react-query'
+import { Link } from '@tanstack/react-router'
 import { cn } from 'cn'
 import { useId, useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -10,6 +12,7 @@ import { Spinner } from '@/components/ui/spinner'
 import { Toggle } from '@/components/ui/toggle'
 import { errorKey } from '@/features/auth/errors'
 import { FormAlert } from '@/features/auth/form-parts'
+import { Sparkline } from '@/features/progress/sparkline'
 import { formatRest } from '@/features/workouts/format'
 import { useWorkoutLabels } from '@/features/workouts/labels'
 import type { Day, Exercise, Plan } from '@/features/workouts/types'
@@ -17,6 +20,7 @@ import { useRequiredSession } from '@/lib/auth'
 
 import { dayLogQuery, historyQuery, useLogSet } from './api'
 import { LogSetSheet } from './log-set-sheet'
+import { PlateSheet } from './plate-sheet'
 import { nextExercise, plannedSets, restSeconds, setsOf, suggestion, topWeight } from './plan'
 import { restTimer } from './rest-timer'
 import { RestPill, RestSheet } from './rest-timer-ui'
@@ -96,6 +100,7 @@ function ExerciseLogger({ day, exercise, log }: { day: Day; exercise: Exercise; 
   const [logging, setLogging] = useState(false)
   const [editing, setEditing] = useState<LoggedSet | null>(null)
   const [afterRest, setAfterRest] = useState<string | null>(null)
+  const [platesOpen, setPlatesOpen] = useState(false)
 
   function changeWeight(value: number) {
     const clamped = clampWeight(value, unit)
@@ -196,7 +201,7 @@ function ExerciseLogger({ day, exercise, log }: { day: Day; exercise: Exercise; 
             </Button>
           ))}
         </div>
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-3 gap-2">
           <Toggle
             variant="outline"
             pressed={decreasing}
@@ -213,6 +218,9 @@ function ExerciseLogger({ day, exercise, log }: { day: Day; exercise: Exercise; 
             onClick={() => lastInUnit !== null && changeWeight(lastInUnit)}
           >
             {t('training.exercise.useLast')}
+          </Button>
+          <Button variant="outline" size="touch" className="h-11" onClick={() => setPlatesOpen(true)}>
+            {t('training.plates.open')}
           </Button>
         </div>
       </div>
@@ -254,6 +262,7 @@ function ExerciseLogger({ day, exercise, log }: { day: Day; exercise: Exercise; 
       </section>
 
       <HistoryCard history={history.data} pending={history.isPending} best={best} unit={unit} />
+      <ProgressionCard exerciseId={exercise.id} history={history.data} best={best} unit={unit} />
 
       <div className="fixed inset-x-0 bottom-[calc(4.25rem+env(safe-area-inset-bottom))] z-10 bg-linear-to-t from-background from-60% to-transparent px-5 pt-6 pb-3">
         <div className="mx-auto max-w-md">
@@ -283,6 +292,7 @@ function ExerciseLogger({ day, exercise, log }: { day: Day; exercise: Exercise; 
         onConfirm={confirm}
       />
       <SetDialog dayId={day.id} set={editing} unit={unit} onClose={() => setEditing(null)} />
+      <PlateSheet open={platesOpen} onOpenChange={setPlatesOpen} weight={weight} unit={unit} />
       <RestSheet next={afterRest} />
     </div>
   )
@@ -330,5 +340,60 @@ function HistoryCard({ history, pending, best, unit }: HistoryCardProps) {
         </ul>
       )}
     </Card>
+  )
+}
+
+type ProgressionCardProps = {
+  exerciseId: string
+  history: ExerciseHistory | undefined
+  /** Heaviest weight ever, today included (kg). */
+  best: number
+  unit: Unit
+}
+
+/** "Progressão": the last sessions' heaviest sets at a glance; opens the full progress. */
+function ProgressionCard({ exerciseId, history, best, unit }: ProgressionCardProps) {
+  const { t, i18n } = useTranslation()
+  const points = history?.recent ?? []
+  return (
+    <Link
+      to="/progress/exercises/$exerciseId"
+      params={{ exerciseId }}
+      className="grid gap-2 rounded-xl bg-card px-4 py-3"
+    >
+      <div className="flex items-baseline justify-between gap-3">
+        <h2 className={HEADING}>{t('progress.card.title')}</h2>
+        <span className="flex items-center gap-1 text-xs text-primary">
+          {t('progress.card.open')}
+          <CaretRightIcon aria-hidden className="size-3" />
+        </span>
+      </div>
+      {points.length < 2 ? (
+        <p className="text-sm text-muted-foreground">{t('progress.card.empty')}</p>
+      ) : (
+        <>
+          <Sparkline
+            values={points.map((point) => point.weight)}
+            width={320}
+            height={56}
+            endDot
+            className="h-14 w-full text-primary"
+          />
+          <div className="flex justify-between gap-3 text-[0.6875rem] text-muted-foreground">
+            <span>
+              {t('progress.card.sessions', {
+                count: points.length,
+                min: formatWeight(Math.min(...points.map((point) => point.weight)), unit, i18n.language),
+              })}
+            </span>
+            {best > 0 && (
+              <span className="text-primary">
+                {t('progress.card.record', { weight: formatWeight(best, unit, i18n.language) })}
+              </span>
+            )}
+          </div>
+        </>
+      )}
+    </Link>
   )
 }

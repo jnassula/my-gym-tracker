@@ -32,7 +32,12 @@ export type DayLog = {
   last: Record<string, PastSession>
 }
 
-export type ExerciseHistory = { sessions: PastSession[]; best_weight: number | null }
+export type ExerciseHistory = {
+  sessions: PastSession[]
+  best_weight: number | null
+  /** Heaviest set of each of the last 8 sessions, oldest first (the "Progressão" sparkline). */
+  recent: Array<{ date: string; weight: number }>
+}
 
 export type DayWeek = {
   day_id: string

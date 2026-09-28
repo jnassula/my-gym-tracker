@@ -369,6 +369,94 @@
       "seeWeek": "Ver la semana",
       "chooseTitle": "Elige el entreno de hoy",
       "chooseDescription": "Tu plan no tiene días fijos: elige el entreno en la lista."
+    },
+    "plates": {
+      "open": "Discos",
+      "title": "Discos por lado · {{weight}}",
+      "bar": "barra {{weight}}",
+      "barLabel": "Barra",
+      "plate": "{{count}} × {{weight}}",
+      "onlyBar": "Solo la barra.",
+      "belowBar": "La carga es menor que la barra.",
+      "remainder": "Faltan {{weight}} por lado: no sale exacto con estos discos.",
+      "close": "Cerrar"
+    }
+  },
+  "progress": {
+    "streak": "semanas seguidas",
+    "weekVolume": "volumen · semana",
+    "recordsMonth": "PRs este mes",
+    "byGroup": "Series por grupo muscular",
+    "byGroupHint": "Esta semana, sin calentamientos.",
+    "byGroupEmpty": "Aún sin series esta semana.",
+    "byExercise": "Por ejercicio",
+    "exerciseRow": "{{group}} · PR {{weight}}",
+    "trend": "Tendencia {{trend}}",
+    "startTraining": "Entrenar hoy",
+    "rangeLabel": "Periodo",
+    "range": {
+      "4w": "4 sem",
+      "3m": "3 meses",
+      "1y": "1 año"
+    },
+    "detail": {
+      "chartTitle": "Carga máxima por sesión",
+      "chartTitleWeekly": "Carga máxima por semana",
+      "heaviest": "Carga máx.",
+      "pr": "PR",
+      "volume": "Volumen",
+      "trend": "Tendencia",
+      "date": "Fecha",
+      "best": "Mejor",
+      "sessionVolume": "Volumen",
+      "empty": "Sin sesiones en este periodo.",
+      "sessions": "Sesiones en el periodo"
+    },
+    "card": {
+      "title": "Progresión",
+      "sessions_one": "{{count}} sesión · desde {{min}}",
+      "sessions_other": "{{count}} sesiones · desde {{min}}",
+      "record": "PR {{weight}}",
+      "open": "Ver evolución",
+      "empty": "La evolución aparece desde la segunda sesión."
+    },
+    "calendar": {
+      "title": "Constancia",
+      "streak": "semanas seguidas",
+      "total": "entrenos · total",
+      "adherence": "plan cumplido · 30 d",
+      "previous": "Mes anterior",
+      "next": "Mes siguiente",
+      "status": {
+        "trained": "entrenado",
+        "missed": "fallado",
+        "rest": "descanso",
+        "today": "hoy, por entrenar",
+        "future": "por venir"
+      },
+      "thisWeek": "Esta semana",
+      "noSessions": "Aún sin entrenos esta semana.",
+      "session": "{{duration}} · {{sets}} series",
+      "today": "hoy · {{done}}/{{total}}"
+    },
+    "weeks": {
+      "title": "Comparación semanal",
+      "kicker": "Semana {{week}} vs. {{last}}",
+      "until": "De lunes a {{weekday}}, en las dos semanas.",
+      "volume": "Volumen",
+      "sets": "Series",
+      "time": "Tiempo",
+      "byDay": "Volumen por día",
+      "week": "semana {{week}}",
+      "showTable": "Ver valores",
+      "hideTable": "Ocultar valores",
+      "day": "Día",
+      "today": "Hoy vs. hace una semana",
+      "exercise": "Ejercicio",
+      "delta": "Δ",
+      "pending": "por hacer",
+      "noToday": "Hoy no hay entreno en el plan.",
+      "weekShort": "S{{week}}"
     }
   }
 }
