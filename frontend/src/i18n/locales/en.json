@@ -513,5 +513,9 @@
     "deleteConfirm": "Delete",
     "deleted": "Plan deleted.",
     "activated": "“{{name}}” is now the active workout."
+  },
+  "pwa": {
+    "updateAvailable": "A new version of the app is ready.",
+    "update": "Update"
   }
 }

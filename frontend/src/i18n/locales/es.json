@@ -513,5 +513,9 @@
     "deleteConfirm": "Borrar",
     "deleted": "Plan borrado.",
     "activated": "«{{name}}» es ahora el entreno activo."
+  },
+  "pwa": {
+    "updateAvailable": "Hay una nueva versión de la app.",
+    "update": "Actualizar"
   }
 }

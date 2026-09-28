@@ -5,6 +5,7 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 
 import '@/i18n'
+import { registerServiceWorker } from '@/pwa'
 import { queryClient, router } from '@/router'
 
 import './index.css'
@@ -18,3 +19,5 @@ createRoot(document.getElementById('root')!).render(
     </ThemeProvider>
   </StrictMode>,
 )
+
+registerServiceWorker()

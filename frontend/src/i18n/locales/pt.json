@@ -513,5 +513,9 @@
     "deleteConfirm": "Apagar",
     "deleted": "Plano apagado.",
     "activated": "“{{name}}” é agora o treino ativo."
+  },
+  "pwa": {
+    "updateAvailable": "Há uma nova versão da app.",
+    "update": "Atualizar"
   }
 }

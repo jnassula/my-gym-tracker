@@ -22,3 +22,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# vite-plugin-pwa: the service worker built for `npm run dev`
+dev-dist
