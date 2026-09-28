@@ -15,10 +15,11 @@ from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from app.core.db import utcnow
 from app.core.storage import Storage
 from app.exercises.models import Exercise
 from app.files import service as files
-from app.files.models import FileKind
+from app.files.models import FileKind, StoredFile
 from app.workouts.errors import (
     PdfNoStructureError,
     PdfNoTextError,
@@ -41,6 +42,8 @@ from app.workouts.schemas import (
     ImportPreview,
     PlanCreate,
     PlanSummary,
+    PlanUpdate,
+    SourceFile,
 )
 
 logger = logging.getLogger(__name__)
@@ -116,11 +119,7 @@ async def create_plan(session: AsyncSession, user_id: uuid.UUID, data: PlanCreat
     if data.source_file_id is not None:
         await files.get_user_file(session, user_id, data.source_file_id)  # ownership check
     if data.activate:
-        await session.execute(
-            update(WorkoutPlan)
-            .where(WorkoutPlan.user_id == user_id, WorkoutPlan.is_active)
-            .values(is_active=False)
-        )
+        await _deactivate_all(session, user_id)
     plan = WorkoutPlan(
         user_id=user_id,
         name=data.name,
@@ -145,10 +144,23 @@ async def create_plan(session: AsyncSession, user_id: uuid.UUID, data: PlanCreat
     return await get_plan(session, user_id, plan.id)
 
 
+async def _deactivate_all(session: AsyncSession, user_id: uuid.UUID) -> None:
+    await session.execute(
+        update(WorkoutPlan)
+        .where(WorkoutPlan.user_id == user_id, WorkoutPlan.is_active)
+        .values(is_active=False)
+    )
+
+
 async def get_plan(session: AsyncSession, user_id: uuid.UUID, plan_id: uuid.UUID) -> WorkoutPlan:
+    """A plan of the user's that hasn't been deleted."""
     plan = await session.scalar(
         select(WorkoutPlan)
-        .where(WorkoutPlan.id == plan_id, WorkoutPlan.user_id == user_id)
+        .where(
+            WorkoutPlan.id == plan_id,
+            WorkoutPlan.user_id == user_id,
+            WorkoutPlan.deleted_at.is_(None),
+        )
         .options(selectinload(WorkoutPlan.days).selectinload(WorkoutDay.exercises))
         .execution_options(populate_existing=True)
     )
@@ -169,9 +181,15 @@ async def list_plans(session: AsyncSession, user_id: uuid.UUID) -> list[PlanSumm
         .where(WorkoutDay.plan_id == WorkoutPlan.id)
         .scalar_subquery()
     )
+    day_count = (
+        select(func.count(WorkoutDay.id))
+        .where(WorkoutDay.plan_id == WorkoutPlan.id)
+        .scalar_subquery()
+    )
     rows = await session.execute(
-        select(WorkoutPlan, exercise_count, weekdays)
-        .where(WorkoutPlan.user_id == user_id)
+        select(WorkoutPlan, exercise_count, weekdays, day_count, StoredFile)
+        .outerjoin(StoredFile, WorkoutPlan.source_file_id == StoredFile.id)
+        .where(WorkoutPlan.user_id == user_id, WorkoutPlan.deleted_at.is_(None))
         .order_by(WorkoutPlan.is_active.desc(), WorkoutPlan.created_at.desc())
     )
     return [
@@ -181,9 +199,43 @@ async def list_plans(session: AsyncSession, user_id: uuid.UUID) -> list[PlanSumm
             is_active=plan.is_active,
             valid_until=plan.valid_until,
             source_file_id=plan.source_file_id,
+            source_file=(
+                SourceFile(id=file.id, filename=file.filename, size_bytes=file.size_bytes)
+                if file
+                else None
+            ),
             created_at=plan.created_at,
             weekdays=sorted(days or []),
+            day_count=n_days,
             exercise_count=count,
         )
-        for plan, count, days in rows.all()
+        for plan, count, days, n_days, file in rows.all()
     ]
+
+
+async def update_plan(
+    session: AsyncSession, user_id: uuid.UUID, plan_id: uuid.UUID, data: PlanUpdate
+) -> WorkoutPlan:
+    plan = await get_plan(session, user_id, plan_id)
+    if data.name is not None:
+        plan.name = data.name
+    if data.is_active is not None and data.is_active != plan.is_active:
+        if data.is_active:
+            await _deactivate_all(session, user_id)
+        plan.is_active = data.is_active
+    await session.commit()
+    return await get_plan(session, user_id, plan_id)
+
+
+async def delete_plan(
+    session: AsyncSession, storage: Storage, user_id: uuid.UUID, plan_id: uuid.UUID
+) -> None:
+    """Hide the plan and delete its PDF; the logged weights stay in the history."""
+    plan = await get_plan(session, user_id, plan_id)
+    plan.deleted_at = utcnow()
+    plan.is_active = False
+    source_file_id, plan.source_file_id = plan.source_file_id, None
+    await session.flush()
+    if source_file_id is not None:
+        await files.delete_file(session, storage, user_id, source_file_id)
+    await session.commit()

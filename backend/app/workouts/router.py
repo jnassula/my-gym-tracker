@@ -9,7 +9,7 @@ from app.core.rate_limit import limiter
 from app.core.storage import Storage, get_storage
 from app.workouts import service
 from app.workouts.parser import PlanParser, get_plan_parser
-from app.workouts.schemas import ImportPreview, PlanCreate, PlanRead, PlanSummary
+from app.workouts.schemas import ImportPreview, PlanCreate, PlanRead, PlanSummary, PlanUpdate
 
 router = APIRouter(prefix="/workouts", tags=["workouts"])
 
@@ -45,3 +45,19 @@ async def list_plans(user: CurrentUser, session: SessionDep) -> list[PlanSummary
 @router.get("/{plan_id}")
 async def get_plan(plan_id: uuid.UUID, user: CurrentUser, session: SessionDep) -> PlanRead:
     return PlanRead.model_validate(await service.get_plan(session, user.id, plan_id))
+
+
+@router.patch("/{plan_id}")
+async def update_plan(
+    plan_id: uuid.UUID, body: PlanUpdate, user: CurrentUser, session: SessionDep
+) -> PlanRead:
+    """Rename, activate (the previous active plan stops being active) or deactivate."""
+    return PlanRead.model_validate(await service.update_plan(session, user.id, plan_id, body))
+
+
+@router.delete("/{plan_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_plan(
+    plan_id: uuid.UUID, user: CurrentUser, session: SessionDep, storage: StorageDep
+) -> None:
+    """Remove the plan and its PDF. Weights logged on its exercises stay in the history."""
+    await service.delete_plan(session, storage, user.id, plan_id)

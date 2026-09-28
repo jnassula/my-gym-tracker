@@ -90,14 +90,22 @@ def exercise_key(name: str, group: MuscleGroup | None) -> ExerciseKey:
 
 
 async def get_exercise(
-    session: AsyncSession, user_id: uuid.UUID, exercise_id: uuid.UUID
+    session: AsyncSession,
+    user_id: uuid.UUID,
+    exercise_id: uuid.UUID,
+    *,
+    include_deleted: bool = False,
 ) -> Exercise:
-    exercise = await session.scalar(
+    """The user's exercise. Deleted plans' exercises only for reading history (progress)."""
+    query = (
         select(Exercise)
         .join(WorkoutDay, Exercise.day_id == WorkoutDay.id)
         .join(WorkoutPlan, WorkoutDay.plan_id == WorkoutPlan.id)
         .where(Exercise.id == exercise_id, WorkoutPlan.user_id == user_id)
     )
+    if not include_deleted:
+        query = query.where(WorkoutPlan.deleted_at.is_(None))
+    exercise = await session.scalar(query)
     if exercise is None:
         raise ExerciseNotFoundError
     return exercise
@@ -107,7 +115,11 @@ async def _day(session: AsyncSession, user_id: uuid.UUID, day_id: uuid.UUID) -> 
     day = await session.scalar(
         select(WorkoutDay)
         .join(WorkoutPlan, WorkoutDay.plan_id == WorkoutPlan.id)
-        .where(WorkoutDay.id == day_id, WorkoutPlan.user_id == user_id)
+        .where(
+            WorkoutDay.id == day_id,
+            WorkoutPlan.user_id == user_id,
+            WorkoutPlan.deleted_at.is_(None),
+        )
         .options(selectinload(WorkoutDay.exercises))
     )
     if day is None:

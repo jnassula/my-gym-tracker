@@ -2,6 +2,7 @@
 
 import uuid
 from pathlib import PurePath
+from urllib.parse import quote
 
 from fastapi import UploadFile
 from sqlalchemy import select
@@ -85,3 +86,16 @@ async def delete_file(
     await session.flush()
     await storage.delete(stored.object_key)
     await session.commit()
+
+
+async def read_file(
+    session: AsyncSession, storage: Storage, user_id: uuid.UUID, file_id: uuid.UUID
+) -> tuple[StoredFile, bytes]:
+    stored = await get_user_file(session, user_id, file_id)
+    return stored, await storage.get(stored.object_key)
+
+
+def inline_disposition(filename: str) -> str:
+    """RFC 6266: an ASCII fallback plus the UTF-8 name ("Treino Jonatã.pdf")."""
+    fallback = filename.encode("ascii", "replace").decode().replace('"', "")
+    return f"inline; filename=\"{fallback}\"; filename*=UTF-8''{quote(filename)}"

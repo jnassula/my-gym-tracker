@@ -161,7 +161,7 @@ async def overview(session: AsyncSession, user: User) -> ProgressOverview:
 async def exercise_progress(
     session: AsyncSession, user: User, exercise_id: uuid.UUID, range_: Range
 ) -> ExerciseProgress:
-    exercise = await get_exercise(session, user.id, exercise_id)
+    exercise = await get_exercise(session, user.id, exercise_id, include_deleted=True)
     key = exercise_key(exercise.name, exercise.muscle_group)
     sets = [s for s in await _sets(session, user.id, name=exercise.name) if s.key == key]
     entries = session_tops(sets).get(key, [])

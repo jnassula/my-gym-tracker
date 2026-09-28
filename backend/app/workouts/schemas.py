@@ -103,15 +103,40 @@ class DayRead(BaseModel):
     exercises: list[ExerciseRead]
 
 
+class SourceFile(BaseModel):
+    """The PDF a plan was imported from."""
+
+    id: uuid.UUID
+    filename: str
+    size_bytes: int
+
+
 class PlanSummary(BaseModel):
     id: uuid.UUID
     name: str
     is_active: bool
     valid_until: date | None
     source_file_id: uuid.UUID | None
+    source_file: SourceFile | None
     created_at: datetime
     weekdays: list[int]
+    day_count: int
     exercise_count: int
+
+
+class PlanUpdate(BaseModel):
+    """Rename a plan, or make it the active one (``is_active: false`` leaves none active)."""
+
+    name: Name | None = None
+    is_active: bool | None = None
+
+    @model_validator(mode="after")
+    def _something_to_change(self) -> Self:
+        if not self.model_fields_set or any(
+            getattr(self, field) is None for field in self.model_fields_set
+        ):
+            raise ValueError("Send a name, is_active or both, not null")
+        return self
 
 
 class PlanRead(BaseModel):

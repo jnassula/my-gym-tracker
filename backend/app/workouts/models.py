@@ -1,5 +1,5 @@
 import uuid
-from datetime import date
+from datetime import date, datetime
 
 from sqlalchemy import CheckConstraint, ForeignKey, Index, SmallInteger, String, text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -31,6 +31,9 @@ class WorkoutPlan(UUIDPrimaryKey, CreatedAt, Base):
     # "Trocar até": when the trainer expects the plan to be replaced.
     valid_until: Mapped[date | None]
     is_active: Mapped[bool] = mapped_column(default=False, server_default="false")
+    # Deleting a plan hides it and removes its PDF, but keeps its days and exercises so the
+    # weights logged on them stay in the history ("O histórico de cargas mantém-se").
+    deleted_at: Mapped[datetime | None]
 
     # lazy="raise": async code must load collections explicitly (selectinload).
     days: Mapped[list["WorkoutDay"]] = relationship(
