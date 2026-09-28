@@ -1,7 +1,7 @@
 from datetime import datetime
 from enum import StrEnum
 
-from sqlalchemy import CheckConstraint, String
+from sqlalchemy import CheckConstraint, String, true
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.db import Base, CreatedAt, UUIDPrimaryKey, enum_check, str_enum
@@ -42,3 +42,5 @@ class User(UUIDPrimaryKey, CreatedAt, Base):
     unit: Mapped[WeightUnit] = mapped_column(
         str_enum(WeightUnit), default=WeightUnit.KG, server_default=WeightUnit.KG.value
     )
+    # "Descanso automático": logging a set starts the rest timer.
+    auto_rest: Mapped[bool] = mapped_column(default=True, server_default=true())

@@ -1,10 +1,17 @@
 import uuid
 from datetime import datetime
 from functools import lru_cache
-from typing import Annotated
+from typing import Annotated, Self
 from zoneinfo import available_timezones
 
-from pydantic import AfterValidator, BaseModel, ConfigDict, EmailStr, StringConstraints
+from pydantic import (
+    AfterValidator,
+    BaseModel,
+    ConfigDict,
+    EmailStr,
+    StringConstraints,
+    model_validator,
+)
 
 from app.users.models import Language, WeightUnit
 
@@ -34,4 +41,23 @@ class UserRead(BaseModel):
     language: Language
     timezone: str
     unit: WeightUnit
+    auto_rest: bool
     created_at: datetime
+
+
+class UserUpdate(BaseModel):
+    """Profile and preferences; send only what changes."""
+
+    name: Name | None = None
+    language: Language | None = None
+    timezone: Timezone | None = None
+    unit: WeightUnit | None = None
+    auto_rest: bool | None = None
+
+    @model_validator(mode="after")
+    def _something_to_change(self) -> Self:
+        if not self.model_fields_set:
+            raise ValueError("Send at least one field")
+        if any(getattr(self, field) is None for field in self.model_fields_set):
+            raise ValueError("Fields can't be null")
+        return self
