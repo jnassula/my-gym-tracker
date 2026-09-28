@@ -52,14 +52,14 @@ def enum_check(column: str, enum: type[StrEnum]) -> CheckConstraint:
     return CheckConstraint(f"{column} IN ({values})", name=column)
 
 
-def _utcnow() -> datetime:
+def utcnow() -> datetime:
     return datetime.now(UTC)
 
 
 class CreatedAt:
     # Python-side default: Postgres now() is the transaction start, so rows created in one
     # transaction would tie. The server default covers raw SQL inserts.
-    created_at: Mapped[datetime] = mapped_column(default=_utcnow, server_default=func.now())
+    created_at: Mapped[datetime] = mapped_column(default=utcnow, server_default=func.now())
 
 
 engine = create_async_engine(get_settings().database_url, pool_pre_ping=True)
