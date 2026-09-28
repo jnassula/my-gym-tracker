@@ -95,15 +95,17 @@ type RequestOptions = {
 export async function api<T>(path: string, options: RequestOptions = {}): Promise<T> {
   const { method = 'GET', body, auth = true } = options
 
+  // FormData (file uploads) goes as multipart; the browser sets the boundary header.
+  const isForm = body instanceof FormData
   const attempt = () => {
     const headers: Record<string, string> = { Accept: 'application/json' }
-    if (body !== undefined) headers['Content-Type'] = 'application/json'
+    if (body !== undefined && !isForm) headers['Content-Type'] = 'application/json'
     const token = auth ? sessionStore.get()?.accessToken : undefined
     if (token) headers.Authorization = `Bearer ${token}`
     return send(path, {
       method,
       headers,
-      body: body === undefined ? undefined : JSON.stringify(body),
+      body: body === undefined ? undefined : isForm ? body : JSON.stringify(body),
     })
   }
 

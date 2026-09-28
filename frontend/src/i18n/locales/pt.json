@@ -113,7 +113,9 @@
     "passwordMin": "Usa pelo menos 8 caracteres.",
     "passwordMax": "Usa no máximo 128 caracteres.",
     "nameMax": "Usa no máximo 100 caracteres.",
-    "passwordsMismatch": "As palavras-passe não coincidem."
+    "passwordsMismatch": "As palavras-passe não coincidem.",
+    "number": "Introduz um número válido.",
+    "repsMax": "Usa no máximo 32 caracteres."
   },
   "errors": {
     "invalid_credentials": "Email ou palavra-passe incorretos.",
@@ -123,6 +125,148 @@
     "rate_limited": "Demasiadas tentativas. Tenta novamente daqui a pouco.",
     "validation_error": "Verifica os campos assinalados.",
     "network": "Sem ligação ao servidor. Verifica a internet e tenta novamente.",
-    "unknown": "Algo correu mal. Tenta novamente."
+    "unknown": "Algo correu mal. Tenta novamente.",
+    "file_too_large": "O ficheiro é demasiado grande.",
+    "unsupported_file_type": "Tipo de ficheiro não suportado.",
+    "pdf_no_text": "O PDF não tem texto.",
+    "pdf_no_structure": "Não encontrámos dias de treino no PDF.",
+    "pdf_unreadable": "Não conseguimos abrir o PDF.",
+    "plan_not_found": "Plano não encontrado.",
+    "file_not_found": "Ficheiro não encontrado."
+  },
+  "weekdays": {
+    "short": {
+      "0": "Seg",
+      "1": "Ter",
+      "2": "Qua",
+      "3": "Qui",
+      "4": "Sex",
+      "5": "Sáb",
+      "6": "Dom"
+    },
+    "long": {
+      "0": "Segunda",
+      "1": "Terça",
+      "2": "Quarta",
+      "3": "Quinta",
+      "4": "Sexta",
+      "5": "Sábado",
+      "6": "Domingo"
+    },
+    "none": "Sem dia"
+  },
+  "muscleGroups": {
+    "warmup": "Aquecimento",
+    "chest": "Peitoral",
+    "back": "Costas",
+    "shoulders": "Ombros",
+    "biceps": "Bíceps",
+    "triceps": "Tríceps",
+    "forearms": "Antebraço",
+    "abs": "Abdómen",
+    "quads": "Quadríceps",
+    "hamstrings": "Posteriores da coxa",
+    "glutes": "Glúteos",
+    "adductors": "Adutores",
+    "calves": "Panturrilhas",
+    "cardio": "Cardio",
+    "other": "Outro",
+    "none": "Sem grupo"
+  },
+  "workouts": {
+    "addPdf": "PDF",
+    "addPdfLabel": "Importar plano em PDF",
+    "active": "Ativo",
+    "summary": "{{days}} dias · {{exercises}} exercícios",
+    "validUntil": "Trocar até {{date}}",
+    "importCta": "Importar PDF",
+    "restDay": "Descanso",
+    "exerciseCount_one": "{{count}} exercício",
+    "exerciseCount_other": "{{count}} exercícios"
+  },
+  "import": {
+    "title": "Importar PDF",
+    "dropHere": "Arrasta o PDF para aqui",
+    "limits": "PDF · máx. 20 MB",
+    "chooseFile": "Escolher ficheiro",
+    "hint": "O plano é lido por dia da semana → grupo muscular → exercício (séries × reps, descanso). Podes corrigir tudo antes de confirmar.",
+    "reading": "A ler a estrutura…",
+    "anotherFile": "Outro ficheiro",
+    "errors": {
+      "pdf_no_text": {
+        "title": "Não conseguimos ler a estrutura",
+        "body": "O PDF parece ser uma imagem digitalizada. Tenta o PDF original do teu PT."
+      },
+      "pdf_no_structure": {
+        "title": "Não encontrámos dias de treino",
+        "body": "O PDF abriu, mas não tem dias da semana com exercícios que consigamos reconhecer."
+      },
+      "pdf_unreadable": {
+        "title": "Não conseguimos abrir o PDF",
+        "body": "O ficheiro pode estar danificado ou protegido por palavra-passe."
+      },
+      "file_too_large": {
+        "title": "Ficheiro demasiado grande",
+        "body": "{{name}} · {{size}} · máx. 20 MB"
+      },
+      "unsupported_file_type": {
+        "title": "Só aceitamos PDF",
+        "body": "{{name}} não é um ficheiro PDF."
+      }
+    },
+    "review": {
+      "kicker": "Rever importação · {{current}} de {{total}} dias",
+      "planName": "Nome do plano",
+      "days": "Dias do plano",
+      "addExercise": "Adicionar exercício em falta",
+      "confirmDay": "Confirmar dia · seguinte",
+      "confirmAll": "Confirmar tudo sem rever",
+      "confirmActivate": "Confirmar e ativar",
+      "saving": "A guardar…",
+      "cancel": "Cancelar importação",
+      "emptyDay": "Este dia ficou sem exercícios e não será guardado.",
+      "reviewed": "revisto"
+    },
+    "warnings": {
+      "technique_sets": "Técnica especial — confirma as séries",
+      "combined_exercise": "Dois exercícios feitos em conjunto",
+      "alternative_exercise": "Tinha alternativa — ficou a primeira opção",
+      "no_sets": "Sem séries reconhecidas — completa à mão",
+      "unknown_muscle_group": "Escolhe o grupo muscular"
+    },
+    "success": {
+      "title": "{{name}} importado",
+      "summary": "{{days}} dias · {{exercises}} exercícios · {{groups}} grupos musculares",
+      "active": "Definido como treino ativo.",
+      "viewPlan": "Ver treino",
+      "backToList": "Ver todos os treinos"
+    }
+  },
+  "exercise": {
+    "actions": "Ações para {{name}}",
+    "edit": "Editar",
+    "move": "Mover para…",
+    "moveUp": "Subir",
+    "moveDown": "Descer",
+    "delete": "Apagar",
+    "editTitle": "Editar exercício",
+    "addTitle": "Adicionar exercício",
+    "moveTitle": "Mover exercício",
+    "name": "Nome",
+    "group": "Grupo muscular",
+    "day": "Dia",
+    "sets": "Séries",
+    "reps": "Repetições",
+    "repsHint": "Ex.: 12, 8-12, 15/12/10 ou falha",
+    "rest": "Descanso (segundos)",
+    "notes": "Prescrição original",
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "moveConfirm": "Mover",
+    "setsReps": "{{sets}}×{{reps}}",
+    "setsOnly": "{{sets}} séries"
+  },
+  "plan": {
+    "notFound": "Plano não encontrado."
   }
 }

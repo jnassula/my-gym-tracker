@@ -113,7 +113,9 @@
     "passwordMin": "Use at least 8 characters.",
     "passwordMax": "Use at most 128 characters.",
     "nameMax": "Use at most 100 characters.",
-    "passwordsMismatch": "Passwords don't match."
+    "passwordsMismatch": "Passwords don't match.",
+    "number": "Enter a valid number.",
+    "repsMax": "Use at most 32 characters."
   },
   "errors": {
     "invalid_credentials": "Wrong email or password.",
@@ -123,6 +125,148 @@
     "rate_limited": "Too many attempts. Try again in a moment.",
     "validation_error": "Check the highlighted fields.",
     "network": "Can't reach the server. Check your connection and try again.",
-    "unknown": "Something went wrong. Please try again."
+    "unknown": "Something went wrong. Please try again.",
+    "file_too_large": "The file is too large.",
+    "unsupported_file_type": "Unsupported file type.",
+    "pdf_no_text": "The PDF has no text.",
+    "pdf_no_structure": "No workout days found in the PDF.",
+    "pdf_unreadable": "We couldn't open the PDF.",
+    "plan_not_found": "Plan not found.",
+    "file_not_found": "File not found."
+  },
+  "weekdays": {
+    "short": {
+      "0": "Mon",
+      "1": "Tue",
+      "2": "Wed",
+      "3": "Thu",
+      "4": "Fri",
+      "5": "Sat",
+      "6": "Sun"
+    },
+    "long": {
+      "0": "Monday",
+      "1": "Tuesday",
+      "2": "Wednesday",
+      "3": "Thursday",
+      "4": "Friday",
+      "5": "Saturday",
+      "6": "Sunday"
+    },
+    "none": "No day"
+  },
+  "muscleGroups": {
+    "warmup": "Warm-up",
+    "chest": "Chest",
+    "back": "Back",
+    "shoulders": "Shoulders",
+    "biceps": "Biceps",
+    "triceps": "Triceps",
+    "forearms": "Forearms",
+    "abs": "Abs",
+    "quads": "Quads",
+    "hamstrings": "Hamstrings",
+    "glutes": "Glutes",
+    "adductors": "Adductors",
+    "calves": "Calves",
+    "cardio": "Cardio",
+    "other": "Other",
+    "none": "No group"
+  },
+  "workouts": {
+    "addPdf": "PDF",
+    "addPdfLabel": "Import a PDF plan",
+    "active": "Active",
+    "summary": "{{days}} days · {{exercises}} exercises",
+    "validUntil": "Swap by {{date}}",
+    "importCta": "Import PDF",
+    "restDay": "Rest",
+    "exerciseCount_one": "{{count}} exercise",
+    "exerciseCount_other": "{{count}} exercises"
+  },
+  "import": {
+    "title": "Import PDF",
+    "dropHere": "Drop your PDF here",
+    "limits": "PDF · max. 20 MB",
+    "chooseFile": "Choose file",
+    "hint": "The plan is read by weekday → muscle group → exercise (sets × reps, rest). You can fix anything before confirming.",
+    "reading": "Reading the structure…",
+    "anotherFile": "Another file",
+    "errors": {
+      "pdf_no_text": {
+        "title": "We couldn't read the structure",
+        "body": "The PDF looks like a scanned image. Try the original PDF from your trainer."
+      },
+      "pdf_no_structure": {
+        "title": "No workout days found",
+        "body": "The PDF opened, but it has no weekdays with exercises we recognise."
+      },
+      "pdf_unreadable": {
+        "title": "We couldn't open the PDF",
+        "body": "The file may be damaged or password-protected."
+      },
+      "file_too_large": {
+        "title": "File too large",
+        "body": "{{name}} · {{size}} · max. 20 MB"
+      },
+      "unsupported_file_type": {
+        "title": "Only PDF files",
+        "body": "{{name}} is not a PDF file."
+      }
+    },
+    "review": {
+      "kicker": "Review import · {{current}} of {{total}} days",
+      "planName": "Plan name",
+      "days": "Plan days",
+      "addExercise": "Add a missing exercise",
+      "confirmDay": "Confirm day · next",
+      "confirmAll": "Confirm all without reviewing",
+      "confirmActivate": "Confirm & activate",
+      "saving": "Saving…",
+      "cancel": "Cancel import",
+      "emptyDay": "This day has no exercises left and won't be saved.",
+      "reviewed": "reviewed"
+    },
+    "warnings": {
+      "technique_sets": "Special technique — check the sets",
+      "combined_exercise": "Two exercises done together",
+      "alternative_exercise": "Had an alternative — kept the first option",
+      "no_sets": "No sets recognised — fill them in",
+      "unknown_muscle_group": "Pick the muscle group"
+    },
+    "success": {
+      "title": "{{name}} imported",
+      "summary": "{{days}} days · {{exercises}} exercises · {{groups}} muscle groups",
+      "active": "Set as your active plan.",
+      "viewPlan": "View plan",
+      "backToList": "See all workouts"
+    }
+  },
+  "exercise": {
+    "actions": "Actions for {{name}}",
+    "edit": "Edit",
+    "move": "Move to…",
+    "moveUp": "Move up",
+    "moveDown": "Move down",
+    "delete": "Delete",
+    "editTitle": "Edit exercise",
+    "addTitle": "Add exercise",
+    "moveTitle": "Move exercise",
+    "name": "Name",
+    "group": "Muscle group",
+    "day": "Day",
+    "sets": "Sets",
+    "reps": "Reps",
+    "repsHint": "E.g. 12, 8-12, 15/12/10 or failure",
+    "rest": "Rest (seconds)",
+    "notes": "Original prescription",
+    "save": "Save",
+    "cancel": "Cancel",
+    "moveConfirm": "Move",
+    "setsReps": "{{sets}}×{{reps}}",
+    "setsOnly": "{{sets}} sets"
+  },
+  "plan": {
+    "notFound": "Plan not found."
   }
 }
