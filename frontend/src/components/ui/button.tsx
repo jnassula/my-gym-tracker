@@ -17,6 +17,9 @@ const buttonVariants = cva(
         destructive:
           "bg-destructive/10 text-destructive hover:bg-destructive/20 focus-visible:border-destructive/40 focus-visible:ring-destructive/20 dark:bg-destructive/20 dark:hover:bg-destructive/30 dark:focus-visible:ring-destructive/40",
         link: "text-primary underline-offset-4 hover:underline",
+        // Nocturne's primary action: accent outline, tinted on hover/press.
+        "outline-primary":
+          "border-primary bg-transparent text-primary hover:bg-primary/12 active:bg-primary/20",
       },
       size: {
         default:
@@ -30,6 +33,10 @@ const buttonVariants = cva(
         "icon-sm":
           "size-7 rounded-[min(var(--radius-md),12px)] in-data-[slot=button-group]:rounded-lg",
         "icon-lg": "size-9",
+        // Touch sizes (design: >= 44px targets, 48px secondary, 52px hero action).
+        touch: "h-12 gap-2 rounded-xl px-4 text-[15px]",
+        hero: "h-13 gap-2 rounded-xl px-5 text-[15px] font-semibold",
+        "icon-touch": "size-11 rounded-xl",
       },
     },
     defaultVariants: {

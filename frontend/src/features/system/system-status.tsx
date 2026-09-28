@@ -1,4 +1,4 @@
-import { RefreshCwIcon } from 'lucide-react'
+import { ArrowClockwiseIcon } from '@phosphor-icons/react'
 
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -47,7 +47,7 @@ export function SystemStatus() {
             disabled={isFetching}
             onClick={() => void refetch()}
           >
-            <RefreshCwIcon className={isFetching ? 'animate-spin' : undefined} />
+            <ArrowClockwiseIcon className={isFetching ? 'animate-spin' : undefined} />
           </Button>
         </CardAction>
       </CardHeader>
