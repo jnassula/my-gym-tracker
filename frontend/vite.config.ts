@@ -17,6 +17,8 @@ export default defineConfig({
     alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) },
   },
   server: {
+    // File events don't reliably cross the Docker bind mount on macOS: poll inside the container.
+    watch: process.env.VITE_WATCH_POLLING === 'true' ? { usePolling: true, interval: 300 } : undefined,
     // Same-origin proxy: the refresh-token cookie stays first-party (SameSite=Lax) and no CORS.
     proxy: {
       // xfwd: forward the client IP (X-Forwarded-For) for the backend's rate limits.
