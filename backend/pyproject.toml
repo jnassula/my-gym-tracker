@@ -15,6 +15,7 @@ dependencies = [
     "pydantic-settings>=2.15.0",
     "pyjwt>=2.15.1",
     "python-multipart>=0.0.32",
+    "pywebpush>=2.0",
     "slowapi>=0.1.10",
     "sqlalchemy[asyncio]>=2.1.1",
     "uvicorn[standard]>=0.54.0",
@@ -51,6 +52,11 @@ known-third-party = ["alembic"]
 strict = true
 plugins = ["pydantic.mypy"]
 exclude = ["alembic/versions/"]
+
+[[tool.mypy.overrides]]
+# No type information shipped.
+module = ["pywebpush", "py_vapid"]
+ignore_missing_imports = true
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
