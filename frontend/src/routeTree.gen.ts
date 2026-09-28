@@ -21,8 +21,10 @@ import { Route as AuthWelcomeRouteImport } from './routes/_auth/welcome'
 import { Route as AppSettingsIndexRouteImport } from './routes/_app/settings/index'
 import { Route as AppSettingsPasswordRouteImport } from './routes/_app/settings/password'
 import { Route as AppWorkoutsIndexRouteImport } from './routes/_app/workouts/index'
-import { Route as AppWorkoutsPlanIdRouteImport } from './routes/_app/workouts/$planId'
 import { Route as AppWorkoutsImportRouteImport } from './routes/_app/workouts/import'
+import { Route as AppWorkoutsPlanIdIndexRouteImport } from './routes/_app/workouts/$planId/index'
+import { Route as AppWorkoutsPlanIdDaysDayIdIndexRouteImport } from './routes/_app/workouts/$planId/days/$dayId/index'
+import { Route as AppWorkoutsPlanIdDaysDayIdExerciseIdRouteImport } from './routes/_app/workouts/$planId/days/$dayId/$exerciseId'
 
 const AppRoute = AppRouteImport.update({
   id: '/_app',
@@ -82,16 +84,28 @@ const AppWorkoutsIndexRoute = AppWorkoutsIndexRouteImport.update({
   path: '/workouts/',
   getParentRoute: () => AppRoute,
 } as any)
-const AppWorkoutsPlanIdRoute = AppWorkoutsPlanIdRouteImport.update({
-  id: '/workouts/$planId',
-  path: '/workouts/$planId',
-  getParentRoute: () => AppRoute,
-} as any)
 const AppWorkoutsImportRoute = AppWorkoutsImportRouteImport.update({
   id: '/workouts/import',
   path: '/workouts/import',
   getParentRoute: () => AppRoute,
 } as any)
+const AppWorkoutsPlanIdIndexRoute = AppWorkoutsPlanIdIndexRouteImport.update({
+  id: '/workouts/$planId/',
+  path: '/workouts/$planId/',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppWorkoutsPlanIdDaysDayIdIndexRoute =
+  AppWorkoutsPlanIdDaysDayIdIndexRouteImport.update({
+    id: '/workouts/$planId/days/$dayId/',
+    path: '/workouts/$planId/days/$dayId/',
+    getParentRoute: () => AppRoute,
+  } as any)
+const AppWorkoutsPlanIdDaysDayIdExerciseIdRoute =
+  AppWorkoutsPlanIdDaysDayIdExerciseIdRouteImport.update({
+    id: '/workouts/$planId/days/$dayId/$exerciseId',
+    path: '/workouts/$planId/days/$dayId/$exerciseId',
+    getParentRoute: () => AppRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AppIndexRoute
@@ -102,10 +116,12 @@ export interface FileRoutesByFullPath {
   '/register': typeof AuthRegisterRoute
   '/welcome': typeof AuthWelcomeRoute
   '/settings/password': typeof AppSettingsPasswordRoute
-  '/workouts/$planId': typeof AppWorkoutsPlanIdRoute
   '/workouts/import': typeof AppWorkoutsImportRoute
   '/settings/': typeof AppSettingsIndexRoute
   '/workouts/': typeof AppWorkoutsIndexRoute
+  '/workouts/$planId/': typeof AppWorkoutsPlanIdIndexRoute
+  '/workouts/$planId/days/$dayId/$exerciseId': typeof AppWorkoutsPlanIdDaysDayIdExerciseIdRoute
+  '/workouts/$planId/days/$dayId/': typeof AppWorkoutsPlanIdDaysDayIdIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof AppIndexRoute
@@ -116,10 +132,12 @@ export interface FileRoutesByTo {
   '/register': typeof AuthRegisterRoute
   '/welcome': typeof AuthWelcomeRoute
   '/settings/password': typeof AppSettingsPasswordRoute
-  '/workouts/$planId': typeof AppWorkoutsPlanIdRoute
   '/workouts/import': typeof AppWorkoutsImportRoute
   '/settings': typeof AppSettingsIndexRoute
   '/workouts': typeof AppWorkoutsIndexRoute
+  '/workouts/$planId': typeof AppWorkoutsPlanIdIndexRoute
+  '/workouts/$planId/days/$dayId/$exerciseId': typeof AppWorkoutsPlanIdDaysDayIdExerciseIdRoute
+  '/workouts/$planId/days/$dayId': typeof AppWorkoutsPlanIdDaysDayIdIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -133,10 +151,12 @@ export interface FileRoutesById {
   '/_auth/welcome': typeof AuthWelcomeRoute
   '/_app/': typeof AppIndexRoute
   '/_app/settings/password': typeof AppSettingsPasswordRoute
-  '/_app/workouts/$planId': typeof AppWorkoutsPlanIdRoute
   '/_app/workouts/import': typeof AppWorkoutsImportRoute
   '/_app/settings/': typeof AppSettingsIndexRoute
   '/_app/workouts/': typeof AppWorkoutsIndexRoute
+  '/_app/workouts/$planId/': typeof AppWorkoutsPlanIdIndexRoute
+  '/_app/workouts/$planId/days/$dayId/$exerciseId': typeof AppWorkoutsPlanIdDaysDayIdExerciseIdRoute
+  '/_app/workouts/$planId/days/$dayId/': typeof AppWorkoutsPlanIdDaysDayIdIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -149,10 +169,12 @@ export interface FileRouteTypes {
     | '/register'
     | '/welcome'
     | '/settings/password'
-    | '/workouts/$planId'
     | '/workouts/import'
     | '/settings/'
     | '/workouts/'
+    | '/workouts/$planId/'
+    | '/workouts/$planId/days/$dayId/$exerciseId'
+    | '/workouts/$planId/days/$dayId/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -163,10 +185,12 @@ export interface FileRouteTypes {
     | '/register'
     | '/welcome'
     | '/settings/password'
-    | '/workouts/$planId'
     | '/workouts/import'
     | '/settings'
     | '/workouts'
+    | '/workouts/$planId'
+    | '/workouts/$planId/days/$dayId/$exerciseId'
+    | '/workouts/$planId/days/$dayId'
   id:
     | '__root__'
     | '/_app'
@@ -179,10 +203,12 @@ export interface FileRouteTypes {
     | '/_auth/welcome'
     | '/_app/'
     | '/_app/settings/password'
-    | '/_app/workouts/$planId'
     | '/_app/workouts/import'
     | '/_app/settings/'
     | '/_app/workouts/'
+    | '/_app/workouts/$planId/'
+    | '/_app/workouts/$planId/days/$dayId/$exerciseId'
+    | '/_app/workouts/$planId/days/$dayId/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -277,18 +303,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppWorkoutsIndexRouteImport
       parentRoute: typeof AppRoute
     }
-    '/_app/workouts/$planId': {
-      id: '/_app/workouts/$planId'
-      path: '/workouts/$planId'
-      fullPath: '/workouts/$planId'
-      preLoaderRoute: typeof AppWorkoutsPlanIdRouteImport
-      parentRoute: typeof AppRoute
-    }
     '/_app/workouts/import': {
       id: '/_app/workouts/import'
       path: '/workouts/import'
       fullPath: '/workouts/import'
       preLoaderRoute: typeof AppWorkoutsImportRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/workouts/$planId/': {
+      id: '/_app/workouts/$planId/'
+      path: '/workouts/$planId'
+      fullPath: '/workouts/$planId/'
+      preLoaderRoute: typeof AppWorkoutsPlanIdIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/workouts/$planId/days/$dayId/': {
+      id: '/_app/workouts/$planId/days/$dayId/'
+      path: '/workouts/$planId/days/$dayId'
+      fullPath: '/workouts/$planId/days/$dayId/'
+      preLoaderRoute: typeof AppWorkoutsPlanIdDaysDayIdIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/workouts/$planId/days/$dayId/$exerciseId': {
+      id: '/_app/workouts/$planId/days/$dayId/$exerciseId'
+      path: '/workouts/$planId/days/$dayId/$exerciseId'
+      fullPath: '/workouts/$planId/days/$dayId/$exerciseId'
+      preLoaderRoute: typeof AppWorkoutsPlanIdDaysDayIdExerciseIdRouteImport
       parentRoute: typeof AppRoute
     }
   }
@@ -298,20 +338,25 @@ interface AppRouteChildren {
   AppProgressRoute: typeof AppProgressRoute
   AppIndexRoute: typeof AppIndexRoute
   AppSettingsPasswordRoute: typeof AppSettingsPasswordRoute
-  AppWorkoutsPlanIdRoute: typeof AppWorkoutsPlanIdRoute
   AppWorkoutsImportRoute: typeof AppWorkoutsImportRoute
   AppSettingsIndexRoute: typeof AppSettingsIndexRoute
   AppWorkoutsIndexRoute: typeof AppWorkoutsIndexRoute
+  AppWorkoutsPlanIdIndexRoute: typeof AppWorkoutsPlanIdIndexRoute
+  AppWorkoutsPlanIdDaysDayIdExerciseIdRoute: typeof AppWorkoutsPlanIdDaysDayIdExerciseIdRoute
+  AppWorkoutsPlanIdDaysDayIdIndexRoute: typeof AppWorkoutsPlanIdDaysDayIdIndexRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
   AppProgressRoute: AppProgressRoute,
   AppIndexRoute: AppIndexRoute,
   AppSettingsPasswordRoute: AppSettingsPasswordRoute,
-  AppWorkoutsPlanIdRoute: AppWorkoutsPlanIdRoute,
   AppWorkoutsImportRoute: AppWorkoutsImportRoute,
   AppSettingsIndexRoute: AppSettingsIndexRoute,
   AppWorkoutsIndexRoute: AppWorkoutsIndexRoute,
+  AppWorkoutsPlanIdIndexRoute: AppWorkoutsPlanIdIndexRoute,
+  AppWorkoutsPlanIdDaysDayIdExerciseIdRoute:
+    AppWorkoutsPlanIdDaysDayIdExerciseIdRoute,
+  AppWorkoutsPlanIdDaysDayIdIndexRoute: AppWorkoutsPlanIdDaysDayIdIndexRoute,
 }
 
 const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)

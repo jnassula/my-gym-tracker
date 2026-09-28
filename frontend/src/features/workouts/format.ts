@@ -1,6 +1,11 @@
 import type { ExerciseFields, MuscleGroup } from './types'
 
-function clock(seconds: number): string {
+/** 80 → "1:20"; 3725 → "1:02:05". */
+export function clock(seconds: number): string {
+  if (seconds >= 3600) {
+    const hours = Math.floor(seconds / 3600)
+    return `${hours}:${clock(seconds % 3600).padStart(5, '0')}`
+  }
   const minutes = Math.floor(seconds / 60)
   const rest = seconds % 60
   return `${minutes}:${String(rest).padStart(2, '0')}`

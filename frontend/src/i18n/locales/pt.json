@@ -133,7 +133,11 @@
     "pdf_unreadable": "Não conseguimos abrir o PDF.",
     "pdf_reader_unavailable": "O leitor de PDFs está indisponível. Tenta daqui a pouco.",
     "plan_not_found": "Plano não encontrado.",
-    "file_not_found": "Ficheiro não encontrado."
+    "file_not_found": "Ficheiro não encontrado.",
+    "day_not_found": "Este dia já não existe no plano.",
+    "exercise_not_found": "Este exercício já não existe no plano.",
+    "set_not_found": "Esta série já não existe.",
+    "session_not_found": "Este treino já não existe."
   },
   "weekdays": {
     "short": {
@@ -273,5 +277,98 @@
   },
   "plan": {
     "notFound": "Plano não encontrado."
+  },
+  "training": {
+    "todayKicker": "{{weekday}} · Hoje",
+    "sets": "séries",
+    "noLoad": "sem carga",
+    "progress": "{{done}} de {{total}} exercícios feitos",
+    "markDone": "Marcar {{name}} como feito",
+    "unmarkDone": "Desmarcar {{name}}",
+    "finish": "Terminar treino",
+    "finishing": "A terminar…",
+    "dayNotFound": "Este dia já não existe no plano.",
+    "restPill": "Descanso {{time}}. Abrir temporizador",
+    "rest": {
+      "title": "Descanso",
+      "ready": "Pronto — próxima série",
+      "next": "A seguir: {{name}}",
+      "nextSet": "A seguir: {{name}} #{{n}}",
+      "pause": "Pausa",
+      "resume": "Continuar",
+      "restart": "Recomeçar",
+      "less": "Menos 15 segundos",
+      "more": "Mais 15 segundos",
+      "skip": "Saltar descanso"
+    },
+    "exercise": {
+      "rest": "Descanso {{time}}",
+      "last": "Última {{weight}}",
+      "lastNone": "Última —",
+      "currentWeight": "Carga atual",
+      "weightInput": "Carga atual em {{unit}}",
+      "heavier": "+{{delta}} vs. última",
+      "lighter": "−{{delta}} vs. última",
+      "same": "igual à última sessão",
+      "decrease": "− diminuir",
+      "decreasing": "− a diminuir",
+      "useLast": "Usar última",
+      "setsToday": "Séries de hoje",
+      "noSets": "Ainda sem séries — toca em Registar série",
+      "setChip": "Série {{n}}: {{weight}} × {{reps}}. Tocar para corrigir",
+      "history": "Histórico",
+      "noHistory": "Primeira vez: ainda sem histórico.",
+      "record": "PR {{weight}}",
+      "logSet": "Registar série · {{weight}} × {{reps}}",
+      "notFound": "Este exercício já não existe no plano."
+    },
+    "log": {
+      "title": "Registar série #{{n}}",
+      "weight": "Carga",
+      "reps": "Reps",
+      "lessWeight": "Menos carga",
+      "moreWeight": "Mais carga",
+      "lessReps": "Menos repetições",
+      "moreReps": "Mais repetições",
+      "confirm": "Confirmar",
+      "saving": "A registar…"
+    },
+    "edit": {
+      "title": "Corrigir série #{{n}}",
+      "weight": "Carga ({{unit}})",
+      "reps": "Repetições",
+      "invalidWeight": "Indica uma carga entre 0 e {{max}}.",
+      "invalidReps": "Indica entre 1 e 200 repetições.",
+      "save": "Guardar",
+      "delete": "Apagar série",
+      "cancel": "Cancelar"
+    },
+    "summary": {
+      "kicker": "Treino concluído",
+      "sets": "séries registadas",
+      "volume": "Volume",
+      "duration": "Duração",
+      "record": "Novo PR: {{name}} — {{weight}}",
+      "close": "Fechar"
+    },
+    "week": {
+      "kicker": "Treino",
+      "progress": "{{done}}/{{total}} dias esta semana",
+      "restDay": "Dia de descanso",
+      "exercises": "{{count}} ex.",
+      "done": "{{count}} ex. · feito",
+      "today": "Hoje · {{done}}/{{total}} feito",
+      "partial": "{{done}}/{{total}} feito",
+      "doneLabel": "Feito",
+      "todayLabel": "Hoje"
+    },
+    "restToday": {
+      "title": "Hoje é dia de descanso",
+      "next": "Próximo treino: {{weekday}} · {{label}}",
+      "nextNoLabel": "Próximo treino: {{weekday}}",
+      "seeWeek": "Ver a semana",
+      "chooseTitle": "Escolhe o treino de hoje",
+      "chooseDescription": "O teu plano não tem dias da semana fixos: escolhe o treino na lista."
+    }
   }
 }

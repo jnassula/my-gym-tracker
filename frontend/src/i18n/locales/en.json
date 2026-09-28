@@ -133,7 +133,11 @@
     "pdf_unreadable": "We couldn't open the PDF.",
     "pdf_reader_unavailable": "The PDF reader is unavailable. Try again in a moment.",
     "plan_not_found": "Plan not found.",
-    "file_not_found": "File not found."
+    "file_not_found": "File not found.",
+    "day_not_found": "This day is no longer in the plan.",
+    "exercise_not_found": "This exercise is no longer in the plan.",
+    "set_not_found": "This set no longer exists.",
+    "session_not_found": "This workout no longer exists."
   },
   "weekdays": {
     "short": {
@@ -273,5 +277,98 @@
   },
   "plan": {
     "notFound": "Plan not found."
+  },
+  "training": {
+    "todayKicker": "{{weekday}} · Today",
+    "sets": "sets",
+    "noLoad": "bodyweight",
+    "progress": "{{done}} of {{total}} exercises done",
+    "markDone": "Mark {{name}} as done",
+    "unmarkDone": "Unmark {{name}}",
+    "finish": "Finish workout",
+    "finishing": "Finishing…",
+    "dayNotFound": "This day is no longer in the plan.",
+    "restPill": "Rest {{time}}. Open timer",
+    "rest": {
+      "title": "Rest",
+      "ready": "Ready — next set",
+      "next": "Up next: {{name}}",
+      "nextSet": "Up next: {{name}} #{{n}}",
+      "pause": "Pause",
+      "resume": "Resume",
+      "restart": "Restart",
+      "less": "15 seconds less",
+      "more": "15 seconds more",
+      "skip": "Skip rest"
+    },
+    "exercise": {
+      "rest": "Rest {{time}}",
+      "last": "Last {{weight}}",
+      "lastNone": "Last —",
+      "currentWeight": "Current weight",
+      "weightInput": "Current weight in {{unit}}",
+      "heavier": "+{{delta}} vs. last",
+      "lighter": "−{{delta}} vs. last",
+      "same": "same as last session",
+      "decrease": "− decrease",
+      "decreasing": "− decreasing",
+      "useLast": "Use last",
+      "setsToday": "Today's sets",
+      "noSets": "No sets yet — tap Log set",
+      "setChip": "Set {{n}}: {{weight}} × {{reps}}. Tap to correct",
+      "history": "History",
+      "noHistory": "First time: no history yet.",
+      "record": "PR {{weight}}",
+      "logSet": "Log set · {{weight}} × {{reps}}",
+      "notFound": "This exercise is no longer in the plan."
+    },
+    "log": {
+      "title": "Log set #{{n}}",
+      "weight": "Weight",
+      "reps": "Reps",
+      "lessWeight": "Less weight",
+      "moreWeight": "More weight",
+      "lessReps": "Fewer reps",
+      "moreReps": "More reps",
+      "confirm": "Confirm",
+      "saving": "Logging…"
+    },
+    "edit": {
+      "title": "Correct set #{{n}}",
+      "weight": "Weight ({{unit}})",
+      "reps": "Reps",
+      "invalidWeight": "Enter a weight between 0 and {{max}}.",
+      "invalidReps": "Enter between 1 and 200 reps.",
+      "save": "Save",
+      "delete": "Delete set",
+      "cancel": "Cancel"
+    },
+    "summary": {
+      "kicker": "Workout complete",
+      "sets": "sets logged",
+      "volume": "Volume",
+      "duration": "Duration",
+      "record": "New PR: {{name}} — {{weight}}",
+      "close": "Close"
+    },
+    "week": {
+      "kicker": "Workout",
+      "progress": "{{done}}/{{total}} days this week",
+      "restDay": "Rest day",
+      "exercises": "{{count}} ex.",
+      "done": "{{count}} ex. · done",
+      "today": "Today · {{done}}/{{total}} done",
+      "partial": "{{done}}/{{total}} done",
+      "doneLabel": "Done",
+      "todayLabel": "Today"
+    },
+    "restToday": {
+      "title": "Today is a rest day",
+      "next": "Next workout: {{weekday}} · {{label}}",
+      "nextNoLabel": "Next workout: {{weekday}}",
+      "seeWeek": "See the week",
+      "chooseTitle": "Pick today's workout",
+      "chooseDescription": "Your plan has no fixed weekdays: pick the workout from the list."
+    }
   }
 }
