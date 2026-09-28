@@ -6,7 +6,8 @@ App mobile-first para registar treinos de ginásio: importa o plano a partir de 
 | --- | --- |
 | Backend | Python 3.13, FastAPI, SQLAlchemy 2 (async) + asyncpg, Alembic, Pydantic v2 |
 | Base de dados | PostgreSQL 17 |
-| Ficheiros | MinIO (compatível com S3) |
+| Ficheiros | MinIO (compatível com S3), SDK `minio` |
+| PDF | pdfplumber + regras próprias (`backend/app/workouts/parser`) |
 | Frontend | React 19, Vite 8, TypeScript, Tailwind CSS 4, shadcn/ui (Base UI), TanStack Router + Query, react-hook-form + zod, i18next (pt/en/es) |
 | Autenticação | JWT (PyJWT) + refresh token rotativo, Argon2id (pwdlib), rate limit (slowapi) |
 | Testes | pytest + pytest-asyncio (backend), Vitest + Testing Library (frontend) |
@@ -59,6 +60,22 @@ O backend corre `alembic upgrade head` ao arrancar e recarrega com as alteraçõ
 | `GET /api/users/me` | autenticado |
 
 Em desenvolvimento, os emails de recuperação aparecem no Mailpit (http://localhost:8026).
+
+## Importar um plano em PDF
+
+1. **Upload** (`POST /api/workouts/import`, multipart, até 20 MB). O ficheiro passa pela API em vez de ir por URL presigned: o backend precisa dos bytes na hora para o parse, valida o tipo pelos bytes (`%PDF-`) e o tamanho antes de guardar, e o MinIO fica privado (sem CORS, sem endpoint público). Com PDFs deste tamanho, o custo de passar pela API é irrelevante. Só são guardados no MinIO os PDFs que o parser consegue ler.
+2. **Pré-visualização**: a resposta traz a estrutura que o parser entendeu (dias → exercícios com grupo muscular, séries, reps e descanso), com avisos quando algo merece revisão: técnicas como drop set ou rest pause, exercícios combinados ou alternativos, séries em falta, grupo desconhecido.
+3. **Revisão** no ecrã: renomear o plano, editar exercícios, "Mover para…" outro dia ou grupo, reordenar, apagar e adicionar.
+4. **Confirmação** (`POST /api/workouts`) grava o plano e, por defeito, torna-o o plano ativo. Cancelar apaga o upload (`DELETE /api/files/{id}`).
+
+O parser tem duas camadas:
+
+- **Extração** (`parser/extract.py`): pdfplumber → linhas com a posição de cada palavra.
+- **Interpretação** (`parser/parse.py`, `prescription.py`, `muscle_groups.py`): funções puras, das linhas para o plano. Usa a coluna "Tempo de intervalo" para o descanso, as colunas do resumo para o foco de cada dia, o bloco "Aquecimento" (mostrado primeiro) e os dias `DayOff`.
+
+Os erros têm códigos próprios: `pdf_no_text` (PDF digitalizado), `pdf_no_structure`, `pdf_unreadable`, `file_too_large` e `unsupported_file_type`.
+
+Os PDFs pessoais em `samples/` **não são commitados** (estão no `.gitignore`). Os testes do parser usam um layout anonimizado (`backend/tests/workouts/layout.py`), que também é convertido num PDF real. Os testes com os samples (`test_sample_pdfs.py`) correm quando os ficheiros existem e são ignorados quando não existem.
 
 ## Testes e linters
 
@@ -115,13 +132,13 @@ backend/
 frontend/
   src/
     routes/         rotas (TanStack Router, file-based); _auth = só visitantes, _app = autenticado
-    features/       código por funcionalidade (auth: formulários, API, medidor de força)
+    features/       código por funcionalidade (auth, workouts: import, revisão, planos)
     components/ui/  componentes shadcn (gerados pela CLI; ajustes do design notados em CLAUDE.md)
     components/     componentes partilhados (shell da app, logótipo)
     lib/            cliente da API e sessão em memória
     i18n/           i18next + traduções pt/en/es
 design/             referência do design (canvas do Claude Design + resumo do Nocturne)
-samples/            PDFs de exemplo para os testes do parser
+samples/            PDFs pessoais de exemplo (locais, não commitados)
 ```
 
 Todos os erros da API têm o formato `{"detail": str, "code": str}`; os erros de validação acrescentam `errors: [{loc, msg, type}]` e nunca devolvem o valor enviado.
