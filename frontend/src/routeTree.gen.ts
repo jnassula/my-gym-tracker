@@ -14,13 +14,15 @@ import { Route as AuthRouteImport } from './routes/_auth'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as AppIndexRouteImport } from './routes/_app/index'
 import { Route as AppProgressRouteImport } from './routes/_app/progress'
-import { Route as AppWorkoutsRouteImport } from './routes/_app/workouts'
 import { Route as AuthForgotPasswordRouteImport } from './routes/_auth/forgot-password'
 import { Route as AuthLoginRouteImport } from './routes/_auth/login'
 import { Route as AuthRegisterRouteImport } from './routes/_auth/register'
 import { Route as AuthWelcomeRouteImport } from './routes/_auth/welcome'
 import { Route as AppSettingsIndexRouteImport } from './routes/_app/settings/index'
 import { Route as AppSettingsPasswordRouteImport } from './routes/_app/settings/password'
+import { Route as AppWorkoutsIndexRouteImport } from './routes/_app/workouts/index'
+import { Route as AppWorkoutsPlanIdRouteImport } from './routes/_app/workouts/$planId'
+import { Route as AppWorkoutsImportRouteImport } from './routes/_app/workouts/import'
 
 const AppRoute = AppRouteImport.update({
   id: '/_app',
@@ -43,11 +45,6 @@ const AppIndexRoute = AppIndexRouteImport.update({
 const AppProgressRoute = AppProgressRouteImport.update({
   id: '/progress',
   path: '/progress',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppWorkoutsRoute = AppWorkoutsRouteImport.update({
-  id: '/workouts',
-  path: '/workouts',
   getParentRoute: () => AppRoute,
 } as any)
 const AuthForgotPasswordRoute = AuthForgotPasswordRouteImport.update({
@@ -80,30 +77,49 @@ const AppSettingsPasswordRoute = AppSettingsPasswordRouteImport.update({
   path: '/settings/password',
   getParentRoute: () => AppRoute,
 } as any)
+const AppWorkoutsIndexRoute = AppWorkoutsIndexRouteImport.update({
+  id: '/workouts/',
+  path: '/workouts/',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppWorkoutsPlanIdRoute = AppWorkoutsPlanIdRouteImport.update({
+  id: '/workouts/$planId',
+  path: '/workouts/$planId',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppWorkoutsImportRoute = AppWorkoutsImportRouteImport.update({
+  id: '/workouts/import',
+  path: '/workouts/import',
+  getParentRoute: () => AppRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AppIndexRoute
   '/reset-password': typeof ResetPasswordRoute
   '/progress': typeof AppProgressRoute
-  '/workouts': typeof AppWorkoutsRoute
   '/forgot-password': typeof AuthForgotPasswordRoute
   '/login': typeof AuthLoginRoute
   '/register': typeof AuthRegisterRoute
   '/welcome': typeof AuthWelcomeRoute
   '/settings/password': typeof AppSettingsPasswordRoute
+  '/workouts/$planId': typeof AppWorkoutsPlanIdRoute
+  '/workouts/import': typeof AppWorkoutsImportRoute
   '/settings/': typeof AppSettingsIndexRoute
+  '/workouts/': typeof AppWorkoutsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof AppIndexRoute
   '/reset-password': typeof ResetPasswordRoute
   '/progress': typeof AppProgressRoute
-  '/workouts': typeof AppWorkoutsRoute
   '/forgot-password': typeof AuthForgotPasswordRoute
   '/login': typeof AuthLoginRoute
   '/register': typeof AuthRegisterRoute
   '/welcome': typeof AuthWelcomeRoute
   '/settings/password': typeof AppSettingsPasswordRoute
+  '/workouts/$planId': typeof AppWorkoutsPlanIdRoute
+  '/workouts/import': typeof AppWorkoutsImportRoute
   '/settings': typeof AppSettingsIndexRoute
+  '/workouts': typeof AppWorkoutsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -111,14 +127,16 @@ export interface FileRoutesById {
   '/_auth': typeof AuthRouteWithChildren
   '/reset-password': typeof ResetPasswordRoute
   '/_app/progress': typeof AppProgressRoute
-  '/_app/workouts': typeof AppWorkoutsRoute
   '/_auth/forgot-password': typeof AuthForgotPasswordRoute
   '/_auth/login': typeof AuthLoginRoute
   '/_auth/register': typeof AuthRegisterRoute
   '/_auth/welcome': typeof AuthWelcomeRoute
   '/_app/': typeof AppIndexRoute
   '/_app/settings/password': typeof AppSettingsPasswordRoute
+  '/_app/workouts/$planId': typeof AppWorkoutsPlanIdRoute
+  '/_app/workouts/import': typeof AppWorkoutsImportRoute
   '/_app/settings/': typeof AppSettingsIndexRoute
+  '/_app/workouts/': typeof AppWorkoutsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -126,39 +144,45 @@ export interface FileRouteTypes {
     | '/'
     | '/reset-password'
     | '/progress'
-    | '/workouts'
     | '/forgot-password'
     | '/login'
     | '/register'
     | '/welcome'
     | '/settings/password'
+    | '/workouts/$planId'
+    | '/workouts/import'
     | '/settings/'
+    | '/workouts/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/reset-password'
     | '/progress'
-    | '/workouts'
     | '/forgot-password'
     | '/login'
     | '/register'
     | '/welcome'
     | '/settings/password'
+    | '/workouts/$planId'
+    | '/workouts/import'
     | '/settings'
+    | '/workouts'
   id:
     | '__root__'
     | '/_app'
     | '/_auth'
     | '/reset-password'
     | '/_app/progress'
-    | '/_app/workouts'
     | '/_auth/forgot-password'
     | '/_auth/login'
     | '/_auth/register'
     | '/_auth/welcome'
     | '/_app/'
     | '/_app/settings/password'
+    | '/_app/workouts/$planId'
+    | '/_app/workouts/import'
     | '/_app/settings/'
+    | '/_app/workouts/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -204,13 +228,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppProgressRouteImport
       parentRoute: typeof AppRoute
     }
-    '/_app/workouts': {
-      id: '/_app/workouts'
-      path: '/workouts'
-      fullPath: '/workouts'
-      preLoaderRoute: typeof AppWorkoutsRouteImport
-      parentRoute: typeof AppRoute
-    }
     '/_auth/forgot-password': {
       id: '/_auth/forgot-password'
       path: '/forgot-password'
@@ -253,23 +270,48 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppSettingsPasswordRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/workouts/': {
+      id: '/_app/workouts/'
+      path: '/workouts'
+      fullPath: '/workouts/'
+      preLoaderRoute: typeof AppWorkoutsIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/workouts/$planId': {
+      id: '/_app/workouts/$planId'
+      path: '/workouts/$planId'
+      fullPath: '/workouts/$planId'
+      preLoaderRoute: typeof AppWorkoutsPlanIdRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/workouts/import': {
+      id: '/_app/workouts/import'
+      path: '/workouts/import'
+      fullPath: '/workouts/import'
+      preLoaderRoute: typeof AppWorkoutsImportRouteImport
+      parentRoute: typeof AppRoute
+    }
   }
 }
 
 interface AppRouteChildren {
   AppProgressRoute: typeof AppProgressRoute
-  AppWorkoutsRoute: typeof AppWorkoutsRoute
   AppIndexRoute: typeof AppIndexRoute
   AppSettingsPasswordRoute: typeof AppSettingsPasswordRoute
+  AppWorkoutsPlanIdRoute: typeof AppWorkoutsPlanIdRoute
+  AppWorkoutsImportRoute: typeof AppWorkoutsImportRoute
   AppSettingsIndexRoute: typeof AppSettingsIndexRoute
+  AppWorkoutsIndexRoute: typeof AppWorkoutsIndexRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
   AppProgressRoute: AppProgressRoute,
-  AppWorkoutsRoute: AppWorkoutsRoute,
   AppIndexRoute: AppIndexRoute,
   AppSettingsPasswordRoute: AppSettingsPasswordRoute,
+  AppWorkoutsPlanIdRoute: AppWorkoutsPlanIdRoute,
+  AppWorkoutsImportRoute: AppWorkoutsImportRoute,
   AppSettingsIndexRoute: AppSettingsIndexRoute,
+  AppWorkoutsIndexRoute: AppWorkoutsIndexRoute,
 }
 
 const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)

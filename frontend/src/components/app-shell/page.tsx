@@ -7,11 +7,13 @@ type PageProps = {
   title: string
   /** Where the ‹ back affordance goes (sub-screens only). */
   back?: LinkProps['to']
+  /** Header action on the right, e.g. "+ PDF". */
+  action?: ReactNode
   children: ReactNode
 }
 
 /** A screen inside the signed-in app: flush-left title, content below. */
-export function Page({ title, back, children }: PageProps) {
+export function Page({ title, back, action, children }: PageProps) {
   const { t } = useTranslation()
   return (
     <div className="mx-auto w-full max-w-md px-5 pt-[max(env(safe-area-inset-top),0.75rem)] pb-6">
@@ -25,7 +27,8 @@ export function Page({ title, back, children }: PageProps) {
             <CaretLeftIcon className="size-6" />
           </Link>
         )}
-        <h1 className={back ? 'text-lg' : 'text-2xl'}>{title}</h1>
+        <h1 className={back ? 'min-w-0 flex-1 truncate text-lg' : 'flex-1 text-2xl'}>{title}</h1>
+        {action}
       </header>
       <div className="pt-3">{children}</div>
     </div>
