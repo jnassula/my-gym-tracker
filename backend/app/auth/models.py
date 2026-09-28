@@ -20,3 +20,5 @@ class RefreshToken(UUIDPrimaryKey, CreatedAt, Base):
     family_id: Mapped[uuid.UUID] = mapped_column(Uuid, index=True)
     expires_at: Mapped[datetime]
     revoked: Mapped[bool] = mapped_column(default=False, server_default="false")
+    # "Remember me": persistent cookie (7 days) vs. session cookie. Kept across rotations.
+    persistent: Mapped[bool] = mapped_column(default=False, server_default="false")
