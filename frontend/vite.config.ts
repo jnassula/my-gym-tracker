@@ -17,7 +17,8 @@ export default defineConfig({
   server: {
     // Same-origin proxy: the refresh-token cookie stays first-party (SameSite=Lax) and no CORS.
     proxy: {
-      '/api': { target: apiTarget, changeOrigin: true },
+      // xfwd: forward the client IP (X-Forwarded-For) for the backend's rate limits.
+      '/api': { target: apiTarget, changeOrigin: true, xfwd: true },
       '/health': { target: apiTarget, changeOrigin: true },
     },
   },

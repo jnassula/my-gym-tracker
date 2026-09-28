@@ -37,6 +37,12 @@ services:
       timeout: 3s
       retries: 10
 
+  mailpit:
+    # Development SMTP server: catches every email, web UI on MAILPIT_UI_PORT.
+    image: axllent/mailpit:v1.27
+    ports:
+      - "127.0.0.1:${MAILPIT_UI_PORT:-8026}:8025"
+
   backend:
     build:
       context: ./backend
@@ -45,6 +51,13 @@ services:
       ENVIRONMENT: ${ENVIRONMENT:-development}
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
       DATABASE_URL: *db-url
+      JWT_SECRET: ${JWT_SECRET:?set in .env}
+      COOKIE_SECURE: ${COOKIE_SECURE:-true}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:5173}
+      SMTP_HOST: mailpit
+      SMTP_PORT: 1025
+      # Trust X-Forwarded-For from the Vite proxy so rate limits see the real client IP.
+      FORWARDED_ALLOW_IPS: "*"
     volumes:
       - ./backend:/app
     ports:
@@ -52,6 +65,8 @@ services:
     depends_on:
       db:
         condition: service_healthy
+      mailpit:
+        condition: service_started
     healthcheck:
       test:
         - CMD
