@@ -1,17 +1,17 @@
 import {
   BarbellIcon,
-  CalendarCheckIcon,
   ChartLineUpIcon,
   GearSixIcon,
+  HouseIcon,
   type Icon,
 } from '@phosphor-icons/react'
 import { Link, type LinkProps } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 
-type Tab = { to: LinkProps['to']; label: 'nav.today' | 'nav.workouts' | 'nav.progress' | 'nav.settings'; icon: Icon; exact?: boolean }
+type Tab = { to: LinkProps['to']; label: 'nav.home' | 'nav.workouts' | 'nav.progress' | 'nav.settings'; icon: Icon; exact?: boolean }
 
 const TABS: Tab[] = [
-  { to: '/', label: 'nav.today', icon: CalendarCheckIcon, exact: true },
+  { to: '/', label: 'nav.home', icon: HouseIcon, exact: true },
   { to: '/workouts', label: 'nav.workouts', icon: BarbellIcon },
   { to: '/progress', label: 'nav.progress', icon: ChartLineUpIcon },
   { to: '/settings', label: 'nav.settings', icon: GearSixIcon },

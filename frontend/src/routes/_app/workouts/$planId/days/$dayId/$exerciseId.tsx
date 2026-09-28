@@ -8,12 +8,11 @@ import { FormAlert } from '@/features/auth/form-parts'
 import { ExerciseScreen } from '@/features/training/exercise-screen'
 import { planQuery } from '@/features/workouts/api'
 
-type Search = { from?: 'today' }
+type Search = { from?: 'home' }
 
 export const Route = createFileRoute('/_app/workouts/$planId/days/$dayId/$exerciseId')({
-  // Opened from Hoje: back goes there rather than to the plan's day.
-  validateSearch: (search: Record<string, unknown>): Search =>
-    search.from === 'today' ? { from: 'today' } : {},
+  // The day was opened from Início: going back to it keeps its way back there.
+  validateSearch: (search: Record<string, unknown>): Search => (search.from === 'home' ? { from: 'home' } : {}),
   component: PlanExercise,
 })
 
@@ -21,12 +20,7 @@ function PlanExercise() {
   const { planId, dayId, exerciseId } = Route.useParams()
   const { from } = Route.useSearch()
   const plan = useQuery(planQuery(planId))
-  const backLink =
-    from === 'today' ? (
-      <BackLink to="/" />
-    ) : (
-      <BackLink to="/workouts/$planId/days/$dayId" params={{ planId, dayId }} />
-    )
+  const backLink = <BackLink to="/workouts/$planId/days/$dayId" params={{ planId, dayId }} search={{ from }} />
 
   if (plan.isPending || plan.isError) {
     return (

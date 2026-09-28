@@ -27,13 +27,13 @@ type DayScreenProps = {
   plan: Plan
   dayId: string
   isToday: boolean
-  /** Opened from the Hoje tab: exercises come back there, and it has no back link. */
-  fromToday?: boolean
+  /** Opened from Início: its exercises keep the way back there, and finishing returns there. */
+  fromHome?: boolean
   backLink?: ReactNode
 }
 
 /** A plan day: its exercises by muscle group, what's done today, and "Terminar treino". */
-export function DayScreen({ plan, dayId, isToday, fromToday = false, backLink }: DayScreenProps) {
+export function DayScreen({ plan, dayId, isToday, fromHome = false, backLink }: DayScreenProps) {
   const { t } = useTranslation()
   const labels = useWorkoutLabels()
   const navigate = useNavigate()
@@ -90,7 +90,7 @@ export function DayScreen({ plan, dayId, isToday, fromToday = false, backLink }:
                       dayId={dayId}
                       session={session}
                       last={log.data.last[exercise.id]}
-                      fromToday={fromToday}
+                      fromHome={fromHome}
                       busy={toggle.isPending}
                       onToggle={(ticked) => toggle.mutate({ exerciseId: exercise.id, done: ticked })}
                     />
@@ -119,7 +119,7 @@ export function DayScreen({ plan, dayId, isToday, fromToday = false, backLink }:
         unit={user.unit}
         onClose={() => {
           setSummary(null)
-          if (!fromToday) void navigate({ to: '/workouts/$planId', params: { planId: plan.id } })
+          void navigate(fromHome ? { to: '/' } : { to: '/workouts/$planId', params: { planId: plan.id } })
         }}
       />
     </Page>
@@ -132,12 +132,12 @@ type ExerciseRowProps = {
   dayId: string
   session: TrainingSession | null
   last: PastSession | undefined
-  fromToday: boolean
+  fromHome: boolean
   busy: boolean
   onToggle: (ticked: boolean) => void
 }
 
-function ExerciseRow({ exercise, planId, dayId, session, last, fromToday, busy, onToggle }: ExerciseRowProps) {
+function ExerciseRow({ exercise, planId, dayId, session, last, fromHome, busy, onToggle }: ExerciseRowProps) {
   const { t, i18n } = useTranslation()
   const labels = useWorkoutLabels()
   const { user } = useRequiredSession()
@@ -176,11 +176,12 @@ function ExerciseRow({ exercise, planId, dayId, session, last, fromToday, busy, 
       <Link
         to="/workouts/$planId/days/$dayId/$exerciseId"
         params={{ planId, dayId, exerciseId: exercise.id }}
-        search={{ from: fromToday ? 'today' : undefined }}
+        search={{ from: fromHome ? 'home' : undefined }}
         className="flex min-w-0 flex-1 items-center gap-3 py-2"
       >
         <span className="min-w-0 flex-1">
-          <span className={cn('block truncate text-[15px] font-medium', done && 'opacity-60')}>
+          {/* Up to two lines: similar names ("Elevação Frontal com…") must stay distinguishable. */}
+          <span className={cn('line-clamp-2 text-[15px] font-medium wrap-anywhere', done && 'opacity-60')}>
             {exercise.name}
           </span>
           {detail && <span className="block truncate text-xs text-muted-foreground">{detail}</span>}

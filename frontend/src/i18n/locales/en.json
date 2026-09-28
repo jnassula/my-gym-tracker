@@ -5,12 +5,38 @@
     "loading": "Loading…"
   },
   "nav": {
-    "today": "Today",
+    "home": "Home",
     "workouts": "Workouts",
     "progress": "Progress",
     "settings": "Settings",
     "back": "Back",
     "main": "Main navigation"
+  },
+  "home": {
+    "date": "{{weekday}}, {{date}}",
+    "greeting": {
+      "morning": "Good morning, {{name}}",
+      "afternoon": "Good afternoon, {{name}}",
+      "evening": "Good evening, {{name}}"
+    },
+    "profile": "Profile",
+    "today": "Today’s workout",
+    "exercises": "{{done}}/{{total}} ex.",
+    "next": "Up next: {{exercise}}",
+    "allDone": "Today’s workout is done.",
+    "start": "Start workout",
+    "continue": "Continue workout",
+    "review": "View workout",
+    "week": "This week",
+    "dayState": {
+      "done": "done",
+      "missed": "not trained",
+      "rest": "rest day",
+      "today": "today"
+    },
+    "lastRecord": "Latest record",
+    "plan": "Plan “{{name}}”",
+    "planUntil": "Plan “{{name}}” · swap by {{date}}"
   },
   "welcome": {
     "createAccount": "Create account",
@@ -189,7 +215,16 @@
       "5": "Saturday",
       "6": "Sunday"
     },
-    "none": "No day"
+    "none": "No day",
+    "initial": {
+      "0": "M",
+      "1": "T",
+      "2": "W",
+      "3": "T",
+      "4": "F",
+      "5": "S",
+      "6": "S"
+    }
   },
   "muscleGroups": {
     "warmup": "Warm-up",

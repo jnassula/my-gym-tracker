@@ -32,10 +32,20 @@ class ExerciseTrend(BaseModel):
     last_date: date
 
 
+class LastRecord(BaseModel):
+    """The newest personal record (Início's "Último recorde")."""
+
+    exercise_id: uuid.UUID  # the most recently trained exercise with this name and group
+    name: str
+    weight: Kg
+    date: date
+
+
 class ProgressOverview(BaseModel):
     week_streak: int
     week_volume: Kg
     records_this_month: int
+    last_record: LastRecord | None
     # This week's working sets (warm-ups left out), most first.
     sets_by_group: list[GroupSets]
     # Exercises trained with weight, most recently trained first.

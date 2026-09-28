@@ -5,12 +5,38 @@
     "loading": "Cargando…"
   },
   "nav": {
-    "today": "Hoy",
+    "home": "Inicio",
     "workouts": "Entrenos",
     "progress": "Progreso",
     "settings": "Ajustes",
     "back": "Volver",
     "main": "Navegación principal"
+  },
+  "home": {
+    "date": "{{weekday}}, {{date}}",
+    "greeting": {
+      "morning": "Buenos días, {{name}}",
+      "afternoon": "Buenas tardes, {{name}}",
+      "evening": "Buenas noches, {{name}}"
+    },
+    "profile": "Perfil",
+    "today": "Entreno de hoy",
+    "exercises": "{{done}}/{{total}} ej.",
+    "next": "A continuación: {{exercise}}",
+    "allDone": "Entreno de hoy hecho.",
+    "start": "Empezar entreno",
+    "continue": "Seguir entreno",
+    "review": "Ver entreno",
+    "week": "Esta semana",
+    "dayState": {
+      "done": "hecho",
+      "missed": "sin entrenar",
+      "rest": "descanso",
+      "today": "hoy"
+    },
+    "lastRecord": "Último récord",
+    "plan": "Plan “{{name}}”",
+    "planUntil": "Plan “{{name}}” · cambiar antes del {{date}}"
   },
   "welcome": {
     "createAccount": "Crear cuenta",
@@ -189,7 +215,16 @@
       "5": "Sábado",
       "6": "Domingo"
     },
-    "none": "Sin día"
+    "none": "Sin día",
+    "initial": {
+      "0": "L",
+      "1": "M",
+      "2": "X",
+      "3": "J",
+      "4": "V",
+      "5": "S",
+      "6": "D"
+    }
   },
   "muscleGroups": {
     "warmup": "Calentamiento",

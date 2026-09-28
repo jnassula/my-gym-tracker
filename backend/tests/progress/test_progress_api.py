@@ -26,6 +26,7 @@ async def test_an_empty_log_has_no_progress(gym: Gym) -> None:
         "week_streak": 0,
         "week_volume": 0.0,
         "records_this_month": 0,
+        "last_record": None,
         "sets_by_group": [],
         "exercises": [],
     }
@@ -42,6 +43,12 @@ async def test_overview(gym: Gym, clock: Clock) -> None:
     assert overview["week_streak"] == 2
     assert overview["week_volume"] == 50 * 10 + 80 * 8 + 50 * 9  # warm-ups left out
     assert overview["records_this_month"] == 1  # the extension, 50 > 45; the squat only tied
+    assert overview["last_record"] == {
+        "exercise_id": gym.ex[EXTENSION],
+        "name": "Cadeira Extensora",
+        "weight": 50.0,
+        "date": "2026-10-05",
+    }
     assert overview["sets_by_group"] == [{"muscle_group": "quads", "sets": 3}]
     trends = [(e["name"], e["best_weight"], e["trend"], [p["weight"] for p in e["recent"]])
               for e in overview["exercises"]]  # fmt: skip

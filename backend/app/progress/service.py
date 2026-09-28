@@ -23,7 +23,7 @@ from app.progress.metrics import (
     LoggedSet,
     adherence,
     duration_seconds,
-    record_dates,
+    records,
     session_tops,
     volume,
     week_start,
@@ -38,6 +38,7 @@ from app.progress.schemas import (
     ExerciseProgress,
     ExerciseTrend,
     GroupSets,
+    LastRecord,
     ProgressCalendar,
     ProgressOverview,
     Range,
@@ -143,10 +144,20 @@ async def overview(session: AsyncSession, user: User) -> ProgressOverview:
 
     groups = Counter(s.muscle_group for s in this_week)
     month_start = today.replace(day=1)
+    found = records(tops)
+    last = max(found, key=lambda record: (record.date, record.weight), default=None)
     return ProgressOverview(
         week_streak=week_streak(await _trained_dates(session, user.id), today),
         week_volume=volume(this_week),
-        records_this_month=sum(1 for _, day in record_dates(tops) if day >= month_start),
+        records_this_month=sum(1 for record in found if record.date >= month_start),
+        last_record=None
+        if last is None
+        else LastRecord(
+            exercise_id=latest[last.key].exercise_id,
+            name=latest[last.key].name,
+            weight=last.weight,
+            date=last.date,
+        ),
         sets_by_group=[
             GroupSets(muscle_group=group, sets=n)
             for group, n in sorted(groups.items(), key=lambda item: (-item[1], item[0] or ""))

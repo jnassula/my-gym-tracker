@@ -251,7 +251,7 @@ describe('ExerciseScreen extras', () => {
 describe('DayScreen', () => {
   it('lists the day by muscle group with what is done', async () => {
     serve({ 'GET /api/logs/days/day-1': () => json(dayLog(session([loggedSet(1, 50, 12)], ['ex-1']))) })
-    renderWithRouter(<DayScreen plan={plan} dayId="day-1" isToday fromToday />)
+    renderWithRouter(<DayScreen plan={plan} dayId="day-1" isToday fromHome />)
 
     expect(await screen.findByRole('progressbar', { name: '1 de 3 exercícios feitos' })).toBeInTheDocument()
     expect(screen.getByText('Quarta · Hoje')).toBeInTheDocument()
@@ -265,7 +265,7 @@ describe('DayScreen', () => {
       'GET /api/logs/days/day-1': () => json(dayLog(null)),
       'PUT /api/logs/exercises/ex-3/done': () => json(session([], ['ex-3'])),
     })
-    renderWithRouter(<DayScreen plan={plan} dayId="day-1" isToday fromToday />)
+    renderWithRouter(<DayScreen plan={plan} dayId="day-1" isToday fromHome />)
 
     await userEvent.click(await screen.findByRole('button', { name: 'Marcar Puxador Horizontal como feito' }))
 
@@ -284,7 +284,7 @@ describe('DayScreen', () => {
           records: [{ exercise_id: 'ex-2', name: 'Remada Curvada', weight: 55 }],
         }),
     })
-    renderWithRouter(<DayScreen plan={plan} dayId="day-1" isToday fromToday />)
+    renderWithRouter(<DayScreen plan={plan} dayId="day-1" isToday fromHome />)
 
     await userEvent.click(await screen.findByRole('button', { name: 'Terminar treino' }))
 

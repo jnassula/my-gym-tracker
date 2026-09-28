@@ -5,9 +5,10 @@ from decimal import Decimal
 from app.exercises.models import MuscleGroup
 from app.progress.metrics import (
     LoggedSet,
+    Record,
     adherence,
     duration_seconds,
-    record_dates,
+    records,
     session_tops,
     week_streak,
     weekly_tops,
@@ -73,7 +74,10 @@ def test_records_beat_every_earlier_date() -> None:
         logged(days[4], 85),  # record
     ])  # fmt: skip
 
-    assert record_dates(tops) == [(SQUAT, days[1]), (SQUAT, days[4])]
+    assert records(tops) == [
+        Record(key=SQUAT, date=days[1], weight=Decimal("82.5")),
+        Record(key=SQUAT, date=days[4], weight=Decimal(85)),
+    ]
 
 
 def test_adherence_and_duration() -> None:

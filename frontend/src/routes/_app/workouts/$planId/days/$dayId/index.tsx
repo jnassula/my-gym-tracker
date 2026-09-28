@@ -10,15 +10,20 @@ import { DayScreen } from '@/features/training/day-screen'
 import { weekdayOf } from '@/features/training/plan'
 import { planQuery } from '@/features/workouts/api'
 
+type Search = { from?: 'home' }
+
 export const Route = createFileRoute('/_app/workouts/$planId/days/$dayId/')({
+  // Opened from Início ("Começar treino"): back goes there rather than to the plan's week.
+  validateSearch: (search: Record<string, unknown>): Search => (search.from === 'home' ? { from: 'home' } : {}),
   component: PlanDay,
 })
 
 function PlanDay() {
   const { planId, dayId } = Route.useParams()
+  const { from } = Route.useSearch()
   const plan = useQuery(planQuery(planId))
   const week = useQuery(weekQuery(planId))
-  const backLink = <BackLink to="/workouts/$planId" params={{ planId }} />
+  const backLink = from === 'home' ? <BackLink to="/" /> : <BackLink to="/workouts/$planId" params={{ planId }} />
 
   if (plan.isPending || plan.isError) {
     return (
@@ -33,5 +38,5 @@ function PlanDay() {
   }
   const weekday = plan.data.days.find((day) => day.id === dayId)?.weekday
   const isToday = week.data !== undefined && weekday === weekdayOf(week.data.today)
-  return <DayScreen plan={plan.data} dayId={dayId} isToday={isToday} backLink={backLink} />
+  return <DayScreen plan={plan.data} dayId={dayId} isToday={isToday} fromHome={from === 'home'} backLink={backLink} />
 }

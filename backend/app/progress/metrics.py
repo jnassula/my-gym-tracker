@@ -97,9 +97,18 @@ def week_streak(trained: Iterable[date], today: date) -> int:
     return streak
 
 
-def record_dates(tops: dict[ExerciseKey, list[SessionTop]]) -> list[tuple[ExerciseKey, date]]:
-    """Dates an exercise was lifted heavier than on every earlier date. A first time isn't one."""
-    records = []
+@dataclass(frozen=True)
+class Record:
+    """A date an exercise was lifted heavier than on every earlier date."""
+
+    key: ExerciseKey
+    date: date
+    weight: Decimal  # the heaviest set that date
+
+
+def records(tops: dict[ExerciseKey, list[SessionTop]]) -> list[Record]:
+    """Every record, exercise by exercise in date order. A first time isn't one."""
+    found = []
     for key, entries in tops.items():
         by_date: dict[date, Decimal] = {}
         for entry in entries:
@@ -107,9 +116,9 @@ def record_dates(tops: dict[ExerciseKey, list[SessionTop]]) -> list[tuple[Exerci
         best: Decimal | None = None
         for day, weight in sorted(by_date.items()):
             if best is not None and weight > best:
-                records.append((key, day))
+                found.append(Record(key=key, date=day, weight=weight))
             best = weight if best is None else max(best, weight)
-    return records
+    return found
 
 
 def adherence(planned: Iterable[date], trained: set[date]) -> float | None:

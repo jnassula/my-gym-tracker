@@ -37,6 +37,7 @@ const overview: ProgressOverview = {
   week_streak: 6,
   week_volume: 27800,
   records_this_month: 4,
+  last_record: null,
   sets_by_group: [
     { muscle_group: 'quads', sets: 19 },
     { muscle_group: 'chest', sets: 15 },

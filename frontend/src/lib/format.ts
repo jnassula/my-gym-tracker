@@ -6,3 +6,10 @@ export function formatDayMonth(iso: string, language: string, withYear = false):
   const month = new Intl.DateTimeFormat(intlLocale(language), { month: 'short' }).format(date)
   return [date.getDate(), month, withYear ? date.getFullYear() : null].filter(Boolean).join(' ')
 }
+
+/** "2026-09-30" → "30 de setembro" (pt), "30 September" (en), "30 de septiembre" (es). */
+export function formatDayMonthLong(iso: string, language: string): string {
+  return new Intl.DateTimeFormat(intlLocale(language), { day: 'numeric', month: 'long' }).format(
+    new Date(`${iso}T00:00:00`),
+  )
+}

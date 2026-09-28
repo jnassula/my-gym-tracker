@@ -1,8 +1,7 @@
-import { CaretRightIcon, ChartLineUpIcon } from '@phosphor-icons/react'
+import { ChartLineUpIcon } from '@phosphor-icons/react'
 import { useQuery } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
 import { cn } from 'cn'
-import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { EmptyState } from '@/components/app-shell/empty-state'
@@ -11,12 +10,13 @@ import { buttonVariants } from '@/components/ui/button'
 import { Spinner } from '@/components/ui/spinner'
 import { errorKey } from '@/features/auth/errors'
 import { FormAlert } from '@/features/auth/form-parts'
-import { formatVolume, formatWeight, toUnit } from '@/features/training/weight'
+import { formatWeight, toUnit } from '@/features/training/weight'
 import { useWorkoutLabels } from '@/features/workouts/labels'
 import { useRequiredSession } from '@/lib/auth'
 
 import { overviewQuery } from './api'
 import { formatSigned } from './format'
+import { OverviewStats } from './overview-stats'
 import { Sparkline } from './sparkline'
 import type { ExerciseTrend, ProgressOverview } from './types'
 
@@ -50,43 +50,14 @@ export function OverviewScreen() {
   )
 }
 
-function StatTile({ value, label, to, highlight }: { value: string; label: string; to?: '/progress/calendar' | '/progress/weeks'; highlight?: boolean }) {
-  const body: ReactNode = (
-    <>
-      <span className={cn('text-[22px] font-medium', highlight && 'text-primary')}>{value}</span>
-      <span className="flex items-center justify-between gap-1 text-[0.6875rem] text-muted-foreground">
-        {label}
-        {to && <CaretRightIcon aria-hidden className="size-3 shrink-0" />}
-      </span>
-    </>
-  )
-  const className = 'grid min-h-11 content-between gap-1 rounded-xl bg-card p-3 text-left'
-  return to ? (
-    <Link to={to} className={className}>
-      {body}
-    </Link>
-  ) : (
-    <div className={className}>{body}</div>
-  )
-}
-
 function Overview({ data }: { data: ProgressOverview }) {
-  const { t, i18n } = useTranslation()
+  const { t } = useTranslation()
   const labels = useWorkoutLabels()
-  const { user } = useRequiredSession()
   const maxSets = Math.max(1, ...data.sets_by_group.map((group) => group.sets))
 
   return (
     <div className="grid gap-6">
-      <div className="grid grid-cols-3 gap-2">
-        <StatTile value={String(data.week_streak)} label={t('progress.streak')} to="/progress/calendar" />
-        <StatTile
-          value={formatVolume(data.week_volume, user.unit, i18n.language)}
-          label={t('progress.weekVolume')}
-          to="/progress/weeks"
-        />
-        <StatTile value={String(data.records_this_month)} label={t('progress.recordsMonth')} highlight />
-      </div>
+      <OverviewStats data={data} />
 
       <section className="grid gap-2" aria-labelledby="by-group">
         <div className="grid gap-0.5">

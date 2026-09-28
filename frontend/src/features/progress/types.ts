@@ -17,10 +17,14 @@ export type ExerciseTrend = {
   last_date: string
 }
 
+/** The newest personal record: Início's "Último recorde". */
+export type LastRecord = { exercise_id: string; name: string; weight: number; date: string }
+
 export type ProgressOverview = {
   week_streak: number
   week_volume: number
   records_this_month: number
+  last_record: LastRecord | null
   sets_by_group: Array<{ muscle_group: MuscleGroup | null; sets: number }>
   exercises: ExerciseTrend[]
 }
