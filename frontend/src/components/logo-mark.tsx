@@ -1,16 +1,27 @@
 import { cn } from '@/lib/utils'
 
-/** The "mG" mark from the design: accent outline with a soft accent glow. */
+/**
+ * The "Anilha G" mark (design/logo): a plate seen head-on whose rim is a progress
+ * ring and reads as a G. Drawn in currentColor, with a soft accent glow.
+ */
 export function LogoMark({ className }: { className?: string }) {
   return (
-    <div
+    <svg
       aria-hidden
+      viewBox="0 0 48 48"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={4.5}
+      strokeLinecap="round"
+      strokeLinejoin="round"
       className={cn(
-        'flex size-18 items-center justify-center rounded-[1.25rem] border-[1.5px] border-primary text-[1.75rem] font-semibold text-primary shadow-[0_0_40px_color-mix(in_oklch,var(--primary)_25%,transparent)]',
+        'size-22 text-primary drop-shadow-[0_0_18px_color-mix(in_oklch,var(--primary)_40%,transparent)]',
         className,
       )}
     >
-      mG
-    </div>
+      <circle cx="24" cy="24" r="16" strokeOpacity={0.28} />
+      <path d="M36.26 13.72A16 16 0 1 0 40 24h-9" />
+      <circle cx="24" cy="24" r="3" fill="currentColor" stroke="none" />
+    </svg>
   )
 }

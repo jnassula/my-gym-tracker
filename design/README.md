@@ -5,6 +5,15 @@ Imported from Claude Design (project `e82bdf97-c13f-4c11-bfed-25b8555a4120`).
 - `myGymTracker.dc.html`: the design canvas. It holds the navigation map, a clickable prototype (1a), variations of the exercise and day screens (1b–1g), and the auth, Apple Health, settings, PDF import, extra and tablet/desktop screens. It ends with a table of the shadcn components used on each screen. Open it in a browser next to `support.js`.
 - `support.js`: the canvas runtime (generated; do not edit).
 
+## Logo
+
+"Anilha G": a weight plate seen head-on. The rim is also a progress ring (the dim 40° segment is what's left), the centre dot is the bar end-on, and together they read as the G of Gym. It is a line in the accent colour, never a fill.
+
+- `logo/mark.svg`: the mark on a 48 grid (radius 16, stroke 4.5, 40° opening, centre dot r 3). In the app it is `LogoMark` (`src/components/logo-mark.tsx`), drawn in `currentColor` (`text-primary`).
+- `logo/favicon.svg`: dark tile with a heavier stroke (5.5) so it holds at 16px. Copied to `frontend/public/favicon.svg`.
+- `logo/app-icon.svg`: the app icon (ground `#161826` with the `#2b2741` glow from the welcome screen). The PWA PNG icons are exported from it in phase 6.
+- Wordmark: "myGymTracker" in Inter 500, letter-spacing -0.02em, next to or under the mark.
+
 ## Nocturne design system (summary)
 
 A quiet, compact dark interface: a blue-grey ground, Inter at weight 500 for headings, soft radii, and an accent used as a line or glow rather than a fill.

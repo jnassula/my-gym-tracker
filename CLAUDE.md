@@ -51,6 +51,7 @@ Host ports (127.0.0.1): frontend 5173, backend 8200, Postgres 5440, MinIO 9100/9
 - Use shadcn components (Base UI, `base-nova` style, `iconLibrary: phosphor`) whenever one exists: `npx shadcn@latest add <name>`. `src/components/ui/*` is generated. The only design-system edits are to `button.tsx` (variant `outline-primary`; sizes `touch` 48px, `hero` 52px, `icon-touch` 44px) and to `input.tsx`/`input-group.tsx` (h-12, `bg-card`). Re-apply these if a component is re-added with `--overwrite`. When `add` asks to overwrite `button.tsx`, answer **no** (`printf 'n\n' | npx shadcn@latest add <name>`).
 - Generated shadcn controls are small (`SelectTrigger` h-8, menu items py-1): pass `h-12`/`min-h-11` at the call site. `DialogContent` has an English "Close" label: use `showCloseButton={false}` with a translated button.
 - Extra tokens beyond shadcn's: `--warning` (low-confidence parse flags, from the design).
+- Logo: "Anilha G" (`design/logo/`, described in `design/README.md`). Use `LogoMark` (`src/components/logo-mark.tsx`, `currentColor`); don't redraw it. `public/favicon.svg` is a copy of `design/logo/favicon.svg`.
 - When styling a `Link` as a button, wrap in `cn(buttonVariants(...))`: `buttonVariants` alone doesn't resolve Tailwind conflicts.
 - No custom CSS outside the Tailwind/shadcn tokens in `src/index.css` without a stated reason. Icons from `@phosphor-icons/react`.
 - Dark is the default theme (`next-themes`, key `mygymtracker-theme`; `class="dark"` preset in `index.html`).
@@ -102,5 +103,5 @@ Migrations: `initial schema` (all tables), `auth password tracking and persisten
 - Uploads left behind by an abandoned review (the tab closed before confirming or cancelling) stay in MinIO. A cleanup of files not linked to any plan after N days is pending. Deleting an account doesn't delete its objects yet.
 - Scanned PDFs are refused (`pdf_no_text`): DeepSeek can't read images. OCR (Tesseract) would need a new dependency.
 - Designed but not built in phase 3: drag-and-drop reordering (replaced by the menu, as the user chose), renaming a whole muscle group, and the imported-PDFs management screen (phase 6).
-- Frontend `Dockerfile` has only a `dev` target. The production build (nginx + PWA) comes in phase 6. In production, set `COOKIE_SECURE=true` (the default) and `FORWARDED_ALLOW_IPS` to the reverse proxy.
+- Frontend `Dockerfile` has only a `dev` target. The production build (nginx + PWA) comes in phase 6; its PNG icons (apple-touch-icon, manifest) are to be exported from `design/logo/app-icon.svg`. In production, set `COOKIE_SECURE=true` (the default) and `FORWARDED_ALLOW_IPS` to the reverse proxy.
 - Rate-limit counters are in-memory (single backend instance). Move them to Redis if the backend is ever scaled out.
