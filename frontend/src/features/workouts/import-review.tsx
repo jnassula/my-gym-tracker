@@ -62,7 +62,8 @@ export function ImportReview({ draft, dispatch, saving, errorKey, onConfirm, onC
       </Field>
 
       <nav aria-label={t('import.review.days')} className="-mx-5 overflow-x-auto px-5">
-        <ul className="flex gap-1.5">
+        {/* Equal columns filling the row; never narrower than a 44px touch target (scrolls instead). */}
+        <ul className="grid auto-cols-[minmax(2.75rem,1fr)] grid-flow-col gap-1.5 py-px">
           {draft.days.map((item, index) => (
             <li key={item.key}>
               <button
@@ -70,7 +71,7 @@ export function ImportReview({ draft, dispatch, saving, errorKey, onConfirm, onC
                 aria-pressed={index === current}
                 onClick={() => setCurrent(index)}
                 className={cn(
-                  'flex h-11 items-center gap-1 rounded-lg bg-card px-3 text-sm text-muted-foreground',
+                  'flex h-11 w-full items-center justify-center gap-1 rounded-lg bg-card px-1 text-sm text-muted-foreground',
                   index === current && 'bg-accent text-foreground ring-1 ring-primary',
                 )}
               >
