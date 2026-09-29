@@ -57,7 +57,7 @@ O backend corre `alembic upgrade head` ao arrancar e recarrega com as alteraçõ
 
 | Endpoint | |
 | --- | --- |
-| `POST /api/auth/register` | cria a conta e inicia a sessão |
+| `POST /api/auth/register` | cria a conta, inicia a sessão e envia o email de boas-vindas |
 | `POST /api/auth/login` | `{email, password, remember}` |
 | `POST /api/auth/refresh` | usa o cookie; roda o refresh token |
 | `POST /api/auth/logout` | revoga a sessão e apaga o cookie |
@@ -67,7 +67,18 @@ O backend corre `alembic upgrade head` ao arrancar e recarrega com as alteraçõ
 | `POST /api/auth/change-password` | autenticado; devolve um access token novo |
 | `GET /api/users/me` | autenticado |
 
-Em desenvolvimento, os emails de recuperação aparecem no Mailpit (http://localhost:8026).
+### Emails
+
+A app envia dois emails, no idioma da conta (pt, en, es): as **boas-vindas** ao criar a conta e a **recuperação de palavra-passe**. Cada um segue em texto simples e em HTML com a identidade da app (Nocturne, sempre escuro): as boas-vindas são um "treino de arranque" com a conta já riscada e o botão para importar o plano; na recuperação, a validade do link aparece como o anel do descanso.
+
+- Os textos estão em `backend/app/auth/emails.py`; o layout e os blocos (`paragraph`, `checklist`, `countdown`, `button`, `note`) em `backend/app/core/email_layout.py`. Um email novo compõe-se com esses blocos.
+- O logótipo vai dentro da mensagem (`cid:`), por isso aparece sem o cliente de email carregar imagens remotas.
+- Em desenvolvimento, os emails aparecem no Mailpit (http://localhost:8026). Para ver amostras sem criar contas:
+
+```bash
+docker compose exec backend python -m app.auth.email_samples tu@exemplo.pt        # pt
+docker compose exec backend python -m app.auth.email_samples tu@exemplo.pt en     # ou es
+```
 
 ## Importar um plano em PDF
 

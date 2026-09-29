@@ -111,6 +111,7 @@ async def test_a_deactivated_account_cannot_reset_its_password(
     await client.post("/api/auth/forgot-password", json={"email": ATHLETE})
     [match] = re.findall(r"#token=(\S+)", outbox.messages[-1].text)
     await set_active(client, admin, ATHLETE, active=False)
+    sent = len(outbox.messages)  # the welcomes of each sign-up and the first link
 
     asked = await client.post("/api/auth/forgot-password", json={"email": ATHLETE})
     reset = await client.post(
@@ -118,7 +119,7 @@ async def test_a_deactivated_account_cannot_reset_its_password(
     )
 
     assert asked.status_code < 300  # the same answer as for any email
-    assert len(outbox.messages) == 1  # but no second link
+    assert len(outbox.messages) == sent  # but no second link
     assert reset.json()["code"] == "invalid_reset_token"
 
 
