@@ -10,20 +10,23 @@ umask 077 # the dumps hold everyone's data
 
 keep_days=${BACKUP_KEEP_DAYS:-14}
 hour=${BACKUP_HOUR_UTC:-3}
+# This runs as root; each backup goes to the folder's owner (the deploy user, see deploy.sh),
+# who restores them and copies them off the server.
+owner=$(stat -c '%u:%g' /backups)
 
 # Written under a temporary name first: a half-written file never looks like a backup.
+publish() {
+    mv "/backups/$1.tmp" "/backups/$1" && chown "$owner" "/backups/$1" && echo "backup: $1"
+}
+
 backup_db() {
-    stamp=$(date -u +%Y%m%dT%H%M%SZ)
-    pg_dump --format=custom --file="/backups/db-$stamp.dump.tmp" &&
-        mv "/backups/db-$stamp.dump.tmp" "/backups/db-$stamp.dump" &&
-        echo "backup: db-$stamp.dump"
+    name=db-$(date -u +%Y%m%dT%H%M%SZ).dump
+    pg_dump --format=custom --file="/backups/$name.tmp" && publish "$name"
 }
 
 backup_files() {
-    stamp=$(date -u +%Y%m%dT%H%M%SZ)
-    tar -C /storage -czf "/backups/files-$stamp.tar.gz.tmp" . &&
-        mv "/backups/files-$stamp.tar.gz.tmp" "/backups/files-$stamp.tar.gz" &&
-        echo "backup: files-$stamp.tar.gz"
+    name=files-$(date -u +%Y%m%dT%H%M%SZ).tar.gz
+    tar -C /storage -czf "/backups/$name.tmp" . && publish "$name"
 }
 
 prune() {

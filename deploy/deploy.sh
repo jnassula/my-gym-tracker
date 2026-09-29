@@ -15,6 +15,8 @@ if [ ! -f .env ]; then
     exit 1
 fi
 previous=$(sed -n 's/^IMAGE_TAG=//p' .env | tail -n 1)
+# Created by this user, not by Docker as root: the backups (and their restore) stay its own.
+mkdir -p backups caddy/sites caddy/global
 
 # Only the running release's tag is kept in .env, so plain `docker compose` commands on the
 # server keep working; a shell variable overrides it for one command.
