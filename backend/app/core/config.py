@@ -29,7 +29,7 @@ class Settings(BaseSettings):
     cookie_secure: bool = True
     rate_limit_enabled: bool = True
 
-    # --- object storage (MinIO / any S3) ---
+    # --- object storage (RustFS in development, any S3-compatible) ---
     s3_endpoint: str = "localhost:9000"  # host:port, no scheme
     s3_access_key: str = ""
     s3_secret_key: SecretStr = SecretStr("")

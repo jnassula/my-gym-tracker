@@ -26,7 +26,7 @@ def test_production_starts_with_real_secrets_and_https() -> None:
     [
         ("jwt_secret", "change-me-to-a-long-random-string-of-at-least-32-chars", "JWT_SECRET"),
         ("database_url", "postgresql+asyncpg://gym:change-me-postgres@db/gym", "DATABASE_URL"),
-        ("s3_secret_key", "change-me-minio", "S3_SECRET_KEY"),
+        ("s3_secret_key", "change-me-s3", "S3_SECRET_KEY"),
         ("cookie_secure", False, "COOKIE_SECURE"),
         ("frontend_url", "http://localhost:5173", "FRONTEND_URL"),
     ],

@@ -113,7 +113,7 @@ def outbox() -> Outbox:
 
 
 class MemoryStorage:
-    """In-memory ``Storage``: tests inspect ``objects`` instead of talking to MinIO."""
+    """In-memory ``Storage``: tests inspect ``objects`` instead of talking to the S3 server."""
 
     def __init__(self) -> None:
         self.objects: dict[str, tuple[bytes, str]] = {}

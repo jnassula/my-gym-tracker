@@ -1,7 +1,8 @@
-"""Object storage for uploaded files (MinIO in development, any S3-compatible in production).
+"""Object storage for uploaded files: any S3-compatible server (RustFS in the Compose stacks).
 
 Services depend on the ``Storage`` protocol (FastAPI dependency ``get_storage``) so tests can
-use an in-memory implementation. The MinIO SDK is synchronous: calls run in a worker thread.
+use an in-memory implementation. The MinIO SDK (a generic S3 client) is synchronous: calls run
+in a worker thread.
 """
 
 import asyncio
