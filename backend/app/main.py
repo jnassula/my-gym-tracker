@@ -9,6 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from slowapi.errors import RateLimitExceeded
 
 from app import __version__
+from app.admin.router import router as admin_router
 from app.auth.router import router as auth_router
 from app.core import healthcheck
 from app.core.config import get_settings
@@ -37,6 +38,7 @@ DOMAIN_ROUTERS = (
     notifications_router,
     files_router,
     health_router,
+    admin_router,
 )
 
 
