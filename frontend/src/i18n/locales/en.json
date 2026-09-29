@@ -148,7 +148,8 @@
       "device": "Use this device's · {{zone}}",
       "current": "current",
       "none": "No time zone found."
-    }
+    },
+    "administration": "Administration"
   },
   "empty": {
     "today": {
@@ -196,7 +197,8 @@
     "set_not_found": "This set no longer exists.",
     "session_not_found": "This workout no longer exists.",
     "health_token_invalid": "This Apple Health code is no longer valid.",
-    "health_not_connected": "Apple Health isn't connected."
+    "health_not_connected": "Apple Health isn't connected.",
+    "forbidden": "You don't have access to this page."
   },
   "weekdays": {
     "short": {
@@ -673,6 +675,94 @@
       "ngrok": "Testing through ngrok? Also add the header ngrok-skip-browser-warning with the value 1.",
       "run": "Run the shortcut now",
       "done": "Done"
+    }
+  },
+  "admin": {
+    "title": "Backoffice",
+    "nav": {
+      "label": "Backoffice",
+      "overview": "Overview",
+      "users": "Accounts",
+      "backToApp": "Back to the app"
+    },
+    "privacy": "Numbers and account data only: each person's plans, PDFs and weights never appear here.",
+    "tiles": {
+      "label": "Headline numbers",
+      "week": "7 days",
+      "month": "30 days",
+      "totalUsers": "Accounts",
+      "workoutsTotal_one": "{{formatted}} workout logged",
+      "workoutsTotal_other": "{{formatted}} workouts logged",
+      "newUsers": "New · {{period}}",
+      "activeUsers": "Active · {{period}}",
+      "workouts": "Workouts · {{period}}",
+      "versus": "{{change}} vs. {{period}} before",
+      "same": "Same as the period before",
+      "activeHint": "Active: an account that logged at least one workout in the period."
+    },
+    "growth": {
+      "metricLabel": "Figure",
+      "rangeLabel": "Period",
+      "metric": {
+        "new_users": "New",
+        "total_users": "Total",
+        "active_users": "Active"
+      },
+      "series": {
+        "new_users": "New accounts",
+        "total_users": "Total accounts",
+        "active_users": "Active accounts"
+      },
+      "range": {
+        "30d": "30 days",
+        "12w": "12 weeks",
+        "12m": "12 months"
+      },
+      "unit": {
+        "day": "per day",
+        "week": "per week",
+        "month": "per month"
+      },
+      "chartTitle": "{{series}} {{unit}}",
+      "weekOf": "Week of {{date}}",
+      "period": "Period",
+      "showTable": "Show table",
+      "hideTable": "Hide table",
+      "partial": "The last period is still running."
+    },
+    "funnel": {
+      "title": "How far they get",
+      "hint": "Accounts that reached each step",
+      "steps": {
+        "registered": "Signed up",
+        "with_plan": "Created a plan",
+        "trained": "Logged a workout",
+        "active_30d": "Trained in the last 30 days"
+      }
+    },
+    "adoption": {
+      "title": "Usage",
+      "appleHealth": "Apple Health connected",
+      "notifications": "Notifications on",
+      "language": "Language {{language}}"
+    },
+    "users": {
+      "title": "Accounts",
+      "recent": "Latest accounts",
+      "seeAll": "See all",
+      "search": "Search name or email",
+      "count_one": "{{count}} account",
+      "count_other": "{{count}} accounts",
+      "none": "No accounts found.",
+      "more": "Load more",
+      "columns": {
+        "account": "Account",
+        "joined": "Joined",
+        "language": "Language",
+        "plans": "Plans",
+        "workouts": "Workouts",
+        "lastWorkout": "Last workout"
+      }
     }
   }
 }

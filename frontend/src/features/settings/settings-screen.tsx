@@ -117,6 +117,12 @@ export function SettingsScreen() {
           <LinkRow to="/settings/notifications" label={t('settings.notifications')} />
         </SettingsGroup>
 
+        {user.is_admin && (
+          <SettingsGroup title={t('settings.administration')}>
+            <LinkRow to="/admin" label={t('admin.title')} />
+          </SettingsGroup>
+        )}
+
         <Button
           variant="outline"
           size="touch"

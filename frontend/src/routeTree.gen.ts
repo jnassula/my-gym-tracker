@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as AdminRouteImport } from './routes/_admin'
 import { Route as AppRouteImport } from './routes/_app'
 import { Route as AuthRouteImport } from './routes/_auth'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
@@ -17,6 +18,8 @@ import { Route as AuthForgotPasswordRouteImport } from './routes/_auth/forgot-pa
 import { Route as AuthLoginRouteImport } from './routes/_auth/login'
 import { Route as AuthRegisterRouteImport } from './routes/_auth/register'
 import { Route as AuthWelcomeRouteImport } from './routes/_auth/welcome'
+import { Route as AdminAdminIndexRouteImport } from './routes/_admin/admin/index'
+import { Route as AdminAdminUsersRouteImport } from './routes/_admin/admin/users'
 import { Route as AppProgressIndexRouteImport } from './routes/_app/progress/index'
 import { Route as AppProgressCalendarRouteImport } from './routes/_app/progress/calendar'
 import { Route as AppProgressWeeksRouteImport } from './routes/_app/progress/weeks'
@@ -35,6 +38,10 @@ import { Route as AppWorkoutsPlanIdIndexRouteImport } from './routes/_app/workou
 import { Route as AppWorkoutsPlanIdDaysDayIdIndexRouteImport } from './routes/_app/workouts/$planId/days/$dayId/index'
 import { Route as AppWorkoutsPlanIdDaysDayIdExerciseIdRouteImport } from './routes/_app/workouts/$planId/days/$dayId/$exerciseId'
 
+const AdminRoute = AdminRouteImport.update({
+  id: '/_admin',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AppRoute = AppRouteImport.update({
   id: '/_app',
   getParentRoute: () => rootRouteImport,
@@ -72,6 +79,16 @@ const AuthWelcomeRoute = AuthWelcomeRouteImport.update({
   id: '/welcome',
   path: '/welcome',
   getParentRoute: () => AuthRoute,
+} as any)
+const AdminAdminIndexRoute = AdminAdminIndexRouteImport.update({
+  id: '/admin/',
+  path: '/admin/',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminAdminUsersRoute = AdminAdminUsersRouteImport.update({
+  id: '/admin/users',
+  path: '/admin/users',
+  getParentRoute: () => AdminRoute,
 } as any)
 const AppProgressIndexRoute = AppProgressIndexRouteImport.update({
   id: '/progress/',
@@ -171,6 +188,7 @@ export interface FileRoutesByFullPath {
   '/login': typeof AuthLoginRoute
   '/register': typeof AuthRegisterRoute
   '/welcome': typeof AuthWelcomeRoute
+  '/admin/users': typeof AdminAdminUsersRoute
   '/progress/calendar': typeof AppProgressCalendarRoute
   '/progress/weeks': typeof AppProgressWeeksRoute
   '/settings/health': typeof AppSettingsHealthRoute
@@ -180,6 +198,7 @@ export interface FileRoutesByFullPath {
   '/settings/profile': typeof AppSettingsProfileRoute
   '/settings/timezone': typeof AppSettingsTimezoneRoute
   '/workouts/import': typeof AppWorkoutsImportRoute
+  '/admin/': typeof AdminAdminIndexRoute
   '/progress/': typeof AppProgressIndexRoute
   '/settings/': typeof AppSettingsIndexRoute
   '/workouts/': typeof AppWorkoutsIndexRoute
@@ -196,6 +215,7 @@ export interface FileRoutesByTo {
   '/login': typeof AuthLoginRoute
   '/register': typeof AuthRegisterRoute
   '/welcome': typeof AuthWelcomeRoute
+  '/admin/users': typeof AdminAdminUsersRoute
   '/progress/calendar': typeof AppProgressCalendarRoute
   '/progress/weeks': typeof AppProgressWeeksRoute
   '/settings/health': typeof AppSettingsHealthRoute
@@ -205,6 +225,7 @@ export interface FileRoutesByTo {
   '/settings/profile': typeof AppSettingsProfileRoute
   '/settings/timezone': typeof AppSettingsTimezoneRoute
   '/workouts/import': typeof AppWorkoutsImportRoute
+  '/admin': typeof AdminAdminIndexRoute
   '/progress': typeof AppProgressIndexRoute
   '/settings': typeof AppSettingsIndexRoute
   '/workouts': typeof AppWorkoutsIndexRoute
@@ -216,6 +237,7 @@ export interface FileRoutesByTo {
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
+  '/_admin': typeof AdminRouteWithChildren
   '/_app': typeof AppRouteWithChildren
   '/_auth': typeof AuthRouteWithChildren
   '/reset-password': typeof ResetPasswordRoute
@@ -224,6 +246,7 @@ export interface FileRoutesById {
   '/_auth/register': typeof AuthRegisterRoute
   '/_auth/welcome': typeof AuthWelcomeRoute
   '/_app/': typeof AppIndexRoute
+  '/_admin/admin/users': typeof AdminAdminUsersRoute
   '/_app/progress/calendar': typeof AppProgressCalendarRoute
   '/_app/progress/weeks': typeof AppProgressWeeksRoute
   '/_app/settings/health': typeof AppSettingsHealthRoute
@@ -233,6 +256,7 @@ export interface FileRoutesById {
   '/_app/settings/profile': typeof AppSettingsProfileRoute
   '/_app/settings/timezone': typeof AppSettingsTimezoneRoute
   '/_app/workouts/import': typeof AppWorkoutsImportRoute
+  '/_admin/admin/': typeof AdminAdminIndexRoute
   '/_app/progress/': typeof AppProgressIndexRoute
   '/_app/settings/': typeof AppSettingsIndexRoute
   '/_app/workouts/': typeof AppWorkoutsIndexRoute
@@ -251,6 +275,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/register'
     | '/welcome'
+    | '/admin/users'
     | '/progress/calendar'
     | '/progress/weeks'
     | '/settings/health'
@@ -260,6 +285,7 @@ export interface FileRouteTypes {
     | '/settings/profile'
     | '/settings/timezone'
     | '/workouts/import'
+    | '/admin/'
     | '/progress/'
     | '/settings/'
     | '/workouts/'
@@ -276,6 +302,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/register'
     | '/welcome'
+    | '/admin/users'
     | '/progress/calendar'
     | '/progress/weeks'
     | '/settings/health'
@@ -285,6 +312,7 @@ export interface FileRouteTypes {
     | '/settings/profile'
     | '/settings/timezone'
     | '/workouts/import'
+    | '/admin'
     | '/progress'
     | '/settings'
     | '/workouts'
@@ -295,6 +323,7 @@ export interface FileRouteTypes {
     | '/workouts/$planId/days/$dayId'
   id:
     | '__root__'
+    | '/_admin'
     | '/_app'
     | '/_auth'
     | '/reset-password'
@@ -303,6 +332,7 @@ export interface FileRouteTypes {
     | '/_auth/register'
     | '/_auth/welcome'
     | '/_app/'
+    | '/_admin/admin/users'
     | '/_app/progress/calendar'
     | '/_app/progress/weeks'
     | '/_app/settings/health'
@@ -312,6 +342,7 @@ export interface FileRouteTypes {
     | '/_app/settings/profile'
     | '/_app/settings/timezone'
     | '/_app/workouts/import'
+    | '/_admin/admin/'
     | '/_app/progress/'
     | '/_app/settings/'
     | '/_app/workouts/'
@@ -323,6 +354,7 @@ export interface FileRouteTypes {
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
+  AdminRoute: typeof AdminRouteWithChildren
   AppRoute: typeof AppRouteWithChildren
   AuthRoute: typeof AuthRouteWithChildren
   ResetPasswordRoute: typeof ResetPasswordRoute
@@ -330,6 +362,13 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/_admin': {
+      id: '/_admin'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AdminRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_app': {
       id: '/_app'
       path: ''
@@ -385,6 +424,20 @@ declare module '@tanstack/react-router' {
       fullPath: '/welcome'
       preLoaderRoute: typeof AuthWelcomeRouteImport
       parentRoute: typeof AuthRoute
+    }
+    '/_admin/admin/': {
+      id: '/_admin/admin/'
+      path: '/admin'
+      fullPath: '/admin/'
+      preLoaderRoute: typeof AdminAdminIndexRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/_admin/admin/users': {
+      id: '/_admin/admin/users'
+      path: '/admin/users'
+      fullPath: '/admin/users'
+      preLoaderRoute: typeof AdminAdminUsersRouteImport
+      parentRoute: typeof AdminRoute
     }
     '/_app/progress/': {
       id: '/_app/progress/'
@@ -508,6 +561,18 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface AdminRouteChildren {
+  AdminAdminUsersRoute: typeof AdminAdminUsersRoute
+  AdminAdminIndexRoute: typeof AdminAdminIndexRoute
+}
+
+const AdminRouteChildren: AdminRouteChildren = {
+  AdminAdminUsersRoute: AdminAdminUsersRoute,
+  AdminAdminIndexRoute: AdminAdminIndexRoute,
+}
+
+const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
+
 interface AppRouteChildren {
   AppIndexRoute: typeof AppIndexRoute
   AppProgressCalendarRoute: typeof AppProgressCalendarRoute
@@ -570,6 +635,7 @@ const AuthRouteChildren: AuthRouteChildren = {
 const AuthRouteWithChildren = AuthRoute._addFileChildren(AuthRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
+  AdminRoute: AdminRouteWithChildren,
   AppRoute: AppRouteWithChildren,
   AuthRoute: AuthRouteWithChildren,
   ResetPasswordRoute: ResetPasswordRoute,

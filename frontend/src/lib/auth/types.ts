@@ -10,6 +10,8 @@ export type User = {
   /** "Descanso automático": logging a set starts the rest timer. */
   auto_rest: boolean
   created_at: string
+  /** May open the backoffice (/admin); the API checks again on every call. */
+  is_admin: boolean
 }
 
 export type AuthResponse = {

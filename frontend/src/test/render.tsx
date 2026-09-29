@@ -33,6 +33,7 @@ export const user = {
   unit: 'kg',
   auto_rest: true,
   created_at: '2026-09-28T10:00:00Z',
+  is_admin: false,
 } as const
 
 export const authResponse = (token = 'access-1') => ({
