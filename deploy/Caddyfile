@@ -1,8 +1,8 @@
 # The edge: HTTPS with a Let's Encrypt certificate (renewed on its own), HTTP redirected to
 # HTTPS, everything handed to nginx. With DOMAIN=localhost Caddy uses its own local CA.
 {
-	email {$ACME_EMAIL}
-	# Server-specific global options (for example `metrics`), if any.
+	# Server-specific global options, if any: `metrics`, or `email you@example.com` for an
+	# ACME contact (optional: Let's Encrypt stopped sending expiry emails in 2025).
 	import /etc/caddy/conf.d/global/*.caddy
 }
 

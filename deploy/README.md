@@ -45,7 +45,7 @@ sudo ufw allow OpenSSH && sudo ufw allow 80 && sudo ufw allow 443 && sudo ufw en
 ```bash
 sudo -u deploy -i
 cd /opt/mygymtracker
-nano .env            # DOMAIN, ACME_EMAIL, as passwords, SMTP, LLM_API_KEY...
+nano .env            # DOMAIN, as passwords, SMTP, LLM_API_KEY...
 chmod 600 .env
 openssl rand -hex 32 # uma vez por password/segredo
 ```

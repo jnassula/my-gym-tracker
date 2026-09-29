@@ -25,7 +25,6 @@ services:
       - "${HTTPS_PORT:-443}:443/udp" # HTTP/3
     environment:
       DOMAIN: ${DOMAIN:?set in .env}
-      ACME_EMAIL: ${ACME_EMAIL:?set in .env}
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       # Other sites on the same server (Caddy owns :80/:443): caddy/sites/*.caddy and
