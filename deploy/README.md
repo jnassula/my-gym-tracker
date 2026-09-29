@@ -87,6 +87,8 @@ nano .env                                           # VAPID_PRIVATE_KEY=... (gua
 docker compose up -d backend
 ```
 
+Para abrir o backoffice (`/admin`, os números de crescimento), cria a tua conta na app e só depois põe o email em `ADMIN_EMAILS` no `.env` (um endereço da lista deixa de poder ser registado) e corre `docker compose up -d backend`.
+
 ## Operação
 
 No servidor, dentro de `/opt/mygymtracker`, o `docker compose` já sabe que versão está em produção (o `IMAGE_TAG` que o `deploy.sh` grava no `.env`):
