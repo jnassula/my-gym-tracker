@@ -50,7 +50,7 @@ class Settings(BaseSettings):
     # --- backoffice (/admin): the accounts that may open it, comma-separated. Empty: nobody.
     admin_emails: str = ""
 
-    # --- email (password recovery) ---
+    # --- email (welcome, password recovery) ---
     frontend_url: str = "http://localhost:5173"
     smtp_host: str = "localhost"
     smtp_port: int = 1025
