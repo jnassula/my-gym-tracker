@@ -1,8 +1,11 @@
 from functools import lru_cache
-from typing import Literal
+from typing import Literal, Self
 
-from pydantic import Field, SecretStr
+from pydantic import Field, SecretStr, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+# Every placeholder value in .env.example contains it.
+PLACEHOLDER_MARKER = "change-me"
 
 
 class Settings(BaseSettings):
@@ -52,6 +55,28 @@ class Settings(BaseSettings):
     smtp_password: SecretStr | None = None
     smtp_starttls: bool = False
     email_from: str = "myGymTracker <no-reply@mygymtracker.local>"
+
+    @model_validator(mode="after")
+    def _safe_for_production(self) -> Self:
+        """Production refuses to start with the development defaults of .env.example."""
+        if self.environment != "production":
+            return self
+        problems = [
+            f"{name} still has the example value"
+            for name, value in (
+                ("JWT_SECRET", self.jwt_secret.get_secret_value()),
+                ("DATABASE_URL", self.database_url),
+                ("S3_SECRET_KEY", self.s3_secret_key.get_secret_value()),
+            )
+            if PLACEHOLDER_MARKER in value
+        ]
+        if not self.cookie_secure:
+            problems.append("COOKIE_SECURE must be true (the site is served over HTTPS)")
+        if not self.frontend_url.startswith("https://"):
+            problems.append("FRONTEND_URL must be the site's https:// address")
+        if problems:
+            raise ValueError("Unsafe production settings: " + "; ".join(problems))
+        return self
 
 
 @lru_cache
