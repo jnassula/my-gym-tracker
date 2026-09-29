@@ -1,16 +1,20 @@
 # myGymTracker
 
+[![CI/CD](https://github.com/jnassula/my-gym-tracker/actions/workflows/ci.yml/badge.svg)](https://github.com/jnassula/my-gym-tracker/actions/workflows/ci.yml)
+[![CodeQL](https://github.com/jnassula/my-gym-tracker/actions/workflows/codeql.yml/badge.svg)](https://github.com/jnassula/my-gym-tracker/actions/workflows/codeql.yml)
+
 App mobile-first para registar treinos de ginásio: importa o plano a partir de um PDF, regista peso × repetições por série, mostra a evolução em gráficos e cruza as sessões com dados do Apple Health.
 
 | Camada | Tecnologia |
 | --- | --- |
 | Backend | Python 3.13, FastAPI, SQLAlchemy 2 (async) + asyncpg, Alembic, Pydantic v2 |
 | Base de dados | PostgreSQL 17 |
-| Ficheiros | MinIO (compatível com S3), SDK `minio` |
+| Ficheiros | RustFS (compatível com S3), SDK `minio` |
 | PDF | pdfplumber (texto) + agente LLM com Google ADK, DeepSeek por omissão (`backend/app/workouts/parser`) |
 | Frontend | React 19, Vite 8, TypeScript, Tailwind CSS 4, shadcn/ui (Base UI), TanStack Router + Query, react-hook-form + zod, i18next (pt/en/es), Recharts (gráficos), vite-plugin-pwa (Workbox) |
 | Notificações | Web Push com VAPID (pywebpush) |
-| Produção | nginx a servir o build do frontend (`docker-compose.prod.yml`) |
+| Produção | Caddy (HTTPS) + nginx a servir a PWA, imagens no GHCR, backups diários (`deploy/`) |
+| CI/CD | GitHub Actions: testes, smoke test da stack de produção, deploy do `main` por SSH; CodeQL e Dependabot |
 | Autenticação | JWT (PyJWT) + refresh token rotativo, Argon2id (pwdlib), rate limit (slowapi) |
 | Testes | pytest + pytest-asyncio (backend), Vitest + Testing Library (frontend) |
 | Qualidade | ruff + mypy `--strict` (backend), oxlint + `tsc` (frontend) |
@@ -31,11 +35,13 @@ Depois de mudar dependências do frontend (`package.json`), recria o volume de `
 | App (frontend) | http://localhost:5173 |
 | API: healthcheck | http://localhost:8200/health |
 | API: documentação OpenAPI | http://localhost:8200/docs |
-| Consola MinIO | http://localhost:9101 (credenciais `MINIO_ROOT_*` do `.env`) |
+| Consola do RustFS (S3) | http://localhost:9101 (credenciais `S3_ACCESS_KEY`/`S3_SECRET_KEY` do `.env`) |
 | Mailpit (emails de desenvolvimento) | http://localhost:8026 |
 | Postgres | `localhost:5440` |
 
-Todas as portas publicadas ficam em `127.0.0.1` e podem ser mudadas no `.env` (`FRONTEND_PORT`, `BACKEND_PORT`, `POSTGRES_PORT`, `MINIO_API_PORT`, `MINIO_CONSOLE_PORT`, `MAILPIT_UI_PORT`).
+Todas as portas publicadas ficam em `127.0.0.1` e podem ser mudadas no `.env` (`FRONTEND_PORT`, `BACKEND_PORT`, `POSTGRES_PORT`, `S3_API_PORT`, `S3_CONSOLE_PORT`, `MAILPIT_UI_PORT`).
+
+Os ficheiros ficam no [RustFS](https://rustfs.com), compatível com S3, que substituiu o MinIO quando as imagens deste deixaram de ser publicadas. Num `.env` anterior a essa mudança, renomeia `MINIO_ROOT_USER`, `MINIO_ROOT_PASSWORD`, `MINIO_API_PORT` e `MINIO_CONSOLE_PORT` para `S3_ACCESS_KEY`, `S3_SECRET_KEY`, `S3_API_PORT` e `S3_CONSOLE_PORT`.
 
 O backend corre `alembic upgrade head` ao arrancar e recarrega com as alterações ao código (`--reload`). O frontend usa o dev server do Vite com HMR e faz proxy de `/api` e `/health` para o backend: o browser fala sempre com a mesma origem, por isso não há CORS e o cookie do refresh token fica first-party.
 
@@ -65,7 +71,7 @@ Em desenvolvimento, os emails de recuperação aparecem no Mailpit (http://local
 
 ## Importar um plano em PDF
 
-1. **Upload** (`POST /api/workouts/import`, multipart, até 20 MB). O ficheiro passa pela API em vez de ir por URL presigned: o backend precisa dos bytes na hora para a leitura, valida o tipo pelos bytes (`%PDF-`) e o tamanho antes de guardar, e o MinIO fica privado (sem CORS, sem endpoint público). Com PDFs deste tamanho, o custo de passar pela API é irrelevante. Só são guardados no MinIO os PDFs que foram lidos com sucesso.
+1. **Upload** (`POST /api/workouts/import`, multipart, até 20 MB). O ficheiro passa pela API em vez de ir por URL presigned: o backend precisa dos bytes na hora para a leitura, valida o tipo pelos bytes (`%PDF-`) e o tamanho antes de guardar, e o armazenamento fica privado (sem CORS, sem endpoint público). Com PDFs deste tamanho, o custo de passar pela API é irrelevante. Só são guardados os PDFs que foram lidos com sucesso.
 2. **Pré-visualização**: a resposta traz a estrutura que o LLM leu (dias → exercícios com grupo muscular, séries, reps e descanso), com avisos quando algo merece revisão: técnicas como drop set ou rest pause, exercícios combinados ou alternativos, séries em falta, grupo desconhecido.
 3. **Revisão** no ecrã: renomear o plano, editar exercícios, "Mover para…" outro dia ou grupo, reordenar, apagar e adicionar.
 4. **Confirmação** (`POST /api/workouts`) grava o plano e, por defeito, torna-o o plano ativo. Cancelar apaga o upload (`DELETE /api/files/{id}`).
@@ -128,7 +134,7 @@ Os números de progresso ignoram as séries de aquecimento e seguem cada exercí
 
 - **Perfil** (nome), **idioma** (pt/en/es), **unidades** (kg/lb), **tema escuro**, **descanso automático** (registar uma série inicia o descanso) e **fuso horário** (pesquisa, ou o do dispositivo). As alterações aplicam-se logo e gravam-se em segundo plano.
 - Datas e números seguem o idioma: pt → pt-PT, en → en-GB, es → es-ES (`intlLocale()` em `src/i18n`).
-- **PDFs importados**: renomear o plano, torná-lo ativo, abrir o PDF original e apagar. Apagar esconde o plano e apaga o PDF do MinIO; as cargas registadas continuam no histórico e no progresso.
+- **PDFs importados**: renomear o plano, torná-lo ativo, abrir o PDF original e apagar. Apagar esconde o plano e apaga o PDF do armazenamento; as cargas registadas continuam no histórico e no progresso.
 - **Notificações**: ver abaixo.
 
 | Endpoint | |
@@ -206,21 +212,23 @@ O Web Push, a instalação da PWA e o atalho do Apple Health precisam de HTTPS e
 
 O plano grátis mostra uma página de aviso do ngrok na primeira visita (no Safari e outra vez na app instalada): toca em "Visit Site". No atalho, junta o cabeçalho `ngrok-skip-browser-warning: 1` (o ecrã de configuração lembra-o quando está aberto num domínio ngrok).
 
-## App instalável (PWA) e produção
+## App instalável (PWA)
 
 O frontend é uma PWA ([vite-plugin-pwa](https://vite-pwa-org.netlify.app/)) com um service worker próprio (`frontend/src/sw/`): guarda em cache os ficheiros do build, abre a app sem rede e mostra as notificações. Quando há uma versão nova, a app mostra um aviso com "Atualizar". O service worker também corre no dev server.
 
-Para correr a stack como em produção (o frontend compilado servido pelo nginx, que faz proxy de `/api` e `/health`; o backend sem `--reload` nem bind mounts):
+## Produção e CI/CD
 
-```bash
-docker compose -f docker-compose.yml -f docker-compose.prod.yml up --build
-```
+A produção é um servidor com Docker: o Caddy (HTTPS com Let's Encrypt) à frente do nginx, que serve a PWA e faz proxy da API, com Postgres, RustFS e um backup diário numa rede interna. Tudo isto está em [`deploy/`](deploy/), com o runbook em [`deploy/README.md`](deploy/README.md): preparar o servidor e o GitHub, voltar a uma versão anterior, backups e restauro, correr a mesma stack localmente.
 
-Em produção a sério falta um proxy com HTTPS à frente: os cookies `Secure`, o Web Push e a instalação da PWA precisam dele. Mantém `COOKIE_SECURE=true` e define `FORWARDED_ALLOW_IPS` com o IP do proxy.
+- **CI/CD** (`.github/workflows/ci.yml`), a cada push e pull request: ruff, mypy e pytest (com Postgres); oxlint, tsc, Vitest e o build; depois as imagens de produção são construídas e a stack completa arranca no runner para um smoke test. No `main`, as imagens vão para o GHCR, marcadas com o commit, e são publicadas no servidor (`deploy.yml`). Se a versão nova não ficar saudável, a anterior volta sozinha.
+- **Deploy** à mão ou rollback: Actions → Deploy → Run workflow, com o SHA do commit.
+- **CodeQL** analisa o Python, o TypeScript e os workflows. O **Dependabot** abre PRs semanais (uv, npm, Docker, Compose, Actions), agrupados por app.
+- `GET /health` diz o commit que está a correr (`release`).
+- Com `ENVIRONMENT=production`, o backend recusa arrancar com os valores de exemplo do `.env.example`, sem `COOKIE_SECURE` ou sem `https://` no `FRONTEND_URL`.
 
 ## Testes e linters
 
-Com a stack a correr:
+O CI corre tudo isto a cada push. Localmente, com a stack a correr:
 
 ```bash
 # Backend
@@ -279,6 +287,8 @@ frontend/
     components/     componentes partilhados (shell da app, logótipo)
     lib/            cliente da API e sessão em memória
     i18n/           i18next + traduções pt/en/es
+deploy/             stack de produção (Compose, Caddy), deploy.sh, backups, restauro, runbook
+.github/            CI/CD, deploy, CodeQL, Dependabot
 design/             referência do design (canvas do Claude Design + resumo do Nocturne)
 samples/            PDFs pessoais de exemplo (locais, não commitados)
 ```
