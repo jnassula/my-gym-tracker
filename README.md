@@ -208,6 +208,13 @@ Para acompanhar o crescimento da app há uma área de administração em `/admin
 - **Visão geral**: contas no total, novas e ativas nos últimos 7 e 30 dias (contra o período anterior), treinos registados, o gráfico de crescimento (novas, total ou ativas; por dia, semana ou mês; com tabela), até onde as contas chegam (criaram conta → criaram um plano → registaram um treino → treinaram nos últimos 30 dias) e a utilização (Apple Health, notificações, idiomas).
 - **Contas**: todas as contas, da mais recente para a mais antiga, com procura por nome ou email: data de registo, idioma, número de planos e de treinos, data do último treino.
 
+No menu de cada conta (⋮) em **Contas**:
+
+- **Inativar**: a sessão termina em todos os dispositivos e a pessoa deixa de poder entrar (no início de sessão vê "Esta conta foi inativada"); o atalho do Apple Health e os lembretes também param. Os dados ficam, e **Reativar** devolve o acesso.
+- **Apagar**: apaga a conta e tudo o que lhe pertence (planos, treinos, PDFs no armazenamento, dados do Apple Health, dispositivos). Não pode ser desfeito, por isso pede o email da conta escrito por extenso. O endereço fica livre para um novo registo.
+
+As contas de administração (as de `ADMIN_EMAILS`, a tua incluída) não têm menu: para fechar uma, tira-a primeiro da lista. Cada ação fica nos logs do backend, com os ids de quem a fez e da conta.
+
 "Ativa" é uma conta que registou pelo menos um treino no período. Os dias, semanas e meses do gráfico são os do fuso horário de quem administra.
 
 Quem pode entrar são os emails em `ADMIN_EMAILS` (no `.env`, separados por vírgulas; vazio = ninguém). **Cria primeiro a conta na app e só depois junta o email à lista**: como o registo não confirma o email, um endereço da lista deixa de poder ser registado, para ninguém o reclamar antes de ti. Depois de mudar a lista, recria o backend (`docker compose up -d backend`).
@@ -217,6 +224,8 @@ Quem pode entrar são os emails em `ADMIN_EMAILS` (no `.env`, separados por vír
 | `GET /api/admin/overview` | os números principais, o funil e a utilização |
 | `GET /api/admin/growth?range=30d\|12w\|12m` | novas, total e ativas por dia, semana ou mês |
 | `GET /api/admin/users?q=&limit=&offset=` | as contas, com contagens |
+| `PATCH /api/admin/users/{id}` | `{active}`: inativa ou reativa a conta |
+| `DELETE /api/admin/users/{id}` | apaga a conta e os seus dados |
 
 Quem não está na lista recebe `403 forbidden`; `GET /api/users/me` diz `is_admin`.
 
