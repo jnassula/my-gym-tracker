@@ -17,6 +17,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.auth import security
 from app.auth.emails import password_reset_email
 from app.auth.errors import (
+    AccountDisabledError,
     EmailTakenError,
     InvalidCredentialsError,
     InvalidCurrentPasswordError,
@@ -80,7 +81,7 @@ async def _revoke_family(session: AsyncSession, family_id: uuid.UUID) -> None:
     )
 
 
-async def _revoke_all_sessions(
+async def revoke_all_sessions(
     session: AsyncSession, user_id: uuid.UUID, *, except_family: uuid.UUID | None = None
 ) -> None:
     stmt = update(RefreshToken).where(RefreshToken.user_id == user_id).values(revoked=True)
@@ -139,6 +140,9 @@ async def login(
     password_ok = security.verify_password(password, user.password_hash if user else None)
     if user is None or not password_ok:
         raise InvalidCredentialsError
+    # Only after the right password: strangers don't learn which accounts are deactivated.
+    if user.deactivated_at is not None:
+        raise AccountDisabledError
     # Housekeeping: expired tokens are useless, even for reuse detection.
     await session.execute(
         delete(RefreshToken).where(
@@ -159,7 +163,7 @@ async def refresh(session: AsyncSession, raw_refresh_token: str | None) -> Issue
         await session.commit()
         raise RefreshTokenReusedError
     user = await get_user(session, token.user_id)
-    if user is None:
+    if user is None or user.deactivated_at is not None:
         raise InvalidRefreshTokenError
     token.revoked = True
     issued = await _issue_session(
@@ -179,7 +183,8 @@ async def logout(session: AsyncSession, raw_refresh_token: str | None) -> None:
 async def authenticate(session: AsyncSession, claims: security.AccessClaims) -> User:
     """Resolve the user behind a decoded access token (used by ``get_current_user``)."""
     user = await get_user(session, claims.user_id)
-    if user is None:
+    # A deactivated account is signed out at once, not when its access token expires.
+    if user is None or user.deactivated_at is not None:
         raise TokenRevokedError
     changed_at = user.password_changed_at
     if changed_at is not None and claims.issued_at < changed_at.timestamp():
@@ -192,7 +197,7 @@ async def request_password_reset(
 ) -> None:
     """Emails a reset link if the account exists. Callers must not reveal which case it was."""
     user = await get_user_by_email(session, email)
-    if user is None:
+    if user is None or user.deactivated_at is not None:
         return
     settings = get_settings()
     token = security.create_reset_token(user.id, user.password_hash)
@@ -213,6 +218,8 @@ async def _user_for_reset_token(session: AsyncSession, token: str) -> User:
     user = await get_user(session, claims.user_id)
     if user is None or security.password_fingerprint(user.password_hash) != claims.fingerprint:
         raise InvalidResetTokenError
+    if user.deactivated_at is not None:  # a link sent before the account was deactivated
+        raise InvalidResetTokenError
     return user
 
 
@@ -225,7 +232,7 @@ async def check_reset_token(session: AsyncSession, token: str) -> str:
 async def reset_password(session: AsyncSession, token: str, new_password: str) -> IssuedSession:
     user = await _user_for_reset_token(session, token)
     _set_password(user, new_password)
-    await _revoke_all_sessions(session, user.id)
+    await revoke_all_sessions(session, user.id)
     issued = await _issue_session(session, user, persistent=False)
     await session.commit()
     return issued
@@ -249,6 +256,6 @@ async def change_password(
     _set_password(user, new_password)
     current = await _find_refresh_token(session, raw_refresh_token)
     keep_family = current.family_id if current and current.user_id == user.id else None
-    await _revoke_all_sessions(session, user.id, except_family=keep_family)
+    await revoke_all_sessions(session, user.id, except_family=keep_family)
     await session.commit()
     return security.create_access_token(user.id)

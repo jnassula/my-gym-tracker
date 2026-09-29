@@ -44,3 +44,5 @@ class User(UUIDPrimaryKey, CreatedAt, Base):
     )
     # "Descanso automático": logging a set starts the rest timer.
     auto_rest: Mapped[bool] = mapped_column(default=True, server_default=true())
+    # Set by an administrator (backoffice): the account can't sign in, its data stays.
+    deactivated_at: Mapped[datetime | None]

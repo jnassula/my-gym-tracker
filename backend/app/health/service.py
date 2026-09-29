@@ -127,7 +127,8 @@ async def authenticate(session: AsyncSession, token: str) -> tuple[User, HealthC
     if connection is None:
         raise HealthTokenInvalidError
     user = await session.get(User, connection.user_id)
-    if user is None:  # pragma: no cover - the connection cascades with the user
+    # No user: the connection cascades with it. Deactivated: the shortcut is refused too.
+    if user is None or user.deactivated_at is not None:
         raise HealthTokenInvalidError
     return user, connection
 

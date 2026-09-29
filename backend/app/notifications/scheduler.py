@@ -132,7 +132,10 @@ async def run_due(session: AsyncSession, sender: PushSender, now: datetime) -> i
     rows = await session.execute(
         select(User, NotificationSettings)
         .outerjoin(NotificationSettings, NotificationSettings.user_id == User.id)
-        .where(exists().where(PushSubscription.user_id == User.id))
+        .where(
+            exists().where(PushSubscription.user_id == User.id),
+            User.deactivated_at.is_(None),
+        )
     )
     delivered = 0
     for user, stored in rows.all():

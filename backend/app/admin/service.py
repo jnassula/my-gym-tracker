@@ -1,4 +1,4 @@
-"""Business logic for the backoffice: read-only counts over every account.
+"""Business logic for the backoffice: counts over every account, and closing accounts.
 
 The only place that reads across users, so it stays with counts and account data (name, email,
 dates): no plans, PDFs, weights or health samples. Days, weeks and months are the administrator's
@@ -6,14 +6,26 @@ dates): no plans, PDFs, weights or health samples. Days, weeks and months are th
 The buckets' arithmetic lives in ``metrics``.
 """
 
+import logging
 import uuid
 from datetime import date, datetime, timedelta
 from typing import Any
 
-from sqlalchemy import ColumnElement, Date, DateTime, cast, distinct, func, or_, select
+from sqlalchemy import (
+    ColumnElement,
+    Date,
+    DateTime,
+    Select,
+    cast,
+    distinct,
+    func,
+    or_,
+    select,
+)
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import InstrumentedAttribute
 
+from app.admin.errors import AdminProtectedError, UserNotFoundError
 from app.admin.metrics import Unit, bucket_starts, growth
 from app.admin.schemas import (
     AdminOverview,
@@ -27,10 +39,15 @@ from app.admin.schemas import (
     LanguageCount,
     Range,
 )
+from app.auth.service import revoke_all_sessions
+from app.core.config import get_settings
+from app.core.storage import Storage
+from app.files.models import StoredFile
 from app.health.models import HealthConnection
 from app.logs import service as logs
 from app.logs.models import WorkoutSession
 from app.notifications.models import PushSubscription
+from app.notifications.service import cancel_rest_end
 from app.users.models import User
 from app.workouts.models import WorkoutPlan
 
@@ -41,6 +58,8 @@ RANGES: dict[Range, tuple[Unit, int]] = {
 }
 WEEK = timedelta(days=7)
 MONTH = timedelta(days=30)
+
+logger = logging.getLogger(__name__)
 
 
 async def _count(session: AsyncSession, column: InstrumentedAttribute[uuid.UUID]) -> int:
@@ -65,6 +84,7 @@ async def overview(session: AsyncSession) -> AdminOverview:
                 func.count(),
                 *(func.count().filter(when) for when in during(joined, WEEK)),
                 *(func.count().filter(when) for when in during(joined, MONTH)),
+                func.count().filter(User.deactivated_at.is_not(None)),
             ).select_from(User)
         )
     ).one()
@@ -87,6 +107,7 @@ async def overview(session: AsyncSession) -> AdminOverview:
 
     return AdminOverview(
         total_users=users[0],
+        deactivated_users=users[5],
         new_users_7d=Change(current=users[1], previous=users[2]),
         new_users_30d=Change(current=users[3], previous=users[4]),
         active_users_7d=Change(current=workouts[4], previous=workouts[5]),
@@ -143,8 +164,8 @@ async def growth_series(session: AsyncSession, admin: User, range_: Range) -> Gr
     )
 
 
-async def list_users(session: AsyncSession, search: str, limit: int, offset: int) -> AdminUsers:
-    """Accounts, newest first, with how much each one uses the app (counts only)."""
+def _accounts() -> Select[Any]:
+    """Accounts with how much each one uses the app (counts only)."""
     mine = WorkoutSession.user_id == User.id
     plans = (
         select(func.count())
@@ -154,7 +175,21 @@ async def list_users(session: AsyncSession, search: str, limit: int, offset: int
     )
     workouts = select(func.count()).select_from(WorkoutSession).where(mine).scalar_subquery()
     last_workout = select(func.max(WorkoutSession.local_date)).where(mine).scalar_subquery()
+    return select(
+        User.id,
+        User.name,
+        User.email,
+        User.language,
+        User.created_at,
+        User.deactivated_at,
+        plans.label("plans"),
+        workouts.label("workouts"),
+        last_workout.label("last_workout_date"),
+    )
 
+
+async def list_users(session: AsyncSession, search: str, limit: int, offset: int) -> AdminUsers:
+    """Accounts, newest first; ``search`` matches names and emails."""
     matching = (
         or_(
             User.email.icontains(search, autoescape=True),
@@ -163,17 +198,7 @@ async def list_users(session: AsyncSession, search: str, limit: int, offset: int
         if search
         else None
     )
-    total = select(func.count()).select_from(User)
-    page = select(
-        User.id,
-        User.name,
-        User.email,
-        User.language,
-        User.created_at,
-        plans.label("plans"),
-        workouts.label("workouts"),
-        last_workout.label("last_workout_date"),
-    )
+    total, page = select(func.count()).select_from(User), _accounts()
     if matching is not None:
         total, page = total.where(matching), page.where(matching)
     rows = await session.execute(
@@ -183,3 +208,56 @@ async def list_users(session: AsyncSession, search: str, limit: int, offset: int
         total=await session.scalar(total) or 0,
         items=[AdminUser.model_validate(row) for row in rows],
     )
+
+
+# --- closing accounts ----------------------------------------------------------------------------
+
+
+async def _account(session: AsyncSession, admin: User, user_id: uuid.UUID) -> User:
+    """The account to close, locked. Never the administrator's own, nor another one's."""
+    user = await session.scalar(select(User).where(User.id == user_id).with_for_update())
+    if user is None:
+        raise UserNotFoundError
+    if user.id == admin.id or get_settings().is_admin(user.email):
+        raise AdminProtectedError
+    return user
+
+
+async def set_active(
+    session: AsyncSession, admin: User, user_id: uuid.UUID, *, active: bool
+) -> AdminUser:
+    """Deactivating signs the account out everywhere and keeps its data; it can come back."""
+    user = await _account(session, admin, user_id)
+    if active:
+        user.deactivated_at = None
+    elif user.deactivated_at is None:
+        user.deactivated_at = logs.now()
+        await revoke_all_sessions(session, user.id)
+        cancel_rest_end(user.id)
+    await session.commit()
+    logger.info(
+        "Administrator %s %s account %s",
+        admin.id,
+        "reactivated" if active else "deactivated",
+        user.id,
+    )
+    row = (await session.execute(_accounts().where(User.id == user.id))).one()
+    return AdminUser.model_validate(row)
+
+
+async def delete_user(
+    session: AsyncSession, storage: Storage, admin: User, user_id: uuid.UUID
+) -> None:
+    """Deletes the account and everything it owns. There is no way back.
+
+    The PDFs go first: if the storage fails nothing else is lost and the deletion can be tried
+    again (deleting an object that is gone succeeds), so no personal file is left behind.
+    """
+    user = await _account(session, admin, user_id)
+    keys = await session.scalars(select(StoredFile.object_key).where(StoredFile.user_id == user.id))
+    for key in keys.all():
+        await storage.delete(key)
+    cancel_rest_end(user.id)
+    await session.delete(user)  # every table that points at the user cascades
+    await session.commit()
+    logger.info("Administrator %s deleted account %s", admin.id, user_id)

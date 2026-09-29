@@ -90,6 +90,7 @@ async def test_overview(
 
     assert overview == {
         "total_users": 4,
+        "deactivated_users": 0,
         "new_users_7d": {"current": 1, "previous": 1},
         "new_users_30d": {"current": 2, "previous": 2},
         "active_users_7d": {"current": 1, "previous": 1},
@@ -184,6 +185,8 @@ async def test_accounts_newest_first_with_how_much_they_train(
         "email",
         "language",
         "created_at",
+        "deactivated_at",
+        "is_admin",
         "plans",
         "workouts",
         "last_workout_date",

@@ -4,9 +4,10 @@ import uuid
 from datetime import date, datetime
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, computed_field
 
 from app.admin.metrics import Unit
+from app.core.config import get_settings
 from app.users.models import Language
 
 Range = Literal["30d", "12w", "12m"]
@@ -39,7 +40,8 @@ class LanguageCount(BaseModel):
 
 
 class AdminOverview(BaseModel):
-    total_users: int
+    total_users: int  # deactivated accounts included
+    deactivated_users: int
     new_users_7d: Change
     new_users_30d: Change
     # Active: logged a workout in the period.
@@ -75,9 +77,20 @@ class AdminUser(BaseModel):
     email: str
     language: Language
     created_at: datetime
+    deactivated_at: datetime | None
     plans: int
     workouts: int
     last_workout_date: date | None
+
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def is_admin(self) -> bool:
+        """An administrator's account: it can't be deactivated or deleted from the backoffice."""
+        return get_settings().is_admin(self.email)
+
+
+class AccountStatus(BaseModel):
+    active: bool
 
 
 class AdminUsers(BaseModel):

@@ -1,4 +1,4 @@
-from app.core.errors import AppError, ConflictError, UnauthorizedError
+from app.core.errors import AppError, ConflictError, ForbiddenError, UnauthorizedError
 
 
 class NotAuthenticatedError(UnauthorizedError):
@@ -49,3 +49,8 @@ class InvalidResetTokenError(AppError):
 class InvalidCurrentPasswordError(AppError):
     code = "invalid_current_password"
     detail = "Current password is incorrect"
+
+
+class AccountDisabledError(ForbiddenError):
+    code = "account_disabled"
+    detail = "This account has been deactivated"

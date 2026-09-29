@@ -1,13 +1,25 @@
+import uuid
+from http import HTTPStatus
 from typing import Annotated
 
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Depends, Query
 
 from app.admin import service
 from app.admin.dependencies import CurrentAdmin
-from app.admin.schemas import AdminOverview, AdminUsers, Growth, Range
+from app.admin.schemas import (
+    AccountStatus,
+    AdminOverview,
+    AdminUser,
+    AdminUsers,
+    Growth,
+    Range,
+)
 from app.core.db import SessionDep
+from app.core.storage import Storage, get_storage
 
 router = APIRouter(prefix="/admin", tags=["admin"])
+
+StorageDep = Annotated[Storage, Depends(get_storage)]
 
 
 @router.get("/overview")
@@ -32,3 +44,20 @@ async def users(
 ) -> AdminUsers:
     """Accounts, newest first; ``q`` searches names and emails."""
     return await service.list_users(session, q.strip(), limit, offset)
+
+
+@router.patch("/users/{user_id}")
+async def set_status(
+    user_id: uuid.UUID, body: AccountStatus, admin: CurrentAdmin, session: SessionDep
+) -> AdminUser:
+    """Deactivate an account (it is signed out and can't sign in; its data stays) or bring it
+    back."""
+    return await service.set_active(session, admin, user_id, active=body.active)
+
+
+@router.delete("/users/{user_id}", status_code=HTTPStatus.NO_CONTENT)
+async def delete_user(
+    user_id: uuid.UUID, admin: CurrentAdmin, session: SessionDep, storage: StorageDep
+) -> None:
+    """Delete an account with its plans, workouts, PDFs and health data. Can't be undone."""
+    await service.delete_user(session, storage, admin, user_id)
