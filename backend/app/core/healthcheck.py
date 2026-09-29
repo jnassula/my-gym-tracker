@@ -11,6 +11,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import __version__
+from app.core.config import get_settings
 from app.core.db import SessionDep
 from app.core.storage import Storage, get_storage
 
@@ -24,6 +25,7 @@ ComponentStatus = Literal["ok", "unavailable"]
 class HealthStatus(BaseModel):
     status: Literal["ok", "degraded"]
     version: str
+    release: str
     database: ComponentStatus
     storage: ComponentStatus
 
@@ -51,6 +53,7 @@ async def check_health(session: AsyncSession, storage: Storage) -> HealthStatus:
     return HealthStatus(
         status="ok" if database == storage_status == "ok" else "degraded",
         version=__version__,
+        release=get_settings().app_release,
         database=database,
         storage=storage_status,
     )

@@ -27,5 +27,9 @@ RUN --mount=type=cache,target=/root/.cache/uv uv sync --locked --no-install-proj
 COPY . .
 RUN useradd --system --uid 10001 app && chown -R app /app
 USER app
+# The commit CI built this image from; /health reports it so a deploy can confirm what is live.
+ARG APP_RELEASE=dev
+ENV APP_RELEASE=${APP_RELEASE}
 EXPOSE 8000
-CMD ["sh", "-c", "alembic upgrade head && exec uvicorn app.main:app --host 0.0.0.0 --port 8000 --proxy-headers"]
+# One worker on purpose: the reminder scheduler, rate-limit counters and rest timers live in it.
+CMD ["sh", "-c", "alembic upgrade head && exec uvicorn app.main:app --host 0.0.0.0 --port 8000 --proxy-headers --no-server-header"]
