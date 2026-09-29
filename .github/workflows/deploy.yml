@@ -1,0 +1,104 @@
+# Puts one commit's images live on the server: copies deploy/ there, runs deploy.sh (backup,
+# pull, restart, wait until healthy, roll back if not) and checks the public site.
+# CI/CD calls it for every push to main. By hand (Actions → Deploy → Run workflow) it puts an
+# earlier commit back: a rollback. Setup in deploy/README.md.
+name: Deploy
+
+on:
+  workflow_call:
+    inputs:
+      ref:
+        description: Commit to put live; CI/CD has published its images.
+        type: string
+        required: true
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: >-
+          Commit (SHA) or branch to put live. Its images must be in GHCR: CI/CD publishes
+          every commit on main. An earlier commit rolls back.
+        type: string
+        required: true
+        default: main
+
+permissions:
+  contents: read
+  packages: read
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Production
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    environment:
+      name: production
+      url: https://${{ vars.APP_DOMAIN }}
+    env:
+      DEPLOY_PATH: ${{ vars.DEPLOY_PATH || '/opt/mygymtracker' }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ inputs.ref }}
+          persist-credentials: false
+      - name: Resolve the release
+        id: release
+        run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+      - name: Set up SSH
+        env:
+          SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          KNOWN_HOSTS: ${{ vars.DEPLOY_KNOWN_HOSTS }}
+          DEPLOY_HOST: ${{ vars.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ vars.DEPLOY_USER || 'deploy' }}
+          DEPLOY_PORT: ${{ vars.DEPLOY_PORT || '22' }}
+        run: |
+          if [ -z "$SSH_KEY" ] || [ -z "$KNOWN_HOSTS" ]; then
+            echo "::error::Set the DEPLOY_SSH_KEY secret and the DEPLOY_KNOWN_HOSTS variable (deploy/README.md)"
+            exit 1
+          fi
+          install -d -m 700 ~/.ssh
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
+          cat > ~/.ssh/config <<EOF
+          Host production
+            HostName $DEPLOY_HOST
+            User $DEPLOY_USER
+            Port $DEPLOY_PORT
+            IdentityFile ~/.ssh/deploy_key
+            IdentitiesOnly yes
+            StrictHostKeyChecking yes
+            ServerAliveInterval 30
+          EOF
+      - name: Copy the stack definition
+        run: |
+          # shellcheck disable=SC2029
+          ssh production "mkdir -p '$DEPLOY_PATH'"
+          scp deploy/compose.yml deploy/compose.override.example.yml deploy/Caddyfile \
+            deploy/.env.example deploy/deploy.sh deploy/backup.sh deploy/restore.sh \
+            production:"$DEPLOY_PATH/"
+      - name: Deploy
+        env:
+          REGISTRY_USER: ${{ github.actor }}
+          REGISTRY_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE: ${{ steps.release.outputs.sha }}
+        run: |
+          # This job's token lets the server pull the images (they may be private); it expires
+          # with the job, and the server logs out right after. The variables are expanded
+          # here, on the runner, on purpose (SC2029).
+          # shellcheck disable=SC2029
+          printf '%s' "$REGISTRY_TOKEN" |
+            ssh production "docker login ghcr.io --username '$REGISTRY_USER' --password-stdin" >/dev/null
+          status=0
+          # shellcheck disable=SC2029
+          ssh production "sh '$DEPLOY_PATH/deploy.sh' '$RELEASE'" || status=$?
+          ssh production "docker logout ghcr.io" >/dev/null
+          exit "$status"
+      - name: Check the live site
+        env:
+          APP_DOMAIN: ${{ vars.APP_DOMAIN }}
+          RELEASE: ${{ steps.release.outputs.sha }}
+        run: sh deploy/smoke-test.sh "https://$APP_DOMAIN" "$RELEASE"
