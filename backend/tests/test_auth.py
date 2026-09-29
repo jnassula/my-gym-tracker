@@ -73,13 +73,31 @@ async def test_register_creates_user_signs_in_and_normalises_email(client: Async
     assert "Path=/api/auth" in cookie
 
 
-async def test_register_rejects_duplicate_email_case_insensitively(client: AsyncClient) -> None:
+async def test_register_sends_a_welcome_email_in_the_users_language(
+    client: AsyncClient, outbox: Outbox
+) -> None:
+    await register(client, language="es")
+
+    [message] = outbox.messages
+    assert message.to == "jonata@example.pt"
+    assert "Tu cuenta está lista" in message.subject
+    assert "Hola Jonata" in message.text
+    assert "http://localhost:5173/workouts/import" in message.text
+    assert message.html is not None
+    assert "Hola Jonata" in message.html
+    assert 'href="http://localhost:5173/workouts/import"' in message.html
+
+
+async def test_register_rejects_duplicate_email_case_insensitively(
+    client: AsyncClient, outbox: Outbox
+) -> None:
     await register(client)
 
     response = await register(client, email="JONATA@example.pt")
 
     assert response.status_code == 409
     assert response.json()["code"] == "email_taken"
+    assert len(outbox.messages) == 1  # the account's owner isn't welcomed again
 
 
 @pytest.mark.parametrize(
@@ -274,10 +292,13 @@ async def test_forgot_password_emails_a_link_in_the_users_language(
     response = await client.post("/api/auth/forgot-password", json={"email": "JONATA@example.pt"})
 
     assert response.status_code == 202
-    [message] = outbox.messages
+    message = outbox.messages[-1]  # after the welcome
     assert message.to == "jonata@example.pt"
     assert "Reset your password" in message.subject
     assert "http://localhost:5173/reset-password#token=" in message.text
+    assert message.html is not None
+    assert 'href="http://localhost:5173/reset-password#token=' in message.html
+    assert "The link expires in 30 minutes" in message.html
 
 
 async def test_forgot_password_does_not_reveal_unknown_emails(

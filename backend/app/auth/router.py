@@ -53,9 +53,16 @@ def _start_session(response: Response, issued: service.IssuedSession) -> AuthRes
 @router.post("/register", status_code=status.HTTP_201_CREATED)
 @limiter.limit("5/minute")
 async def register(
-    request: Request, response: Response, body: RegisterRequest, session: SessionDep
+    request: Request,
+    response: Response,
+    body: RegisterRequest,
+    session: SessionDep,
+    *,
+    mailer: MailerDep,
+    background: BackgroundTasks,
 ) -> AuthResponse:
-    return _start_session(response, await service.register(session, body))
+    issued = await service.register(session, body, mailer=mailer, background=background)
+    return _start_session(response, issued)
 
 
 @router.post("/login")

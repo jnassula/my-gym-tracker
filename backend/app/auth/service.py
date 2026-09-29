@@ -15,7 +15,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth import security
-from app.auth.emails import password_reset_email
+from app.auth.emails import password_reset_email, welcome_email
 from app.auth.errors import (
     EmailTakenError,
     InvalidCredentialsError,
@@ -109,7 +109,9 @@ def _set_password(user: User, password: str) -> None:
 # --- public API ------------------------------------------------------------------------------
 
 
-async def register(session: AsyncSession, data: RegisterRequest) -> IssuedSession:
+async def register(
+    session: AsyncSession, data: RegisterRequest, *, mailer: Mailer, background: BackgroundTasks
+) -> IssuedSession:
     # Sign-up doesn't verify the email, so an administrator's address can't be claimed by
     # whoever registers it first: its account exists before it is listed in ADMIN_EMAILS.
     if get_settings().is_admin(data.email) or await get_user_by_email(session, data.email):
@@ -128,6 +130,13 @@ async def register(session: AsyncSession, data: RegisterRequest) -> IssuedSessio
         raise EmailTakenError from exc
     issued = await _issue_session(session, user, persistent=True)
     await session.commit()
+    message = welcome_email(
+        to=user.email,
+        name=user.name,
+        language=user.language,
+        link=f"{get_settings().frontend_url.rstrip('/')}/workouts/import",
+    )
+    background.add_task(mailer.send, message)
     return issued
 
 
