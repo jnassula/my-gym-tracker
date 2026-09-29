@@ -12,6 +12,7 @@ Imported from Claude Design (project `e82bdf97-c13f-4c11-bfed-25b8555a4120`).
 - `logo/mark.svg`: the mark on a 48 grid (radius 16, stroke 4.5, 40° opening, centre dot r 3). In the app it is `LogoMark` (`src/components/logo-mark.tsx`), drawn in `currentColor` (`text-primary`).
 - `logo/favicon.svg`: dark tile with a heavier stroke (5.5) so it holds at 16px. Copied to `frontend/public/favicon.svg`.
 - `logo/app-icon.svg`: the app icon (ground `#161826` with the `#2b2741` glow from the welcome screen). The PWA PNG icons are exported from it in phase 6.
+- Email: `backend/app/core/assets/email-logo.png` is `logo/mark.svg` with the accent glow (`drop-shadow(0 0 14px)` at 45%) on a transparent ground, 192 px for a 96 px slot (mail clients don't draw SVG). Rendered with headless Chrome (`--default-background-color=00000000`).
 - Wordmark: "myGymTracker" in Inter 500, letter-spacing -0.02em, next to or under the mark.
 
 ## Nocturne design system (summary)
