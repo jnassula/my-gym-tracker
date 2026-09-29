@@ -70,6 +70,7 @@ services:
       S3_ACCESS_KEY: ${S3_ACCESS_KEY:?set in .env}
       S3_SECRET_KEY: ${S3_SECRET_KEY:?set in .env}
       S3_BUCKET: ${S3_BUCKET:-mygymtracker}
+      ADMIN_EMAILS: ${ADMIN_EMAILS:-}
       LLM_API_KEY: ${LLM_API_KEY:-}
       LLM_BASE_URL: ${LLM_BASE_URL:-https://api.deepseek.com}
       LLM_MODEL: ${LLM_MODEL:-deepseek-flash}

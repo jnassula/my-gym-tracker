@@ -110,7 +110,9 @@ def _set_password(user: User, password: str) -> None:
 
 
 async def register(session: AsyncSession, data: RegisterRequest) -> IssuedSession:
-    if await get_user_by_email(session, data.email):
+    # Sign-up doesn't verify the email, so an administrator's address can't be claimed by
+    # whoever registers it first: its account exists before it is listed in ADMIN_EMAILS.
+    if get_settings().is_admin(data.email) or await get_user_by_email(session, data.email):
         raise EmailTakenError
     user = User(
         email=data.email,

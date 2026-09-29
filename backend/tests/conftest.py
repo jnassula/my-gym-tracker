@@ -45,6 +45,8 @@ os.environ["ENVIRONMENT"] = "test"
 os.environ.setdefault("JWT_SECRET", "test-secret-" + "x" * 32)
 # The test client talks plain http, so Secure cookies would never be sent back.
 os.environ["COOKIE_SECURE"] = "false"
+# Nobody is an administrator unless a test says so (the `admin` fixture).
+os.environ["ADMIN_EMAILS"] = ""
 # Tests never reach the real LLM by accident: only the opt-in live tests get the key back.
 LLM_API_KEY = os.environ.pop("LLM_API_KEY", "")
 
