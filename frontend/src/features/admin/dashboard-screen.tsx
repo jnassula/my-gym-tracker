@@ -221,6 +221,7 @@ function AdoptionCard({ data }: { data: AdminOverview }) {
   const share = (accounts: number) =>
     `${formatCount(accounts, i18n.language)} · ${percentOf(accounts, data.total_users)}%`
   const rows = [
+    { label: t('admin.adoption.deactivated'), value: share(data.deactivated_users) },
     { label: t('admin.adoption.appleHealth'), value: share(data.adoption.apple_health) },
     { label: t('admin.adoption.notifications'), value: share(data.adoption.notifications) },
     ...data.languages.map(({ language, users }) => ({

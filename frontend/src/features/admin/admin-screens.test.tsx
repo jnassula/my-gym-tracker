@@ -36,6 +36,7 @@ afterEach(() => {
 
 const overview: AdminOverview = {
   total_users: 1240,
+  deactivated_users: 3,
   new_users_7d: { current: 18, previous: 12 },
   new_users_30d: { current: 60, previous: 75 },
   active_users_7d: { current: 310, previous: 310 },
@@ -66,6 +67,8 @@ const account = (name: string, fields: Partial<AdminUser> = {}): AdminUser => ({
   language: 'pt',
   // 23:30 UTC is already the 27th in Lisbon, the administrator's time zone.
   created_at: '2026-09-26T23:30:00Z',
+  deactivated_at: null,
+  is_admin: false,
   plans: 1,
   workouts: 14,
   last_workout_date: '2026-09-28',

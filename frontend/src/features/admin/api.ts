@@ -1,8 +1,14 @@
-import { infiniteQueryOptions, keepPreviousData, queryOptions } from '@tanstack/react-query'
+import {
+  infiniteQueryOptions,
+  keepPreviousData,
+  queryOptions,
+  useMutation,
+  useQueryClient,
+} from '@tanstack/react-query'
 
 import { api } from '@/lib/api'
 
-import type { AdminOverview, AdminUsers, Growth, Range } from './types'
+import type { AdminOverview, AdminUser, AdminUsers, Growth, Range } from './types'
 
 export const PAGE_SIZE = 25
 
@@ -39,3 +45,22 @@ export const usersQuery = (search: string, pageSize = PAGE_SIZE) =>
     },
     placeholderData: keepPreviousData,
   })
+
+/** Deactivate an account (signed out, can't sign in, data kept) or bring it back. */
+export function useSetAccountActive() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, active }: { id: string; active: boolean }) =>
+      api<AdminUser>(`/api/admin/users/${id}`, { method: 'PATCH', body: { active } }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: adminKeys.all }),
+  })
+}
+
+/** Delete an account and everything it owns. There is no way back. */
+export function useDeleteAccount() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (id: string) => api<void>(`/api/admin/users/${id}`, { method: 'DELETE' }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: adminKeys.all }),
+  })
+}

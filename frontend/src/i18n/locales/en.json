@@ -198,7 +198,10 @@
     "session_not_found": "This workout no longer exists.",
     "health_token_invalid": "This Apple Health code is no longer valid.",
     "health_not_connected": "Apple Health isn't connected.",
-    "forbidden": "You don't have access to this page."
+    "forbidden": "You don't have access to this page.",
+    "account_disabled": "This account has been deactivated. Contact whoever runs the app.",
+    "user_not_found": "This account no longer exists.",
+    "admin_account_protected": "Administrators' accounts can't be deactivated or deleted here."
   },
   "weekdays": {
     "short": {
@@ -744,7 +747,8 @@
       "title": "Usage",
       "appleHealth": "Apple Health connected",
       "notifications": "Notifications on",
-      "language": "Language {{language}}"
+      "language": "Language {{language}}",
+      "deactivated": "Inactive accounts"
     },
     "users": {
       "title": "Accounts",
@@ -761,8 +765,26 @@
         "language": "Language",
         "plans": "Plans",
         "workouts": "Workouts",
-        "lastWorkout": "Last workout"
-      }
+        "lastWorkout": "Last workout",
+        "actions": "Actions"
+      },
+      "inactive": "Inactive",
+      "administrator": "Admin",
+      "actions": "Actions for {{name}}",
+      "deactivate": "Deactivate",
+      "reactivate": "Reactivate",
+      "delete": "Delete",
+      "cancel": "Cancel",
+      "deactivateTitle": "Deactivate {{name}}'s account?",
+      "deactivateBody": "They are signed out on every device and can no longer sign in. Their plans and workouts are kept: you can reactivate the account whenever you want.",
+      "deactivateConfirm": "Deactivate account",
+      "deactivated": "Account deactivated.",
+      "reactivated": "Account reactivated.",
+      "deleteTitle": "Delete {{name}}'s account?",
+      "deleteBody": "This deletes the account and everything it owns: plans, workouts, PDFs and Apple Health data. It can't be undone.",
+      "deleteType": "To confirm, type {{email}}",
+      "deleteConfirm": "Delete for good",
+      "deleted": "Account deleted."
     }
   }
 }

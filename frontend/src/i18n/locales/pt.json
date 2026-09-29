@@ -198,7 +198,10 @@
     "session_not_found": "Este treino já não existe.",
     "health_token_invalid": "Este código do Apple Health já não é válido.",
     "health_not_connected": "O Apple Health não está ligado.",
-    "forbidden": "Não tens acesso a esta página."
+    "forbidden": "Não tens acesso a esta página.",
+    "account_disabled": "Esta conta foi inativada. Fala com quem gere a app.",
+    "user_not_found": "Esta conta já não existe.",
+    "admin_account_protected": "As contas de administração não podem ser inativadas nem apagadas aqui."
   },
   "weekdays": {
     "short": {
@@ -744,7 +747,8 @@
       "title": "Utilização",
       "appleHealth": "Apple Health ligado",
       "notifications": "Notificações ativas",
-      "language": "Idioma {{language}}"
+      "language": "Idioma {{language}}",
+      "deactivated": "Contas inativas"
     },
     "users": {
       "title": "Contas",
@@ -761,8 +765,26 @@
         "language": "Idioma",
         "plans": "Planos",
         "workouts": "Treinos",
-        "lastWorkout": "Último treino"
-      }
+        "lastWorkout": "Último treino",
+        "actions": "Ações"
+      },
+      "inactive": "Inativa",
+      "administrator": "Admin",
+      "actions": "Ações para {{name}}",
+      "deactivate": "Inativar",
+      "reactivate": "Reativar",
+      "delete": "Apagar",
+      "cancel": "Cancelar",
+      "deactivateTitle": "Inativar a conta de {{name}}?",
+      "deactivateBody": "A sessão termina em todos os dispositivos e a pessoa deixa de poder entrar. Os planos e os treinos ficam guardados: podes reativar a conta quando quiseres.",
+      "deactivateConfirm": "Inativar conta",
+      "deactivated": "Conta inativada.",
+      "reactivated": "Conta reativada.",
+      "deleteTitle": "Apagar a conta de {{name}}?",
+      "deleteBody": "Apaga a conta e tudo o que lhe pertence: planos, treinos, PDFs e dados do Apple Health. Não pode ser desfeito.",
+      "deleteType": "Para confirmar, escreve {{email}}",
+      "deleteConfirm": "Apagar para sempre",
+      "deleted": "Conta apagada."
     }
   }
 }

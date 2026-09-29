@@ -2,6 +2,7 @@ import { useInfiniteQuery } from '@tanstack/react-query'
 import { cn } from 'cn'
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { toast } from 'sonner'
 
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
@@ -10,8 +11,9 @@ import { Spinner } from '@/components/ui/spinner'
 import { errorKey } from '@/features/auth/errors'
 import { FormAlert } from '@/features/auth/form-parts'
 
-import { usersQuery } from './api'
-import { UsersTable } from './users-table'
+import { DeactivateDialog, DeleteDialog } from './account-dialogs'
+import { usersQuery, useSetAccountActive } from './api'
+import { UsersTable, type AccountAction } from './users-table'
 
 const SEARCH_DELAY_MS = 300
 
@@ -25,13 +27,27 @@ function useSettled(value: string): string {
   return settled
 }
 
-/** Contas: every account, newest first, searched by name or email. */
+/** Contas: every account, newest first, searched by name or email; deactivate or delete one. */
 export function UsersScreen() {
   const { t } = useTranslation()
   const [search, setSearch] = useState('')
   const users = useInfiniteQuery(usersQuery(useSettled(search.trim())))
   const accounts = users.data?.pages.flatMap((page) => page.items) ?? []
   const total = users.data?.pages[0]?.total ?? 0
+  const [action, setAction] = useState<AccountAction | null>(null)
+  const status = useSetAccountActive()
+
+  // Bringing an account back loses nothing, so it needs no confirmation.
+  const onAction = (next: AccountAction) => {
+    if (next.kind !== 'reactivate') return setAction(next)
+    status.mutate(
+      { id: next.user.id, active: true },
+      {
+        onSuccess: () => toast.success(t('admin.users.reactivated')),
+        onError: (error) => toast.error(t(errorKey(error))),
+      },
+    )
+  }
 
   return (
     <div className="grid gap-4">
@@ -59,7 +75,7 @@ export function UsersScreen() {
       ) : (
         <>
           <Card className={cn('px-1 py-4 transition-opacity', users.isPlaceholderData && 'opacity-60')}>
-            <UsersTable users={accounts} caption={t('admin.users.title')} />
+            <UsersTable users={accounts} caption={t('admin.users.title')} onAction={onAction} />
           </Card>
           {users.hasNextPage && (
             <Button
@@ -76,6 +92,8 @@ export function UsersScreen() {
         </>
       )}
       <p className="text-xs text-muted-foreground">{t('admin.privacy')}</p>
+      <DeactivateDialog action={action} onClose={() => setAction(null)} />
+      <DeleteDialog action={action} onClose={() => setAction(null)} />
     </div>
   )
 }

@@ -15,7 +15,9 @@ export type Change = { current: number; previous: number }
 export type Funnel = { registered: number; with_plan: number; trained: number; active_30d: number }
 
 export type AdminOverview = {
+  /** Deactivated accounts included. */
   total_users: number
+  deactivated_users: number
   new_users_7d: Change
   new_users_30d: Change
   /** Active: logged a workout in the period. */
@@ -39,6 +41,10 @@ export type AdminUser = {
   email: string
   language: Language
   created_at: string
+  /** Set by an administrator: the account can't sign in, its data stays. */
+  deactivated_at: string | null
+  /** An administrator's account can't be deactivated or deleted from the backoffice. */
+  is_admin: boolean
   plans: number
   workouts: number
   last_workout_date: string | null

@@ -198,7 +198,10 @@
     "session_not_found": "Este entreno ya no existe.",
     "health_token_invalid": "Este código de Apple Health ya no es válido.",
     "health_not_connected": "Apple Health no está conectado.",
-    "forbidden": "No tienes acceso a esta página."
+    "forbidden": "No tienes acceso a esta página.",
+    "account_disabled": "Esta cuenta ha sido desactivada. Habla con quien gestiona la app.",
+    "user_not_found": "Esta cuenta ya no existe.",
+    "admin_account_protected": "Las cuentas de administración no se pueden desactivar ni eliminar aquí."
   },
   "weekdays": {
     "short": {
@@ -744,7 +747,8 @@
       "title": "Uso",
       "appleHealth": "Apple Health conectado",
       "notifications": "Notificaciones activas",
-      "language": "Idioma {{language}}"
+      "language": "Idioma {{language}}",
+      "deactivated": "Cuentas inactivas"
     },
     "users": {
       "title": "Cuentas",
@@ -761,8 +765,26 @@
         "language": "Idioma",
         "plans": "Planes",
         "workouts": "Entrenamientos",
-        "lastWorkout": "Último entrenamiento"
-      }
+        "lastWorkout": "Último entrenamiento",
+        "actions": "Acciones"
+      },
+      "inactive": "Inactiva",
+      "administrator": "Admin",
+      "actions": "Acciones para {{name}}",
+      "deactivate": "Desactivar",
+      "reactivate": "Reactivar",
+      "delete": "Eliminar",
+      "cancel": "Cancelar",
+      "deactivateTitle": "¿Desactivar la cuenta de {{name}}?",
+      "deactivateBody": "La sesión se cierra en todos los dispositivos y la persona ya no puede entrar. Los planes y los entrenamientos se guardan: puedes reactivar la cuenta cuando quieras.",
+      "deactivateConfirm": "Desactivar cuenta",
+      "deactivated": "Cuenta desactivada.",
+      "reactivated": "Cuenta reactivada.",
+      "deleteTitle": "¿Eliminar la cuenta de {{name}}?",
+      "deleteBody": "Elimina la cuenta y todo lo que le pertenece: planes, entrenamientos, PDF y datos de Apple Health. No se puede deshacer.",
+      "deleteType": "Para confirmar, escribe {{email}}",
+      "deleteConfirm": "Eliminar para siempre",
+      "deleted": "Cuenta eliminada."
     }
   }
 }
