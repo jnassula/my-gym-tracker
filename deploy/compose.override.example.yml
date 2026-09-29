@@ -1,0 +1,12 @@
+# Server-specific additions to compose.yml. Copy to compose.override.yml on the server (Docker
+# Compose loads it on its own; the deploy never touches it) when Caddy also serves other apps:
+# Caddy joins the Docker networks where their web containers live, and their sites go in
+# caddy/sites/*.caddy (see README.md, "Outras apps no mesmo servidor").
+services:
+  caddy:
+    networks: [default, other-app]
+
+networks:
+  other-app:
+    # A network created by the other app's own Compose project (docker network ls).
+    external: true

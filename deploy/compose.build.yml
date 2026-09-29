@@ -1,0 +1,15 @@
+# Builds the images from this checkout instead of pulling them from GHCR: the production
+# stack on your machine (see README.md, "Correr a stack de produção localmente").
+#   docker compose -f deploy/compose.yml -f deploy/compose.build.yml up --build
+services:
+  backend:
+    build:
+      context: ../backend
+      target: prod
+      args:
+        APP_RELEASE: ${IMAGE_TAG:?set in .env}
+
+  frontend:
+    build:
+      context: ../frontend
+      target: prod

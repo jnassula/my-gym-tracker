@@ -22,6 +22,8 @@ CMD ["sh", "-c", "alembic upgrade head && exec uvicorn app.main:app --host 0.0.0
 
 # ---- prod: runtime dependencies only, unprivileged user ----
 FROM base AS prod
+# deploy.sh prunes old releases by this label, and nothing else on the server.
+LABEL mygymtracker.image=backend
 COPY pyproject.toml uv.lock ./
 RUN --mount=type=cache,target=/root/.cache/uv uv sync --locked --no-install-project --no-dev
 COPY . .

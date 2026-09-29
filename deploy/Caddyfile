@@ -1,0 +1,20 @@
+# The edge: HTTPS with a Let's Encrypt certificate (renewed on its own), HTTP redirected to
+# HTTPS, everything handed to nginx. With DOMAIN=localhost Caddy uses its own local CA.
+{
+	email {$ACME_EMAIL}
+	# Server-specific global options (for example `metrics`), if any.
+	import /etc/caddy/conf.d/global/*.caddy
+}
+
+{$DOMAIN} {
+	header {
+		# Browsers only use HTTPS for this host from now on (a year, renewed on every visit).
+		Strict-Transport-Security "max-age=31536000"
+		-Server
+	}
+	reverse_proxy frontend:80
+}
+
+# Other apps on the same server: this Caddy holds :80/:443, so it terminates their TLS too.
+# One file per site in caddy/sites/ next to compose.yml (see README.md). None: a warning only.
+import /etc/caddy/conf.d/sites/*.caddy

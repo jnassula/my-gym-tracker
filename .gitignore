@@ -28,3 +28,8 @@ coverage/
 
 # Personal sample workout plans: used by local parser tests, never committed
 samples/*.pdf
+
+# Production stack: what local runs create, and files that only live on the server
+deploy/backups/
+deploy/caddy/
+deploy/compose.override.yml

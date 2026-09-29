@@ -18,6 +18,8 @@ RUN npm run build
 
 # ---- prod: nginx serves the build and proxies /api to the backend ----
 FROM nginx:1.29-alpine AS prod
+# deploy.sh prunes old releases by this label, and nothing else on the server.
+LABEL mygymtracker.image=frontend
 COPY nginx/default.conf /etc/nginx/conf.d/default.conf
 COPY nginx/security-headers.conf /etc/nginx/snippets/security-headers.conf
 COPY --from=build /app/dist /usr/share/nginx/html
