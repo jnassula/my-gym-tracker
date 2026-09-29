@@ -23,6 +23,7 @@ docker compose exec backend pytest            # backend tests (own *_test DB, au
 docker compose exec -e LLM_LIVE_TESTS=1 backend pytest -m llm   # real DeepSeek on samples/ (paid, minutes)
 docker compose exec backend sh -c "ruff check . && ruff format --check . && mypy ."
 docker compose exec backend alembic revision --autogenerate -m "..."
+docker compose exec backend alembic upgrade head   # right after creating a migration: the dev backend reloads the models at once but only migrates when its container starts
 docker compose exec backend python -m app.notifications.keys   # a VAPID key for .env (Web Push)
 docker compose -f deploy/compose.yml -f deploy/compose.build.yml up --build -d --wait   # the production stack locally (deploy/.env: DOMAIN=localhost, see deploy/README.md)
 CURL_OPTS=--insecure sh deploy/smoke-test.sh https://localhost:8443 local   # what CI and each deploy check
