@@ -144,6 +144,7 @@ Os números de progresso ignoram as séries de aquecimento e seguem cada exercí
 ## Definições
 
 - **Perfil** (nome), **idioma** (pt/en/es), **unidades** (kg/lb), **tema escuro**, **descanso automático** (registar uma série inicia o descanso) e **fuso horário** (pesquisa, ou o do dispositivo). As alterações aplicam-se logo e gravam-se em segundo plano.
+- **Foto de perfil** (Definições → Perfil): adicionar, alterar ou remover. O browser recorta a imagem num quadrado ao centro, reduz para 512 px e envia um JPEG (algumas dezenas de KB, sem os dados da câmara, como o local onde foi tirada). Fica no armazenamento de objetos e só a própria pessoa a vê; aparece no Início, nas Definições e no Perfil. Sem foto, mostra-se a inicial do nome.
 - Datas e números seguem o idioma: pt → pt-PT, en → en-GB, es → es-ES (`intlLocale()` em `src/i18n`).
 - **PDFs importados**: renomear o plano, torná-lo ativo, abrir o PDF original e apagar. Apagar esconde o plano e apaga o PDF do armazenamento; as cargas registadas continuam no histórico e no progresso.
 - **Notificações**: ver abaixo.
@@ -153,7 +154,9 @@ Os números de progresso ignoram as séries de aquecimento e seguem cada exercí
 | `PATCH /api/users/me` | `{name?, language?, timezone?, unit?, auto_rest?}` |
 | `PATCH /api/workouts/{id}` | `{name?, is_active?}` |
 | `DELETE /api/workouts/{id}` | esconde o plano e apaga o PDF; o histórico fica |
-| `GET /api/files/{id}/content` | o PDF original (inline) |
+| `PUT /api/users/me/avatar` | a foto (multipart `file`: JPEG, PNG ou WebP pelos seus bytes, até 1 MB); substitui a anterior |
+| `DELETE /api/users/me/avatar` | remove a foto |
+| `GET /api/files/{id}/content` | o PDF original, ou a foto (`avatar_file_id` do utilizador), só para o dono |
 
 ## Notificações (Web Push)
 
