@@ -47,9 +47,6 @@ class Settings(BaseSettings):
     vapid_private_key: SecretStr = SecretStr("")
     vapid_subject: str = "mailto:admin@mygymtracker.local"
 
-    # --- backoffice (/admin): the accounts that may open it, comma-separated. Empty: nobody.
-    admin_emails: str = ""
-
     # --- email (welcome, password recovery) ---
     frontend_url: str = "http://localhost:5173"
     smtp_host: str = "localhost"
@@ -58,10 +55,6 @@ class Settings(BaseSettings):
     smtp_password: SecretStr | None = None
     smtp_starttls: bool = False
     email_from: str = "myGymTracker <no-reply@mygymtracker.local>"
-
-    def is_admin(self, email: str) -> bool:
-        admins = {item.strip().lower() for item in self.admin_emails.split(",")}
-        return email.lower() in admins - {""}
 
     @model_validator(mode="after")
     def _safe_for_production(self) -> Self:

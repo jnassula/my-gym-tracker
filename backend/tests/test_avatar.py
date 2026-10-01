@@ -10,10 +10,9 @@ from PIL import Image
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.config import get_settings
 from app.files.models import StoredFile
 from tests.conftest import MemoryStorage
-from tests.helpers import signup
+from tests.helpers import make_admin, signup
 
 
 def picture(fmt: str = "JPEG", size: tuple[int, int] = (800, 600)) -> bytes:
@@ -179,10 +178,9 @@ async def test_deleting_the_account_deletes_its_photo(
     client: AsyncClient,
     storage: MemoryStorage,
     db_session: AsyncSession,
-    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     admin = await signup(client, "dona@example.pt")
-    monkeypatch.setattr(get_settings(), "admin_emails", "dona@example.pt")
+    await make_admin(db_session, "dona@example.pt")
     headers = await signup(client)
     await upload(client, headers)
     athlete: dict[str, Any] = (await client.get("/api/users/me", headers=headers)).json()

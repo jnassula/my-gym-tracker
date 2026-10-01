@@ -9,14 +9,13 @@ from httpx import AsyncClient
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.config import get_settings
 from app.files.models import FileKind, StoredFile
 from app.logs.models import ExerciseLog, WorkoutSession
 from app.notifications.scheduler import run_due
 from app.users.models import User
 from app.workouts.models import WorkoutPlan
 from tests.conftest import FakePushSender, MemoryStorage, Outbox
-from tests.helpers import signup
+from tests.helpers import make_admin, signup
 from tests.training import MONDAY, Gym
 
 ADMIN = "dona@example.pt"
@@ -30,10 +29,11 @@ DEVICE = {
 
 
 @pytest.fixture
-async def admin(client: AsyncClient, monkeypatch: pytest.MonkeyPatch) -> dict[str, str]:
+async def admin(client: AsyncClient, db_session: AsyncSession) -> dict[str, str]:
     headers = await signup(client, ADMIN)
     await signup(client, "outra@example.pt")
-    monkeypatch.setattr(get_settings(), "admin_emails", f"{ADMIN},outra@example.pt")
+    for email in (ADMIN, "outra@example.pt"):
+        await make_admin(db_session, email)
     return headers
 
 

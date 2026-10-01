@@ -40,7 +40,6 @@ from app.admin.schemas import (
     Range,
 )
 from app.auth.service import revoke_all_sessions
-from app.core.config import get_settings
 from app.core.storage import Storage
 from app.files.models import StoredFile
 from app.health.models import HealthConnection
@@ -182,6 +181,7 @@ def _accounts() -> Select[Any]:
         User.language,
         User.created_at,
         User.deactivated_at,
+        User.is_admin,
         plans.label("plans"),
         workouts.label("workouts"),
         last_workout.label("last_workout_date"),
@@ -218,7 +218,7 @@ async def _account(session: AsyncSession, admin: User, user_id: uuid.UUID) -> Us
     user = await session.scalar(select(User).where(User.id == user_id).with_for_update())
     if user is None:
         raise UserNotFoundError
-    if user.id == admin.id or get_settings().is_admin(user.email):
+    if user.id == admin.id or user.is_admin:
         raise AdminProtectedError
     return user
 
@@ -261,3 +261,24 @@ async def delete_user(
     await session.delete(user)  # every table that points at the user cascades
     await session.commit()
     logger.info("Administrator %s deleted account %s", admin.id, user_id)
+
+
+# --- administrators ------------------------------------------------------------------------------
+
+
+async def set_admin(session: AsyncSession, email: str, *, admin: bool) -> User:
+    """Make an existing account an administrator, or an ordinary one again.
+
+    Only reachable from the server (``python -m app.admin.grant``), never from the API.
+    """
+    user = await session.scalar(select(User).where(User.email == email.strip().lower()))
+    if user is None:
+        raise UserNotFoundError
+    user.is_admin = admin
+    await session.commit()
+    return user
+
+
+async def administrators(session: AsyncSession) -> list[str]:
+    emails = await session.scalars(select(User.email).where(User.is_admin).order_by(User.email))
+    return list(emails)

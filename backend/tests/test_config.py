@@ -48,18 +48,3 @@ def test_development_keeps_the_example_values() -> None:
     )
 
     assert not settings.cookie_secure
-
-
-def test_administrators_are_listed_by_email() -> None:
-    settings = Settings(
-        **{**SAFE_PRODUCTION, "admin_emails": " Dona@Example.pt ,outra@example.pt,"}
-    )
-
-    assert settings.is_admin("dona@example.pt")
-    assert settings.is_admin("OUTRA@example.pt")
-    assert not settings.is_admin("atleta@example.pt")
-    assert not settings.is_admin("")
-
-
-def test_nobody_is_an_administrator_by_default() -> None:
-    assert not Settings(**SAFE_PRODUCTION).is_admin("dona@example.pt")

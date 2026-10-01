@@ -10,11 +10,9 @@ from pydantic import (
     ConfigDict,
     EmailStr,
     StringConstraints,
-    computed_field,
     model_validator,
 )
 
-from app.core.config import get_settings
 from app.users.models import Language, WeightUnit
 
 
@@ -47,12 +45,8 @@ class UserRead(BaseModel):
     # The profile photo: its bytes are at /api/files/{id}/content. A new photo is a new id.
     avatar_file_id: uuid.UUID | None
     created_at: datetime
-
-    @computed_field  # type: ignore[prop-decorator]
-    @property
-    def is_admin(self) -> bool:
-        """Shows the backoffice link; the API checks again on every call (``CurrentAdmin``)."""
-        return get_settings().is_admin(self.email)
+    # Shows the backoffice link; the API checks again on every call (``CurrentAdmin``).
+    is_admin: bool
 
 
 class UserUpdate(BaseModel):

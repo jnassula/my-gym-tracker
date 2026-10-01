@@ -6,10 +6,9 @@ from httpx import AsyncClient
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.config import get_settings
 from app.health.models import HealthConnection
 from app.users.models import User
-from tests.helpers import signup
+from tests.helpers import make_admin, signup
 from tests.training import Clock, Gym
 
 # The clock starts on Monday 2026-09-28, 18:30 in Lisbon (tests/training.py).
@@ -19,10 +18,10 @@ SQUAT = "0/3"
 
 
 @pytest.fixture
-async def admin(client: AsyncClient, monkeypatch: pytest.MonkeyPatch) -> dict[str, str]:
-    """The administrator's Authorization header: an account first, listed afterwards."""
+async def admin(client: AsyncClient, db_session: AsyncSession) -> dict[str, str]:
+    """The administrator's Authorization header: an account, then made an administrator."""
     headers = await signup(client, ADMIN)
-    monkeypatch.setattr(get_settings(), "admin_emails", "Dona@Example.pt, outra@example.pt")
+    await make_admin(db_session, ADMIN)
     return headers
 
 
@@ -56,16 +55,31 @@ async def test_the_account_says_whether_it_is_an_administrator(
     assert (await get(client, "/api/users/me", athlete))["is_admin"] is False
 
 
-async def test_an_administrators_email_cannot_be_registered(
+async def test_signing_up_never_makes_an_administrator(
     client: AsyncClient, admin: dict[str, str]
 ) -> None:
     response = await client.post(
         "/api/auth/register",
-        json={"email": "Outra@example.pt", "password": "Treino2026!", "name": "Outra"},
+        json={"email": "outra@example.pt", "password": "Treino2026!", "name": "Outra"},
     )
 
-    assert response.status_code == 409
-    assert response.json()["code"] == "email_taken"
+    assert response.status_code == 201
+    assert response.json()["user"]["is_admin"] is False
+    headers = {"Authorization": f"Bearer {response.json()['access_token']}"}
+    assert (await client.get("/api/admin/overview", headers=headers)).status_code == 403
+
+
+async def test_the_api_cannot_make_an_administrator(client: AsyncClient) -> None:
+    headers = await signup(client)
+
+    alone = await client.patch("/api/users/me", json={"is_admin": True}, headers=headers)
+    hidden = await client.patch(
+        "/api/users/me", json={"name": "Atleta", "is_admin": True}, headers=headers
+    )
+
+    assert alone.status_code == 422  # nothing it knows how to change
+    assert hidden.json()["is_admin"] is False
+    assert (await client.get("/api/admin/overview", headers=headers)).status_code == 403
 
 
 async def test_overview(

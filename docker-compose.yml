@@ -62,7 +62,8 @@ services:
       S3_ACCESS_KEY: ${S3_ACCESS_KEY:?set in .env}
       S3_SECRET_KEY: ${S3_SECRET_KEY:?set in .env}
       S3_BUCKET: ${S3_BUCKET:-mygymtracker}
-      # Who may open the backoffice (/admin), comma-separated. Empty: nobody.
+      # Transition: read once by the `administrators` migration, which makes the listed accounts
+      # administrators. Since then: `python -m app.admin.grant`. Remove in a later release.
       ADMIN_EMAILS: ${ADMIN_EMAILS:-}
       # LLM that reads imported workout PDFs: any OpenAI-compatible API (DeepSeek by default).
       LLM_API_KEY: ${LLM_API_KEY:-}

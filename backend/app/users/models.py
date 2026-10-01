@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime
 from enum import StrEnum
 
-from sqlalchemy import CheckConstraint, ForeignKey, String, true
+from sqlalchemy import CheckConstraint, ForeignKey, String, false, true
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.db import Base, CreatedAt, UUIDPrimaryKey, enum_check, str_enum
@@ -45,6 +45,9 @@ class User(UUIDPrimaryKey, CreatedAt, Base):
     )
     # "Descanso automático": logging a set starts the rest timer.
     auto_rest: Mapped[bool] = mapped_column(default=True, server_default=true())
+    # May open the backoffice. Never set through the API: `python -m app.admin.grant` on the
+    # server, so being an administrator belongs to an account, not to whoever holds an address.
+    is_admin: Mapped[bool] = mapped_column(default=False, server_default=false())
     # Set by an administrator (backoffice): the account can't sign in, its data stays.
     deactivated_at: Mapped[datetime | None]
     # The profile photo, a `files` row of kind "avatar". `files` points back at the user, so
