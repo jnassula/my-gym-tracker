@@ -109,6 +109,7 @@
     "account": "Conta",
     "changePassword": "Alterar palavra-passe",
     "logout": "Terminar sessão",
+    "version": "Versão {{version}}",
     "password": {
       "title": "Alterar palavra-passe",
       "current": "Palavra-passe atual",

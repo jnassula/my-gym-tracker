@@ -60,6 +60,14 @@ describe('SettingsScreen', () => {
     expect(sessionStore.get()?.user).toMatchObject({ unit: 'lb', auto_rest: false })
   })
 
+  it('says which version this device is running', async () => {
+    serve({ 'GET /api/workouts': () => json([]) })
+    renderWithRouter(<SettingsScreen />)
+
+    // Production builds carry the version CI worked out; anywhere else it is "dev".
+    expect(await screen.findByText('Versão dev')).toBeInTheDocument()
+  })
+
   it('switches the language of the app', async () => {
     serve({
       'GET /api/workouts': () => json([]),

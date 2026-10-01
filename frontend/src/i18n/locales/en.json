@@ -109,6 +109,7 @@
     "account": "Account",
     "changePassword": "Change password",
     "logout": "Log out",
+    "version": "Version {{version}}",
     "password": {
       "title": "Change password",
       "current": "Current password",

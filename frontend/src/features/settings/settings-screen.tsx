@@ -19,6 +19,7 @@ import { UserAvatar } from '@/features/settings/user-avatar'
 import { plansQuery } from '@/features/workouts/api'
 import { LANGUAGES } from '@/i18n'
 import { useRequiredSession } from '@/lib/auth'
+import { APP_VERSION } from '@/lib/version'
 
 export function SettingsScreen() {
   const { t } = useTranslation()
@@ -130,6 +131,9 @@ export function SettingsScreen() {
           {loggingOut ? <Spinner /> : <SignOutIcon />}
           {t('settings.logout')}
         </Button>
+
+        {/* What this device is running: an installed app updates when the user accepts it. */}
+        <p className="text-center text-xs text-muted-foreground">{t('settings.version', { version: APP_VERSION })}</p>
       </div>
     </Page>
   )
