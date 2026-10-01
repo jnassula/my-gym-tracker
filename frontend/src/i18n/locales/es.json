@@ -159,6 +159,20 @@
         "turnRight": "Girar a la derecha",
         "cancel": "Cancelar",
         "save": "Guardar foto"
+      },
+      "body": {
+        "title": "Datos corporales",
+        "hint": "Opcionales. Solo sirven para calcular la composición corporal (grasa, músculo, agua) a partir de los pesajes de la báscula.",
+        "height": "Altura (cm)",
+        "birthDate": "Fecha de nacimiento",
+        "sex": "Sexo",
+        "male": "Masculino",
+        "female": "Femenino",
+        "sexHint": "Las fórmulas de la báscula solo conocen estos dos valores.",
+        "invalidHeight": "Entre 50 y 260 cm.",
+        "invalidBirthDate": "Una fecha entre 1900 y hoy.",
+        "save": "Guardar datos corporales",
+        "saved": "Datos corporales guardados."
       }
     },
     "timezonePage": {
@@ -220,7 +234,9 @@
     "forbidden": "No tienes acceso a esta página.",
     "account_disabled": "Esta cuenta ha sido desactivada. Habla con quien gestiona la app.",
     "user_not_found": "Esta cuenta ya no existe.",
-    "admin_account_protected": "Las cuentas de administración no se pueden desactivar ni eliminar aquí."
+    "admin_account_protected": "Las cuentas de administración no se pueden desactivar ni eliminar aquí.",
+    "measurement_not_found": "Ese pesaje ya no existe.",
+    "measurement_date_invalid": "La fecha del pesaje no puede ser posterior a hoy."
   },
   "weekdays": {
     "short": {
@@ -552,6 +568,101 @@
       "weekShort": "S{{week}}"
     }
   },
+  "body": {
+    "title": "Peso corporal",
+    "weighNow": "Pesarme ahora",
+    "addManual": "Añadir manualmente",
+    "empty": {
+      "title": "Aún no hay pesajes",
+      "description": "Pésate en la báscula inteligente o escribe tu peso para ver la evolución."
+    },
+    "card": {
+      "empty": "Registra tu peso"
+    },
+    "latest": "Último pesaje",
+    "source": {
+      "manual": "Escrito a mano",
+      "scale": "Báscula"
+    },
+    "metricLabel": "Qué muestra el gráfico",
+    "metric": {
+      "weight": "Peso",
+      "body_fat": "Grasa"
+    },
+    "figures": {
+      "bmi": "IMC",
+      "bodyFat": "Grasa corporal",
+      "muscle": "Masa muscular",
+      "water": "Agua",
+      "bone": "Masa ósea",
+      "visceral": "Grasa visceral",
+      "bmr": "Metabolismo basal"
+    },
+    "percent": "{{value}} %",
+    "kcal": "{{value}} kcal",
+    "estimate": "La composición corporal es una estimación a partir de la impedancia que mide la báscula, como en la app de la báscula. Sirve para seguir la tendencia, no es un valor clínico.",
+    "profileNeeded": "Para ver la composición corporal de los pesajes de la báscula, indica la altura, la fecha de nacimiento y el sexo en el perfil.",
+    "profileLink": "Completar el perfil",
+    "chart": {
+      "weight": "Peso por día",
+      "weightWeekly": "Peso medio por semana",
+      "body_fat": "Grasa corporal por día",
+      "body_fatWeekly": "Grasa corporal media por semana",
+      "empty": "Sin pesajes en este periodo."
+    },
+    "change": "Variación en el periodo",
+    "list": {
+      "title": "Pesajes",
+      "date": "Fecha",
+      "weight": "Peso",
+      "fat": "Grasa",
+      "delete": "Borrar el pesaje del {{date}}",
+      "deleteTitle": "¿Borrar este pesaje?",
+      "deleteBody": "{{date}}: {{weight}}. No se puede deshacer.",
+      "deleteConfirm": "Borrar",
+      "cancel": "Cancelar",
+      "deleted": "Pesaje borrado."
+    },
+    "manual": {
+      "title": "Añadir pesaje",
+      "weight": "Peso ({{unit}})",
+      "date": "Fecha",
+      "bodyFat": "Grasa corporal (%)",
+      "bodyFatHint": "Opcional, si tu báscula la muestra.",
+      "invalidWeight": "Un peso entre {{min}} y {{max}} {{unit}}.",
+      "invalidFat": "Entre 2 y 75 %.",
+      "invalidDate": "Una fecha hasta hoy.",
+      "save": "Guardar",
+      "saved": "Pesaje guardado."
+    },
+    "scale": {
+      "title": "Pesarme ahora",
+      "intro": "Conecta la báscula por Bluetooth. Funciona con la Xiaomi Mi Body Composition Scale (1 y 2).",
+      "tipApp": "Cierra la app Zepp Life o Mi Fitness: la báscula solo habla con una app a la vez.",
+      "tipFeet": "Pisa la báscula para despertarla y súbete descalzo: mide la impedancia por los pies.",
+      "connect": "Conectar con la báscula",
+      "connecting": "Buscando la báscula…",
+      "waiting": "Súbete a la báscula, descalzo.",
+      "measuring": "Pesando…",
+      "settled": "Midiendo la composición corporal…",
+      "saving": "Guardando…",
+      "saved": "Pesaje guardado",
+      "noImpedance": "La báscula no midió la impedancia (¿calcetines o zapatos?): solo quedó el peso.",
+      "again": "Pesarme otra vez",
+      "done": "Hecho",
+      "close": "Cerrar",
+      "retry": "Intentar otra vez",
+      "errors": {
+        "cancelled": "No elegiste ninguna báscula.",
+        "unavailable": "El Bluetooth está apagado, o este navegador no tiene permiso para usarlo.",
+        "failed": "Se perdió la conexión con la báscula. Písala para despertarla e inténtalo otra vez."
+      },
+      "support": {
+        "ios": "En el iPhone los navegadores no tienen Bluetooth. Pésate con la app de la báscula y añade aquí el peso manualmente.",
+        "unsupported": "Este navegador no tiene Bluetooth. Abre la app en Chrome, en un Android o un ordenador, o añade el peso manualmente."
+      }
+    }
+  },
   "pdfs": {
     "title": "PDFs importados",
     "emptyTitle": "Aún sin PDFs importados",
@@ -656,6 +767,11 @@
     "strava": {
       "name": "Strava",
       "hint": "Actividades y frecuencia cardiaca"
+    },
+    "scales": "Básculas",
+    "scale": {
+      "name": "Báscula inteligente",
+      "hint": "Xiaomi Mi Body Composition Scale, por Bluetooth"
     }
   },
   "health": {

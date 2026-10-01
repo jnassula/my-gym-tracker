@@ -159,6 +159,20 @@
         "turnRight": "Rodar à direita",
         "cancel": "Cancelar",
         "save": "Guardar foto"
+      },
+      "body": {
+        "title": "Dados corporais",
+        "hint": "Opcionais. Servem só para calcular a composição corporal (gordura, músculo, água) a partir das pesagens da balança.",
+        "height": "Altura (cm)",
+        "birthDate": "Data de nascimento",
+        "sex": "Sexo",
+        "male": "Masculino",
+        "female": "Feminino",
+        "sexHint": "As fórmulas da balança só conhecem estes dois valores.",
+        "invalidHeight": "Entre 50 e 260 cm.",
+        "invalidBirthDate": "Uma data entre 1900 e hoje.",
+        "save": "Guardar dados corporais",
+        "saved": "Dados corporais guardados."
       }
     },
     "timezonePage": {
@@ -220,7 +234,9 @@
     "forbidden": "Não tens acesso a esta página.",
     "account_disabled": "Esta conta foi inativada. Fala com quem gere a app.",
     "user_not_found": "Esta conta já não existe.",
-    "admin_account_protected": "As contas de administração não podem ser inativadas nem apagadas aqui."
+    "admin_account_protected": "As contas de administração não podem ser inativadas nem apagadas aqui.",
+    "measurement_not_found": "Essa pesagem já não existe.",
+    "measurement_date_invalid": "A data da pesagem tem de ser até hoje."
   },
   "weekdays": {
     "short": {
@@ -552,6 +568,101 @@
       "weekShort": "S{{week}}"
     }
   },
+  "body": {
+    "title": "Peso corporal",
+    "weighNow": "Pesar agora",
+    "addManual": "Adicionar manualmente",
+    "empty": {
+      "title": "Ainda sem pesagens",
+      "description": "Pesa-te na balança inteligente ou escreve o teu peso para veres a evolução."
+    },
+    "card": {
+      "empty": "Regista o teu peso"
+    },
+    "latest": "Última pesagem",
+    "source": {
+      "manual": "Escrita à mão",
+      "scale": "Balança"
+    },
+    "metricLabel": "O que o gráfico mostra",
+    "metric": {
+      "weight": "Peso",
+      "body_fat": "Gordura"
+    },
+    "figures": {
+      "bmi": "IMC",
+      "bodyFat": "Gordura corporal",
+      "muscle": "Massa muscular",
+      "water": "Água",
+      "bone": "Massa óssea",
+      "visceral": "Gordura visceral",
+      "bmr": "Metabolismo basal"
+    },
+    "percent": "{{value}} %",
+    "kcal": "{{value}} kcal",
+    "estimate": "A composição corporal é uma estimativa a partir da impedância que a balança mede, como na app da balança. Serve para seguir a tendência, não é um valor clínico.",
+    "profileNeeded": "Para ver a composição corporal das pesagens da balança, indica a altura, a data de nascimento e o sexo no perfil.",
+    "profileLink": "Completar o perfil",
+    "chart": {
+      "weight": "Peso por dia",
+      "weightWeekly": "Peso médio por semana",
+      "body_fat": "Gordura corporal por dia",
+      "body_fatWeekly": "Gordura corporal média por semana",
+      "empty": "Sem pesagens neste período."
+    },
+    "change": "Variação no período",
+    "list": {
+      "title": "Pesagens",
+      "date": "Data",
+      "weight": "Peso",
+      "fat": "Gordura",
+      "delete": "Apagar a pesagem de {{date}}",
+      "deleteTitle": "Apagar esta pesagem?",
+      "deleteBody": "{{date}}: {{weight}}. Não pode ser desfeito.",
+      "deleteConfirm": "Apagar",
+      "cancel": "Cancelar",
+      "deleted": "Pesagem apagada."
+    },
+    "manual": {
+      "title": "Adicionar pesagem",
+      "weight": "Peso ({{unit}})",
+      "date": "Data",
+      "bodyFat": "Gordura corporal (%)",
+      "bodyFatHint": "Opcional, se a tua balança a mostrar.",
+      "invalidWeight": "Um peso entre {{min}} e {{max}} {{unit}}.",
+      "invalidFat": "Entre 2 e 75 %.",
+      "invalidDate": "Uma data até hoje.",
+      "save": "Guardar",
+      "saved": "Pesagem guardada."
+    },
+    "scale": {
+      "title": "Pesar agora",
+      "intro": "Liga a balança por Bluetooth. Funciona com a Xiaomi Mi Body Composition Scale (1 e 2).",
+      "tipApp": "Fecha a app Zepp Life ou Mi Fitness: a balança só fala com uma app de cada vez.",
+      "tipFeet": "Pisa a balança para a acordar e sobe descalço: é pelos pés que mede a impedância.",
+      "connect": "Ligar à balança",
+      "connecting": "A procurar a balança…",
+      "waiting": "Sobe para a balança, descalço.",
+      "measuring": "A pesar…",
+      "settled": "A medir a composição corporal…",
+      "saving": "A guardar…",
+      "saved": "Pesagem guardada",
+      "noImpedance": "A balança não mediu a impedância (meias ou sapatos?): ficou só o peso.",
+      "again": "Pesar outra vez",
+      "done": "Concluído",
+      "close": "Fechar",
+      "retry": "Tentar outra vez",
+      "errors": {
+        "cancelled": "Não escolheste nenhuma balança.",
+        "unavailable": "O Bluetooth está desligado, ou este browser não tem permissão para o usar.",
+        "failed": "Perdemos a ligação à balança. Pisa-a para a acordar e tenta outra vez."
+      },
+      "support": {
+        "ios": "No iPhone os browsers não têm Bluetooth. Pesa-te com a app da balança e adiciona aqui o peso manualmente.",
+        "unsupported": "Este browser não tem Bluetooth. Abre a app no Chrome, num Android ou num computador, ou adiciona o peso manualmente."
+      }
+    }
+  },
   "pdfs": {
     "title": "PDFs importados",
     "emptyTitle": "Ainda sem PDFs importados",
@@ -656,6 +767,11 @@
     "strava": {
       "name": "Strava",
       "hint": "Atividades e frequência cardíaca"
+    },
+    "scales": "Balanças",
+    "scale": {
+      "name": "Balança inteligente",
+      "hint": "Xiaomi Mi Body Composition Scale, por Bluetooth"
     }
   },
   "health": {

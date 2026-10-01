@@ -21,6 +21,7 @@ import { Route as AuthWelcomeRouteImport } from './routes/_auth/welcome'
 import { Route as AdminAdminIndexRouteImport } from './routes/_admin/admin/index'
 import { Route as AdminAdminUsersRouteImport } from './routes/_admin/admin/users'
 import { Route as AppProgressIndexRouteImport } from './routes/_app/progress/index'
+import { Route as AppProgressBodyRouteImport } from './routes/_app/progress/body'
 import { Route as AppProgressCalendarRouteImport } from './routes/_app/progress/calendar'
 import { Route as AppProgressWeeksRouteImport } from './routes/_app/progress/weeks'
 import { Route as AppSettingsIndexRouteImport } from './routes/_app/settings/index'
@@ -96,6 +97,11 @@ const AdminAdminUsersRoute = AdminAdminUsersRouteImport.update({
 const AppProgressIndexRoute = AppProgressIndexRouteImport.update({
   id: '/progress/',
   path: '/progress/',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppProgressBodyRoute = AppProgressBodyRouteImport.update({
+  id: '/progress/body',
+  path: '/progress/body',
   getParentRoute: () => AppRoute,
 } as any)
 const AppProgressCalendarRoute = AppProgressCalendarRouteImport.update({
@@ -209,6 +215,7 @@ export interface FileRoutesByFullPath {
   '/register': typeof AuthRegisterRoute
   '/welcome': typeof AuthWelcomeRoute
   '/admin/users': typeof AdminAdminUsersRoute
+  '/progress/body': typeof AppProgressBodyRoute
   '/progress/calendar': typeof AppProgressCalendarRoute
   '/progress/weeks': typeof AppProgressWeeksRoute
   '/settings/health': typeof AppSettingsHealthRoute
@@ -239,6 +246,7 @@ export interface FileRoutesByTo {
   '/register': typeof AuthRegisterRoute
   '/welcome': typeof AuthWelcomeRoute
   '/admin/users': typeof AdminAdminUsersRoute
+  '/progress/body': typeof AppProgressBodyRoute
   '/progress/calendar': typeof AppProgressCalendarRoute
   '/progress/weeks': typeof AppProgressWeeksRoute
   '/settings/health': typeof AppSettingsHealthRoute
@@ -273,6 +281,7 @@ export interface FileRoutesById {
   '/_auth/welcome': typeof AuthWelcomeRoute
   '/_app/': typeof AppIndexRoute
   '/_admin/admin/users': typeof AdminAdminUsersRoute
+  '/_app/progress/body': typeof AppProgressBodyRoute
   '/_app/progress/calendar': typeof AppProgressCalendarRoute
   '/_app/progress/weeks': typeof AppProgressWeeksRoute
   '/_app/settings/health': typeof AppSettingsHealthRoute
@@ -305,6 +314,7 @@ export interface FileRouteTypes {
     | '/register'
     | '/welcome'
     | '/admin/users'
+    | '/progress/body'
     | '/progress/calendar'
     | '/progress/weeks'
     | '/settings/health'
@@ -335,6 +345,7 @@ export interface FileRouteTypes {
     | '/register'
     | '/welcome'
     | '/admin/users'
+    | '/progress/body'
     | '/progress/calendar'
     | '/progress/weeks'
     | '/settings/health'
@@ -368,6 +379,7 @@ export interface FileRouteTypes {
     | '/_auth/welcome'
     | '/_app/'
     | '/_admin/admin/users'
+    | '/_app/progress/body'
     | '/_app/progress/calendar'
     | '/_app/progress/weeks'
     | '/_app/settings/health'
@@ -482,6 +494,13 @@ declare module '@tanstack/react-router' {
       path: '/progress'
       fullPath: '/progress/'
       preLoaderRoute: typeof AppProgressIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/progress/body': {
+      id: '/_app/progress/body'
+      path: '/progress/body'
+      fullPath: '/progress/body'
+      preLoaderRoute: typeof AppProgressBodyRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/progress/calendar': {
@@ -634,6 +653,7 @@ const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
 
 interface AppRouteChildren {
   AppIndexRoute: typeof AppIndexRoute
+  AppProgressBodyRoute: typeof AppProgressBodyRoute
   AppProgressCalendarRoute: typeof AppProgressCalendarRoute
   AppProgressWeeksRoute: typeof AppProgressWeeksRoute
   AppSettingsHealthRoute: typeof AppSettingsHealthRoute
@@ -658,6 +678,7 @@ interface AppRouteChildren {
 
 const AppRouteChildren: AppRouteChildren = {
   AppIndexRoute: AppIndexRoute,
+  AppProgressBodyRoute: AppProgressBodyRoute,
   AppProgressCalendarRoute: AppProgressCalendarRoute,
   AppProgressWeeksRoute: AppProgressWeeksRoute,
   AppSettingsHealthRoute: AppSettingsHealthRoute,

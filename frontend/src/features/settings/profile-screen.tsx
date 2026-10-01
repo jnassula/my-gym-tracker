@@ -5,7 +5,7 @@ import { toast } from 'sonner'
 
 import { Page } from '@/components/app-shell/page'
 import { Button } from '@/components/ui/button'
-import { Field, FieldError, FieldLabel } from '@/components/ui/field'
+import { Field, FieldDescription, FieldError, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
 import { Spinner } from '@/components/ui/spinner'
 import { errorKey } from '@/features/auth/errors'
@@ -15,7 +15,7 @@ import { formatMonth } from '@/features/progress/format'
 import { useRemoveAvatar, useSetAvatar, useUpdateMe } from '@/features/settings/api'
 import { loadPicture, type Picture } from '@/features/settings/avatar'
 import { PhotoEditor } from '@/features/settings/photo-editor'
-import { LinkRow, SettingsGroup } from '@/features/settings/rows'
+import { LinkRow, Segmented, SettingsGroup } from '@/features/settings/rows'
 import { UserAvatar } from '@/features/settings/user-avatar'
 import { useRequiredSession } from '@/lib/auth'
 
@@ -94,11 +94,110 @@ export function ProfileScreen() {
           </Button>
         </form>
 
+        <BodyDetails />
+
         <SettingsGroup title={t('settings.profile.password')}>
           <LinkRow to="/settings/password" label={t('settings.changePassword')} />
         </SettingsGroup>
       </div>
     </Page>
+  )
+}
+
+const HEIGHT_CM = [50, 260] as const
+const EARLIEST_BIRTH = '1900-01-01'
+
+/** Height, date of birth and sex: optional, and only used to turn a scale's reading into body
+ * composition (features/body). Emptying a field clears it. */
+function BodyDetails() {
+  const { t } = useTranslation()
+  const { user } = useRequiredSession()
+  const update = useUpdateMe()
+  const ids = { height: useId(), birth: useId(), sexHint: useId() }
+  const [height, setHeight] = useState(user.height_cm === null ? '' : String(user.height_cm))
+  const [birth, setBirth] = useState(user.birth_date ?? '')
+  const [sex, setSex] = useState(user.sex)
+  const [today] = useState(() => new Date().toISOString().slice(0, 10))
+
+  const heightCm = height.trim() === '' ? null : Number(height)
+  const heightValid =
+    heightCm === null || (/^\d{2,3}$/.test(height.trim()) && heightCm >= HEIGHT_CM[0] && heightCm <= HEIGHT_CM[1])
+  const birthDate = birth === '' ? null : birth
+  const birthValid = birthDate === null || (birthDate >= EARLIEST_BIRTH && birthDate <= today)
+  const changed = heightCm !== user.height_cm || birthDate !== user.birth_date || sex !== user.sex
+
+  return (
+    <form
+      className="grid gap-4"
+      onSubmit={(event) => {
+        event.preventDefault()
+        if (!heightValid || !birthValid) return
+        update.mutate(
+          { height_cm: heightCm, birth_date: birthDate, sex },
+          {
+            onSuccess: () => toast.success(t('settings.profile.body.saved')),
+            onError: () => toast.error(t('settings.saveError')),
+          },
+        )
+      }}
+    >
+      <div className="grid gap-1">
+        <h2 className="px-1 text-[0.6875rem] font-medium tracking-widest text-primary uppercase">
+          {t('settings.profile.body.title')}
+        </h2>
+        <p className="px-1 text-xs text-muted-foreground">{t('settings.profile.body.hint')}</p>
+      </div>
+      <div className="grid grid-cols-2 gap-3">
+        <Field data-invalid={!heightValid}>
+          <FieldLabel htmlFor={ids.height}>{t('settings.profile.body.height')}</FieldLabel>
+          <Input
+            id={ids.height}
+            inputMode="numeric"
+            value={height}
+            aria-invalid={!heightValid}
+            onChange={(event) => setHeight(event.target.value)}
+          />
+          {!heightValid && <FieldError>{t('settings.profile.body.invalidHeight')}</FieldError>}
+        </Field>
+        <Field data-invalid={!birthValid}>
+          <FieldLabel htmlFor={ids.birth}>{t('settings.profile.body.birthDate')}</FieldLabel>
+          <Input
+            id={ids.birth}
+            type="date"
+            min={EARLIEST_BIRTH}
+            max={today}
+            value={birth}
+            autoComplete="bday"
+            aria-invalid={!birthValid}
+            onChange={(event) => setBirth(event.target.value)}
+          />
+          {!birthValid && <FieldError>{t('settings.profile.body.invalidBirthDate')}</FieldError>}
+        </Field>
+      </div>
+      <Field>
+        <div className="flex min-h-11 items-center justify-between gap-3">
+          <span className="text-sm font-medium">{t('settings.profile.body.sex')}</span>
+          <Segmented
+            label={t('settings.profile.body.sex')}
+            value={sex ?? ''}
+            options={[
+              { value: 'male', label: t('settings.profile.body.male') },
+              { value: 'female', label: t('settings.profile.body.female') },
+            ]}
+            onChange={(value) => setSex(value as 'male' | 'female')}
+          />
+        </div>
+        <FieldDescription id={ids.sexHint}>{t('settings.profile.body.sexHint')}</FieldDescription>
+      </Field>
+      <Button
+        type="submit"
+        variant="outline-primary"
+        size="touch"
+        disabled={!heightValid || !birthValid || !changed || update.isPending}
+      >
+        {t('settings.profile.body.save')}
+      </Button>
+    </form>
   )
 }
 

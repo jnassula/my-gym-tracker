@@ -159,6 +159,20 @@
         "turnRight": "Turn right",
         "cancel": "Cancel",
         "save": "Save photo"
+      },
+      "body": {
+        "title": "Body details",
+        "hint": "Optional. They are only used to work out body composition (fat, muscle, water) from the scale's weighings.",
+        "height": "Height (cm)",
+        "birthDate": "Date of birth",
+        "sex": "Sex",
+        "male": "Male",
+        "female": "Female",
+        "sexHint": "The scale's formulas only know these two values.",
+        "invalidHeight": "From 50 to 260 cm.",
+        "invalidBirthDate": "A date from 1900 to today.",
+        "save": "Save body details",
+        "saved": "Body details saved."
       }
     },
     "timezonePage": {
@@ -220,7 +234,9 @@
     "forbidden": "You don't have access to this page.",
     "account_disabled": "This account has been deactivated. Contact whoever runs the app.",
     "user_not_found": "This account no longer exists.",
-    "admin_account_protected": "Administrators' accounts can't be deactivated or deleted here."
+    "admin_account_protected": "Administrators' accounts can't be deactivated or deleted here.",
+    "measurement_not_found": "That weighing no longer exists.",
+    "measurement_date_invalid": "A weighing's date can't be after today."
   },
   "weekdays": {
     "short": {
@@ -552,6 +568,101 @@
       "weekShort": "W{{week}}"
     }
   },
+  "body": {
+    "title": "Body weight",
+    "weighNow": "Weigh now",
+    "addManual": "Add manually",
+    "empty": {
+      "title": "No weighings yet",
+      "description": "Step on your smart scale or type your weight in to see how it changes."
+    },
+    "card": {
+      "empty": "Log your weight"
+    },
+    "latest": "Latest weighing",
+    "source": {
+      "manual": "Typed in",
+      "scale": "Scale"
+    },
+    "metricLabel": "What the chart shows",
+    "metric": {
+      "weight": "Weight",
+      "body_fat": "Fat"
+    },
+    "figures": {
+      "bmi": "BMI",
+      "bodyFat": "Body fat",
+      "muscle": "Muscle mass",
+      "water": "Water",
+      "bone": "Bone mass",
+      "visceral": "Visceral fat",
+      "bmr": "Basal metabolism"
+    },
+    "percent": "{{value}}%",
+    "kcal": "{{value}} kcal",
+    "estimate": "Body composition is an estimate from the impedance the scale measures, as in the scale's own app. It is for following a trend, not a clinical figure.",
+    "profileNeeded": "To see the body composition of the scale's weighings, add your height, date of birth and sex to your profile.",
+    "profileLink": "Complete the profile",
+    "chart": {
+      "weight": "Weight by day",
+      "weightWeekly": "Average weight by week",
+      "body_fat": "Body fat by day",
+      "body_fatWeekly": "Average body fat by week",
+      "empty": "No weighings in this period."
+    },
+    "change": "Change over the period",
+    "list": {
+      "title": "Weighings",
+      "date": "Date",
+      "weight": "Weight",
+      "fat": "Fat",
+      "delete": "Delete the weighing of {{date}}",
+      "deleteTitle": "Delete this weighing?",
+      "deleteBody": "{{date}}: {{weight}}. This can't be undone.",
+      "deleteConfirm": "Delete",
+      "cancel": "Cancel",
+      "deleted": "Weighing deleted."
+    },
+    "manual": {
+      "title": "Add a weighing",
+      "weight": "Weight ({{unit}})",
+      "date": "Date",
+      "bodyFat": "Body fat (%)",
+      "bodyFatHint": "Optional, if your scale shows it.",
+      "invalidWeight": "A weight from {{min}} to {{max}} {{unit}}.",
+      "invalidFat": "From 2 to 75%.",
+      "invalidDate": "A date up to today.",
+      "save": "Save",
+      "saved": "Weighing saved."
+    },
+    "scale": {
+      "title": "Weigh now",
+      "intro": "Connect the scale over Bluetooth. Works with the Xiaomi Mi Body Composition Scale (1 and 2).",
+      "tipApp": "Close the Zepp Life or Mi Fitness app: the scale only talks to one app at a time.",
+      "tipFeet": "Tap the scale with your foot to wake it and step on barefoot: it measures impedance through your feet.",
+      "connect": "Connect to the scale",
+      "connecting": "Looking for the scale…",
+      "waiting": "Step on the scale, barefoot.",
+      "measuring": "Weighing…",
+      "settled": "Measuring body composition…",
+      "saving": "Saving…",
+      "saved": "Weighing saved",
+      "noImpedance": "The scale measured no impedance (socks or shoes?): only the weight was kept.",
+      "again": "Weigh again",
+      "done": "Done",
+      "close": "Close",
+      "retry": "Try again",
+      "errors": {
+        "cancelled": "You didn't choose a scale.",
+        "unavailable": "Bluetooth is off, or this browser isn't allowed to use it.",
+        "failed": "The connection to the scale was lost. Tap it to wake it and try again."
+      },
+      "support": {
+        "ios": "Browsers on the iPhone have no Bluetooth. Weigh yourself with the scale's app and add the weight here manually.",
+        "unsupported": "This browser has no Bluetooth. Open the app in Chrome, on Android or a computer, or add the weight manually."
+      }
+    }
+  },
   "pdfs": {
     "title": "Imported PDFs",
     "emptyTitle": "No imported PDFs yet",
@@ -656,6 +767,11 @@
     "strava": {
       "name": "Strava",
       "hint": "Activities and heart rate"
+    },
+    "scales": "Scales",
+    "scale": {
+      "name": "Smart scale",
+      "hint": "Xiaomi Mi Body Composition Scale, over Bluetooth"
     }
   },
   "health": {

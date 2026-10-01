@@ -4,7 +4,9 @@ import { applyLanguage } from '@/i18n'
 import { api } from '@/lib/api'
 import { sessionStore, type User } from '@/lib/auth'
 
-export type UserChanges = Partial<Pick<User, 'name' | 'language' | 'timezone' | 'unit' | 'auto_rest'>>
+export type UserChanges = Partial<
+  Pick<User, 'name' | 'language' | 'timezone' | 'unit' | 'auto_rest' | 'height_cm' | 'birth_date' | 'sex'>
+>
 
 /** Only the fields a request changed: a slower, older response can't undo a newer change. */
 function mergeUser(fields: Partial<User>) {

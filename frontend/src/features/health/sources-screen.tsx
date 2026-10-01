@@ -35,6 +35,9 @@ export function SourcesScreen() {
               <Badge variant="secondary">{t('sources.soon')}</Badge>
             </SettingsRow>
           </SettingsGroup>
+          <SettingsGroup title={t('sources.scales')}>
+            <LinkRow to="/progress/body" label={t('sources.scale.name')} hint={t('sources.scale.hint')} />
+          </SettingsGroup>
         </div>
       )}
     </Page>

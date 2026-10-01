@@ -9,6 +9,7 @@ import { Page } from '@/components/app-shell/page'
 import { buttonVariants } from '@/components/ui/button'
 import { Spinner } from '@/components/ui/spinner'
 import { errorKey } from '@/features/auth/errors'
+import { BodyCard } from '@/features/body/body-card'
 import { FormAlert } from '@/features/auth/form-parts'
 import { formatWeight, toUnit } from '@/features/training/weight'
 import { useWorkoutLabels } from '@/features/workouts/labels'
@@ -42,6 +43,8 @@ export function OverviewScreen() {
           <Link to="/" className={cn(buttonVariants({ variant: 'outline-primary', size: 'hero' }))}>
             {t('progress.startTraining')}
           </Link>
+          {/* The body weight doesn't wait for a first workout. */}
+          <BodyCard />
         </div>
       ) : (
         <Overview data={overview.data} />
@@ -58,6 +61,7 @@ function Overview({ data }: { data: ProgressOverview }) {
   return (
     <div className="grid gap-6">
       <OverviewStats data={data} />
+      <BodyCard />
 
       <section className="grid gap-2" aria-labelledby="by-group">
         <div className="grid gap-0.5">

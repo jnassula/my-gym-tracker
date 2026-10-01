@@ -183,6 +183,7 @@ describe('SourcesScreen', () => {
     )
     expect(screen.getByRole('link', { name: /Garmin Connect/ })).toHaveAttribute('href', '/settings/sources/garmin')
     expect(screen.getByText('Strava').closest('a')).toBeNull()
+    expect(screen.getByRole('link', { name: /Balança inteligente/ })).toHaveAttribute('href', '/progress/body')
     expect(screen.getByText('Em breve')).toBeInTheDocument()
   })
 

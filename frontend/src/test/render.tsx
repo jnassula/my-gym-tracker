@@ -35,6 +35,9 @@ export const user = {
   avatar_file_id: null,
   created_at: '2026-09-28T10:00:00Z',
   is_admin: false,
+  height_cm: null,
+  birth_date: null,
+  sex: null,
 } as const
 
 export const authResponse = (token = 'access-1') => ({

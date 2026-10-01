@@ -14,6 +14,10 @@ export type User = {
   created_at: string
   /** May open the backoffice (/admin); the API checks again on every call. */
   is_admin: boolean
+  /** Optional, for the body composition of a scale's weighing (features/body). */
+  height_cm: number | null
+  birth_date: string | null
+  sex: 'male' | 'female' | null
 }
 
 export type AuthResponse = {
