@@ -3,7 +3,7 @@
 [![CI/CD](https://github.com/jnassula/my-gym-tracker/actions/workflows/ci.yml/badge.svg)](https://github.com/jnassula/my-gym-tracker/actions/workflows/ci.yml)
 [![CodeQL](https://github.com/jnassula/my-gym-tracker/actions/workflows/codeql.yml/badge.svg)](https://github.com/jnassula/my-gym-tracker/actions/workflows/codeql.yml)
 
-App mobile-first para registar treinos de ginásio: importa o plano a partir de um PDF, regista peso × repetições por série, mostra a evolução em gráficos e cruza as sessões com dados do Apple Health.
+App mobile-first para registar treinos de ginásio: importa o plano a partir de um PDF, regista peso × repetições por série, mostra a evolução em gráficos e cruza as sessões com os dados do relógio (Apple Health, Health Connect).
 
 | Camada | Tecnologia |
 | --- | --- |
@@ -127,7 +127,7 @@ Uma sessão é um dia do plano treinado numa data (a data local do utilizador): 
 - **Visão geral:** semanas seguidas (toca para o calendário), volume da semana (toca para a comparação semanal), PRs deste mês, séries por grupo muscular esta semana e cada exercício com a evolução das últimas 8 sessões.
 - **Exercício:** 4 semanas, 3 meses ou 1 ano; gráfico da carga máxima por sessão (por semana no ano), PR, volume, tendência e as últimas sessões. Abre também a partir do cartão "Progressão" no ecrã do exercício.
 - **Consistência:** o mês com dias treinados, falhados e de descanso face ao plano ativo, o plano cumprido nos últimos 30 dias e os treinos desta semana.
-- **Treino:** toca num treino desta semana (na Consistência) para ver a duração, as séries e a carga máxima de cada exercício e, com o Apple Health ligado, a FC média, as calorias, o gráfico da frequência cardíaca e o pico de cada exercício.
+- **Treino:** toca num treino desta semana (na Consistência) para ver a duração, as séries e a carga máxima de cada exercício e, com uma fonte de dados ligada, a FC média, as calorias, o gráfico da frequência cardíaca e o pico de cada exercício.
 - **Comparação semanal:** esta semana contra a passada até ao mesmo dia da semana, o volume por dia e os exercícios de hoje contra há uma semana.
 - **Anilhas:** no ecrã do exercício, as anilhas por lado para a carga no ecrã (barra de 20, 15 ou 10 kg; anilhas em lb para quem usa lb).
 
@@ -190,34 +190,55 @@ O agendador corre dentro do backend, uma vez por minuto (`app/notifications/sche
 | `POST /api/notifications/test` | envia uma notificação de teste |
 | `POST`/`DELETE /api/notifications/rest` | agenda/cancela o fim do descanso (`{ends_at}`) |
 
-## Apple Health
+## Fontes de dados
 
-A web não tem acesso ao HealthKit: só apps instaladas no iPhone leem a app Saúde. Por isso a ligação é um **atalho** da app Atalhos, que lê a frequência cardíaca e a energia ativa dos últimos 3 dias e as envia para a API com um código pessoal.
+A frequência cardíaca e as calorias dos treinos vêm do relógio, mas um browser não chega a ele: é o telemóvel que envia os dados, com um código pessoal por fonte. Em **Definições → Dados → Fontes de dados**:
 
-1. Em **Definições → Apple Health**, toca em "Ligar Apple Health". A app mostra o endereço e o cabeçalho `Authorization` a colar no atalho (o código só aparece dessa vez; "Gerar novo código" substitui-o).
+| Fonte | Como chega |
+| --- | --- |
+| **Apple Health** (iPhone) | um **atalho** da app Atalhos lê a frequência cardíaca e a energia ativa dos últimos 3 dias na app Saúde e envia-as |
+| **Health Connect** (Android) | a app [HC Webhook](https://play.google.com/store/apps/details?id=com.hcwebhook.app) (código aberto, não é nossa) lê o Health Connect e envia o que há de novo, de 15 em 15 minutos |
+| **Garmin Connect** | a Garmin só abre a sua API a empresas; a app Garmin Connect escreve na Saúde e no Health Connect, e os dados chegam por aí |
+| **Strava** | em breve |
+
+As duas primeiras podem estar ligadas ao mesmo tempo. Cada treino fica com cada tipo de dado de uma só fonte, a primeira que o enviar, para que um relógio que escreve nas duas apps de saúde não conte as calorias a dobrar.
+
+### Apple Health
+
+1. Em **Fontes de dados → Apple Health**, toca em "Ligar Apple Health". A app mostra o endereço e o cabeçalho `Authorization` a colar no atalho (o código só aparece dessa vez; "Gerar novo código" substitui-o).
 2. No iPhone, cria o atalho **myGymTracker** seguindo os passos no ecrã: duas vezes "Procurar amostras de Saúde" + "Formatar data" (ISO 8601 com hora) e um "Obter conteúdo do URL" (POST, JSON com `hr_t`, `hr_v`, `ae_t`, `ae_v`).
 3. Corre-o uma vez à mão para autorizar a leitura na Saúde e escolher "Permitir sempre" no envio para o endereço.
-4. Depois: "Sincronizar agora" (no ecrã Apple Health, no resumo do treino ou num treino sem dados) abre o atalho; uma automação diária em Atalhos serve de reserva.
+4. Depois: "Sincronizar agora" (no ecrã Apple Health, no resumo do treino ou num treino sem dados; só aparece no iPhone) abre o atalho; uma automação diária em Atalhos serve de reserva.
 
-O que a app guarda:
+### Health Connect
 
-- Só as amostras que caem dentro de um treino: de 5 minutos antes da primeira série até "Terminar treino" (ou 3 minutos depois da última série, no máximo 20). O resto do dia fica no iPhone.
+1. Em **Fontes de dados → Health Connect**, toca em "Ligar Health Connect": a app mostra o endereço e o valor do cabeçalho `Authorization`.
+2. No Android, instala a HC Webhook e segue os passos no ecrã: ativa só Frequência cardíaca e Calorias ativas, ambas com resolução "Completo"; adiciona um webhook com o endereço, em JSON, e o cabeçalho `Authorization`; agenda um intervalo de 15 minutos.
+3. Uma "Sincronização manual" na HC Webhook confirma que está a funcionar.
+
+A HC Webhook envia cada amostra uma só vez. Por isso, o que chegar fora de um treino espera até 3 horas (podes estar a começar um) e é apagado depois; um total diário de calorias é ignorado, porque não diz o que foi gasto no treino.
+
+### O que a app guarda
+
+- Só as amostras que caem dentro de um treino: de 5 minutos antes da primeira série até "Terminar treino" (ou 3 minutos depois da última série, no máximo 20). O resto do dia não fica cá.
 - Reenviar as mesmas amostras não duplica nada (cada corrida do atalho sobrepõe-se à anterior).
-- Desligar a frequência cardíaca ou as calorias apaga o que já foi importado desse tipo; "Desligar Apple Health" revoga o código e apaga tudo o que veio da Saúde. Os treinos ficam.
+- Desligar a frequência cardíaca ou as calorias apaga o que essa fonte já enviou desse tipo; desligar uma fonte revoga o código e apaga tudo o que veio dela. Os treinos ficam.
 
-Limitações: com o iPhone bloqueado a Saúde não deixa ler os dados, por isso uma automação a essa hora pode não enviar nada (a seguinte recupera). A app Atalhos não lê os treinos do Apple Watch, por isso a duração é a do treino registado na app.
+Limitações: com o iPhone bloqueado a Saúde não deixa ler os dados, por isso uma automação a essa hora pode não enviar nada (a seguinte recupera). Nenhuma das pontes envia os treinos do relógio, por isso a duração é a do treino registado na app.
 
 | Endpoint | |
 | --- | --- |
-| `GET /api/health` | ligado ou não, última sincronização, treinos desta semana com dados do relógio |
-| `POST /api/health/connection` | gera o código do atalho (mostrado uma vez); de novo, substitui-o |
-| `DELETE /api/health/connection` | revoga o código e apaga os dados importados |
-| `PATCH /api/health/settings` | `{heart_rate?, calories?}` |
-| `POST /api/health/sync` | o atalho: `Authorization: Bearer <código>`; listas (ou texto com um item por linha) de datas ISO 8601 e valores |
+| `GET /api/health/connections` | cada fonte (ligada ou não, última sincronização, o que guarda) e os treinos desta semana com dados do relógio |
+| `POST /api/health/connections/{fonte}` | gera o código da fonte (`apple_health`, `health_connect`), mostrado uma vez; de novo, substitui-o |
+| `DELETE /api/health/connections/{fonte}` | revoga o código e apaga os dados que a fonte enviou |
+| `PATCH /api/health/connections/{fonte}/settings` | `{heart_rate?, calories?}` |
+| `POST /api/health/sync` | as pontes: `Authorization: Bearer <código>`; o código diz de que fonte é o corpo (as listas do atalho, ou o JSON da HC Webhook) |
+
+`GET /api/health`, `POST`/`DELETE /api/health/connection` e `PATCH /api/health/settings` continuam a responder pelo Apple Health, para apps instaladas que ainda não se atualizaram.
 
 ## Backoffice
 
-Para acompanhar o crescimento da app há uma área de administração em `/admin` (também em **Definições → Administração → Backoffice**). Mostra números e dados de conta, nunca o que cada pessoa treina: os planos, os PDFs, as cargas e os dados do Apple Health não passam por aqui.
+Para acompanhar o crescimento da app há uma área de administração em `/admin` (também em **Definições → Administração → Backoffice**). Mostra números e dados de conta, nunca o que cada pessoa treina: os planos, os PDFs, as cargas e os dados do relógio não passam por aqui.
 
 - **Visão geral**: contas no total, novas e ativas nos últimos 7 e 30 dias (contra o período anterior), treinos registados, o gráfico de crescimento (novas, total ou ativas; por dia, semana ou mês; com tabela), até onde as contas chegam (criaram conta → criaram um plano → registaram um treino → treinaram nos últimos 30 dias) e a utilização (Apple Health, notificações, idiomas).
 - **Contas**: todas as contas, da mais recente para a mais antiga, com procura por nome ou email: data de registo, idioma, número de planos e de treinos, data do último treino.
