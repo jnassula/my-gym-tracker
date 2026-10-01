@@ -140,7 +140,14 @@
       "saved": "Profile saved.",
       "workouts_one": "{{count}} workout",
       "workouts_other": "{{count}} workouts",
-      "password": "Password"
+      "password": "Password",
+      "photoAdd": "Add photo",
+      "photoChange": "Change photo",
+      "photoRemove": "Remove photo",
+      "photoSaved": "Photo saved.",
+      "photoRemoved": "Photo removed.",
+      "photoHint": "JPG, PNG or WebP. It is cropped to a square and only you see it.",
+      "photoUnreadable": "We couldn't read this image. Try a JPG or PNG."
     },
     "timezonePage": {
       "title": "Time zone",

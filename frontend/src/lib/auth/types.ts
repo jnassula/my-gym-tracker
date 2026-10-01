@@ -9,6 +9,8 @@ export type User = {
   unit: 'kg' | 'lb'
   /** "Descanso automático": logging a set starts the rest timer. */
   auto_rest: boolean
+  /** The profile photo's file (its bytes: /api/files/{id}/content); a new photo is a new id. */
+  avatar_file_id: string | null
   created_at: string
   /** May open the backoffice (/admin); the API checks again on every call. */
   is_admin: boolean

@@ -32,6 +32,7 @@ export const user = {
   timezone: 'Europe/Lisbon',
   unit: 'kg',
   auto_rest: true,
+  avatar_file_id: null,
   created_at: '2026-09-28T10:00:00Z',
   is_admin: false,
 } as const

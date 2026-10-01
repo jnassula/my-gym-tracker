@@ -6,7 +6,6 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { EmptyState } from '@/components/app-shell/empty-state'
-import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { buttonVariants } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
 import { Spinner } from '@/components/ui/spinner'
@@ -15,6 +14,7 @@ import { FormAlert } from '@/features/auth/form-parts'
 import { overviewQuery } from '@/features/progress/api'
 import { OverviewStats } from '@/features/progress/overview-stats'
 import type { LastRecord, ProgressOverview } from '@/features/progress/types'
+import { UserAvatar } from '@/features/settings/user-avatar'
 import { dayLogQuery, weekQuery } from '@/features/training/api'
 import { addDays, dayProgress, isDayDone, weekdayOf } from '@/features/training/plan'
 import type { PlanWeek } from '@/features/training/types'
@@ -83,11 +83,7 @@ function Greeting() {
         <h1 className="truncate text-2xl">{t(`home.greeting.${greetingFor(hour)}`, { name: firstName(user.name) })}</h1>
       </div>
       <Link to="/settings/profile" aria-label={t('home.profile')} className="shrink-0 rounded-full">
-        <Avatar className="size-11">
-          <AvatarFallback className="bg-accent text-lg text-accent-foreground">
-            {user.name.charAt(0).toUpperCase()}
-          </AvatarFallback>
-        </Avatar>
+        <UserAvatar user={user} className="size-11" fallbackClassName="text-lg" />
       </Link>
     </header>
   )

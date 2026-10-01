@@ -140,7 +140,14 @@
       "saved": "Perfil guardado.",
       "workouts_one": "{{count}} entreno",
       "workouts_other": "{{count}} entrenos",
-      "password": "Contraseña"
+      "password": "Contraseña",
+      "photoAdd": "Añadir foto",
+      "photoChange": "Cambiar foto",
+      "photoRemove": "Quitar foto",
+      "photoSaved": "Foto guardada.",
+      "photoRemoved": "Foto eliminada.",
+      "photoHint": "JPG, PNG o WebP. Se recorta en un cuadrado y solo tú la ves.",
+      "photoUnreadable": "No pudimos leer esta imagen. Prueba con un JPG o PNG."
     },
     "timezonePage": {
       "title": "Zona horaria",

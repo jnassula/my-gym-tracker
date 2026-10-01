@@ -7,7 +7,6 @@ import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 
 import { Page } from '@/components/app-shell/page'
-import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { Spinner } from '@/components/ui/spinner'
 import { logout } from '@/features/auth/api'
@@ -15,6 +14,7 @@ import { errorKey } from '@/features/auth/errors'
 import { healthQuery } from '@/features/health/api'
 import { useUpdateMe, type UserChanges } from '@/features/settings/api'
 import { LinkRow, Segmented, SettingsGroup, SettingsRow, SwitchRow } from '@/features/settings/rows'
+import { UserAvatar } from '@/features/settings/user-avatar'
 import { plansQuery } from '@/features/workouts/api'
 import { LANGUAGES } from '@/i18n'
 import { useRequiredSession } from '@/lib/auth'
@@ -51,11 +51,7 @@ export function SettingsScreen() {
           aria-label={t('settings.profileLink', { name: user.name })}
           className="flex items-center gap-3.5 rounded-2xl bg-card p-3.5"
         >
-          <Avatar className="size-11">
-            <AvatarFallback className="bg-accent text-lg text-accent-foreground">
-              {user.name.charAt(0).toUpperCase()}
-            </AvatarFallback>
-          </Avatar>
+          <UserAvatar user={user} className="size-11" fallbackClassName="text-lg" />
           <span className="min-w-0 flex-1">
             <span className="block truncate text-[15px] font-medium">{user.name}</span>
             <span className="block truncate text-xs text-muted-foreground">{user.email}</span>

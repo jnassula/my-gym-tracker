@@ -140,7 +140,14 @@
       "saved": "Perfil guardado.",
       "workouts_one": "{{count}} treino",
       "workouts_other": "{{count}} treinos",
-      "password": "Palavra-passe"
+      "password": "Palavra-passe",
+      "photoAdd": "Adicionar foto",
+      "photoChange": "Alterar foto",
+      "photoRemove": "Remover foto",
+      "photoSaved": "Foto guardada.",
+      "photoRemoved": "Foto removida.",
+      "photoHint": "JPG, PNG ou WebP. Fica recortada num quadrado e só tu a vês.",
+      "photoUnreadable": "Não conseguimos ler esta imagem. Tenta um JPG ou PNG."
     },
     "timezonePage": {
       "title": "Fuso horário",
