@@ -13,7 +13,8 @@ import { FormAlert } from '@/features/auth/form-parts'
 import { calendarQuery } from '@/features/progress/api'
 import { formatMonth } from '@/features/progress/format'
 import { useRemoveAvatar, useSetAvatar, useUpdateMe } from '@/features/settings/api'
-import { UnreadableImageError } from '@/features/settings/avatar'
+import { loadPicture, type Picture } from '@/features/settings/avatar'
+import { PhotoEditor } from '@/features/settings/photo-editor'
 import { LinkRow, SettingsGroup } from '@/features/settings/rows'
 import { UserAvatar } from '@/features/settings/user-avatar'
 import { useRequiredSession } from '@/lib/auth'
@@ -101,21 +102,32 @@ export function ProfileScreen() {
   )
 }
 
-/** Add, change or remove the profile photo. The picture is cropped and scaled down before it goes. */
+/** Add, change or remove the profile photo. A chosen picture goes through the editor first. */
 function PhotoActions() {
   const { t } = useTranslation()
   const { user } = useRequiredSession()
   const input = useRef<HTMLInputElement>(null)
   const upload = useSetAvatar()
   const remove = useRemoveAvatar()
+  const [picture, setPicture] = useState<Picture | null>(null)
+  const [unreadable, setUnreadable] = useState(false)
+  const [reading, setReading] = useState(false)
   const hasPhoto = user.avatar_file_id !== null
-  const busy = upload.isPending || remove.isPending
-  const error = upload.error ?? remove.error
+  const busy = reading || upload.isPending || remove.isPending
 
-  const choose = (file: File | undefined) => {
+  const choose = async (file: File | undefined) => {
     if (!file) return
+    upload.reset()
     remove.reset()
-    upload.mutate(file, { onSuccess: () => toast.success(t('settings.profile.photoSaved')) })
+    setUnreadable(false)
+    setReading(true)
+    try {
+      setPicture(await loadPicture(file))
+    } catch {
+      setUnreadable(true)
+    } finally {
+      setReading(false)
+    }
   }
 
   return (
@@ -127,12 +139,12 @@ function PhotoActions() {
           accept="image/*"
           hidden
           onChange={(event) => {
-            choose(event.target.files?.[0])
+            void choose(event.target.files?.[0])
             event.target.value = '' // the same file can be chosen again
           }}
         />
         <Button variant="outline" size="touch" disabled={busy} onClick={() => input.current?.click()}>
-          {upload.isPending && <Spinner />}
+          {reading && <Spinner />}
           {hasPhoto ? t('settings.profile.photoChange') : t('settings.profile.photoAdd')}
         </Button>
         {hasPhoto && (
@@ -142,7 +154,7 @@ function PhotoActions() {
             className="text-destructive"
             disabled={busy}
             onClick={() => {
-              upload.reset()
+              setUnreadable(false)
               remove.mutate(undefined, { onSuccess: () => toast.success(t('settings.profile.photoRemoved')) })
             }}
           >
@@ -152,11 +164,28 @@ function PhotoActions() {
         )}
       </div>
       <p className="text-xs text-muted-foreground">{t('settings.profile.photoHint')}</p>
-      {error && (
-        <FormAlert
-          messageKey={error instanceof UnreadableImageError ? 'settings.profile.photoUnreadable' : errorKey(error)}
-        />
+      {unreadable ? (
+        <FormAlert messageKey="settings.profile.photoUnreadable" />
+      ) : (
+        remove.error && <FormAlert messageKey={errorKey(remove.error)} />
       )}
+      <PhotoEditor
+        picture={picture}
+        saving={upload.isPending}
+        errorKey={upload.error ? errorKey(upload.error) : undefined}
+        onCancel={() => {
+          upload.reset()
+          setPicture(null)
+        }}
+        onSave={(photo) =>
+          upload.mutate(photo, {
+            onSuccess: () => {
+              toast.success(t('settings.profile.photoSaved'))
+              setPicture(null)
+            },
+          })
+        }
+      />
     </div>
   )
 }

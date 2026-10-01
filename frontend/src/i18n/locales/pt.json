@@ -146,8 +146,20 @@
       "photoRemove": "Remover foto",
       "photoSaved": "Foto guardada.",
       "photoRemoved": "Foto removida.",
-      "photoHint": "JPG, PNG ou WebP. Fica recortada num quadrado e só tu a vês.",
-      "photoUnreadable": "Não conseguimos ler esta imagem. Tenta um JPG ou PNG."
+      "photoHint": "JPG, PNG ou WebP. Antes de guardar podes posicionar, ampliar e rodar. Só tu a vês.",
+      "photoUnreadable": "Não conseguimos ler esta imagem. Tenta um JPG ou PNG.",
+      "editor": {
+        "title": "Ajustar foto",
+        "hint": "Arrasta para posicionar. Usa dois dedos ou a barra para ampliar.",
+        "position": "Posição da foto: as setas movem, + e − ampliam",
+        "zoom": "Zoom",
+        "zoomIn": "Ampliar",
+        "zoomOut": "Reduzir",
+        "turnLeft": "Rodar à esquerda",
+        "turnRight": "Rodar à direita",
+        "cancel": "Cancelar",
+        "save": "Guardar foto"
+      }
     },
     "timezonePage": {
       "title": "Fuso horário",

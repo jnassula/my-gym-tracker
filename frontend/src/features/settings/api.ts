@@ -4,8 +4,6 @@ import { applyLanguage } from '@/i18n'
 import { api } from '@/lib/api'
 import { sessionStore, type User } from '@/lib/auth'
 
-import { toAvatar } from './avatar'
-
 export type UserChanges = Partial<Pick<User, 'name' | 'language' | 'timezone' | 'unit' | 'auto_rest'>>
 
 /** Only the fields a request changed: a slower, older response can't undo a newer change. */
@@ -67,12 +65,11 @@ function forgetAvatar(queryClient: QueryClient, fileId: string | null | undefine
   if (url) URL.revokeObjectURL(url)
 }
 
-/** PUT /api/users/me/avatar with the picture cropped and scaled down here (`toAvatar`). */
+/** PUT /api/users/me/avatar with the photo as the editor made it (`toJpeg`). */
 export function useSetAvatar() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: async (file: Blob) => {
-      const photo = await toAvatar(file)
+    mutationFn: async (photo: Blob) => {
       const body = new FormData()
       body.append('file', photo, 'avatar.jpg')
       return { photo, user: await api<User>('/api/users/me/avatar', { method: 'PUT', body }) }

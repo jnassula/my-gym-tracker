@@ -146,8 +146,20 @@
       "photoRemove": "Remove photo",
       "photoSaved": "Photo saved.",
       "photoRemoved": "Photo removed.",
-      "photoHint": "JPG, PNG or WebP. It is cropped to a square and only you see it.",
-      "photoUnreadable": "We couldn't read this image. Try a JPG or PNG."
+      "photoHint": "JPG, PNG or WebP. You can position, zoom and turn it before saving. Only you see it.",
+      "photoUnreadable": "We couldn't read this image. Try a JPG or PNG.",
+      "editor": {
+        "title": "Adjust photo",
+        "hint": "Drag to position. Use two fingers or the slider to zoom.",
+        "position": "Photo position: the arrows move it, + and − zoom",
+        "zoom": "Zoom",
+        "zoomIn": "Zoom in",
+        "zoomOut": "Zoom out",
+        "turnLeft": "Turn left",
+        "turnRight": "Turn right",
+        "cancel": "Cancel",
+        "save": "Save photo"
+      }
     },
     "timezonePage": {
       "title": "Time zone",
