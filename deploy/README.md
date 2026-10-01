@@ -87,7 +87,7 @@ nano .env                                           # VAPID_PRIVATE_KEY=... (gua
 docker compose up -d backend
 ```
 
-Para abrir o backoffice (`/admin`, os números de crescimento), cria a tua conta na app e só depois põe o email em `ADMIN_EMAILS` no `.env` (um endereço da lista deixa de poder ser registado) e corre `docker compose up -d backend`.
+Para abrir o backoffice (`/admin`, os números de crescimento), cria a tua conta na app e torna-a administradora: `docker compose exec backend python -m app.admin.grant tu@example.com` (`--list` mostra quem é, `--revoke` tira).
 
 ## Operação
 

@@ -227,11 +227,19 @@ No menu de cada conta (⋮) em **Contas**:
 - **Inativar**: a sessão termina em todos os dispositivos e a pessoa deixa de poder entrar (no início de sessão vê "Esta conta foi inativada"); o atalho do Apple Health e os lembretes também param. Os dados ficam, e **Reativar** devolve o acesso.
 - **Apagar**: apaga a conta e tudo o que lhe pertence (planos, treinos, PDFs no armazenamento, dados do Apple Health, dispositivos). Não pode ser desfeito, por isso pede o email da conta escrito por extenso. O endereço fica livre para um novo registo.
 
-As contas de administração (as de `ADMIN_EMAILS`, a tua incluída) não têm menu: para fechar uma, tira-a primeiro da lista. Cada ação fica nos logs do backend, com os ids de quem a fez e da conta.
+As contas de administração (a tua incluída) não têm menu: para fechar uma, tira-lhe primeiro a administração (`--revoke`, abaixo). Cada ação fica nos logs do backend, com os ids de quem a fez e da conta.
 
 "Ativa" é uma conta que registou pelo menos um treino no período. Os dias, semanas e meses do gráfico são os do fuso horário de quem administra.
 
-Quem pode entrar são os emails em `ADMIN_EMAILS` (no `.env`, separados por vírgulas; vazio = ninguém). **Cria primeiro a conta na app e só depois junta o email à lista**: como o registo não confirma o email, um endereço da lista deixa de poder ser registado, para ninguém o reclamar antes de ti. Depois de mudar a lista, recria o backend (`docker compose up -d backend`).
+Quem pode entrar são as contas marcadas como administradoras (`users.is_admin`). Isso só se faz no servidor, nunca pela API, por isso criar uma conta com um certo email nunca dá acesso ao backoffice:
+
+```bash
+docker compose exec backend python -m app.admin.grant tu@example.com            # torna a conta administradora
+docker compose exec backend python -m app.admin.grant tu@example.com --revoke   # volta a ser uma conta normal
+docker compose exec backend python -m app.admin.grant --list                    # quem é administrador
+```
+
+A conta tem de existir (regista-te primeiro na app, como qualquer pessoa) e o efeito é imediato, sem novo início de sessão. Quem atualiza de uma versão que usava `ADMIN_EMAILS` não precisa de fazer nada: a migração torna administradoras as contas dessa lista, uma única vez, e a variável deixa de ser lida.
 
 | Endpoint | |
 | --- | --- |
@@ -241,7 +249,7 @@ Quem pode entrar são os emails em `ADMIN_EMAILS` (no `.env`, separados por vír
 | `PATCH /api/admin/users/{id}` | `{active}`: inativa ou reativa a conta |
 | `DELETE /api/admin/users/{id}` | apaga a conta e os seus dados |
 
-Quem não está na lista recebe `403 forbidden`; `GET /api/users/me` diz `is_admin`.
+Quem não é administrador recebe `403 forbidden`; `GET /api/users/me` diz `is_admin`.
 
 ## Testar no telemóvel (ngrok)
 
