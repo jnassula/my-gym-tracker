@@ -129,6 +129,7 @@ Uma sessão é um dia do plano treinado numa data (a data local do utilizador): 
 - **Consistência:** o mês com dias treinados, falhados e de descanso face ao plano ativo, o plano cumprido nos últimos 30 dias e os treinos desta semana.
 - **Treino:** toca num treino desta semana (na Consistência) para ver a duração, as séries e a carga máxima de cada exercício e, com um dispositivo ligado, a FC média, as calorias, o gráfico da frequência cardíaca e o pico de cada exercício.
 - **Comparação semanal:** esta semana contra a passada até ao mesmo dia da semana, o volume por dia e os exercícios de hoje contra há uma semana.
+- **Peso corporal:** ver abaixo.
 - **Anilhas:** no ecrã do exercício, as anilhas por lado para a carga no ecrã (barra de 20, 15 ou 10 kg; anilhas em lb para quem usa lb).
 
 Os números de progresso ignoram as séries de aquecimento e seguem cada exercício de plano para plano (mesmo nome e grupo muscular). Um recorde é uma sessão mais pesada do que qualquer data anterior; a primeira vez não conta.
@@ -141,9 +142,24 @@ Os números de progresso ignoram as séries de aquecimento e seguem cada exercí
 | `GET /api/progress/weeks` | esta semana contra a passada |
 | `GET /api/progress/sessions/{id}` | um treino, com os dados do Apple Watch quando os há |
 
+## Peso corporal e balança
+
+Em **Progresso → Peso corporal** (também em Dispositivos conectados → Balança inteligente):
+
+- **Pesar agora** lê uma **Xiaomi Mi Body Composition Scale** (1 ou 2) por Bluetooth, no browser: escolhe a balança, sobe descalço e a app acompanha o peso até estabilizar, espera uns segundos pela impedância e guarda a leitura. Precisa do Web Bluetooth, que existe no Chrome e no Edge (Android e computador) e em nenhum browser do iPhone. A balança só fala com uma app de cada vez: fecha a Zepp Life antes.
+- **Adicionar manualmente** aceita o peso (na unidade escolhida; a API recebe sempre kg), o dia e, se a tua balança a mostrar, a gordura corporal.
+- A **composição corporal** (gordura, músculo, água, massa óssea, gordura visceral, metabolismo basal) é calculada a partir do peso e da impedância que a balança mede, mais a altura, a idade e o sexo do **Perfil** (opcionais). Guarda-se a leitura, não o resultado: corrigir a altura corrige todas as pesagens. São as fórmulas da app Mi Fit, portadas de [lolouk44/xiaomi_mi_scale](https://github.com/lolouk44/xiaomi_mi_scale) (MIT), e são estimativas: servem para seguir a tendência.
+- O gráfico mostra o peso ou a gordura corporal em 4 semanas, 3 meses (um ponto por dia) ou 1 ano (a média de cada semana), com a lista das pesagens por baixo, onde se apaga uma.
+
+| Endpoint | |
+| --- | --- |
+| `GET /api/body?range=4w\|3m\|1y` | a última pesagem, os pontos do gráfico e as pesagens do período |
+| `POST /api/body/measurements` | `{weight, day?, body_fat_pct?}` escrita à mão, ou `{source: "scale", weight, impedance?}` lida da balança |
+| `DELETE /api/body/measurements/{id}` | apaga uma pesagem |
+
 ## Definições
 
-- **Perfil** (nome), **idioma** (pt/en/es), **unidades** (kg/lb), **tema escuro**, **descanso automático** (registar uma série inicia o descanso) e **fuso horário** (pesquisa, ou o do dispositivo). As alterações aplicam-se logo e gravam-se em segundo plano.
+- **Perfil** (nome, e os dados corporais opcionais: altura, data de nascimento e sexo), **idioma** (pt/en/es), **unidades** (kg/lb), **tema escuro**, **descanso automático** (registar uma série inicia o descanso) e **fuso horário** (pesquisa, ou o do dispositivo). As alterações aplicam-se logo e gravam-se em segundo plano.
 - **Foto de perfil** (Definições → Perfil): adicionar, alterar ou remover. Ao escolher uma imagem abre-se o editor **Ajustar foto**: arrastar para posicionar, ampliar até 4× (dois dedos, a barra, a roda do rato ou os botões) e rodar em quartos de volta, com o recorte redondo à vista; no teclado, as setas movem e `+`/`−` ampliam. Ao guardar, o browser envia só essa parte, como JPEG até 512 px. O servidor não confia nisso: descodifica o que recebe (com o Pillow), endireita, recorta, reduz e grava um JPEG novo sem metadados, por isso os dados da câmara (como o local onde foi tirada) nunca ficam guardados, venha a foto da app ou de um pedido direto à API. Fica no armazenamento de objetos e só a própria pessoa a vê; aparece no Início, nas Definições e no Perfil. Sem foto, mostra-se a inicial do nome.
 - Datas e números seguem o idioma: pt → pt-PT, en → en-GB, es → es-ES (`intlLocale()` em `src/i18n`).
 - **PDFs importados**: renomear o plano, torná-lo ativo, abrir o PDF original e apagar. Apagar esconde o plano e apaga o PDF do armazenamento; as cargas registadas continuam no histórico e no progresso.
@@ -151,7 +167,7 @@ Os números de progresso ignoram as séries de aquecimento e seguem cada exercí
 
 | Endpoint | |
 | --- | --- |
-| `PATCH /api/users/me` | `{name?, language?, timezone?, unit?, auto_rest?}` |
+| `PATCH /api/users/me` | `{name?, language?, timezone?, unit?, auto_rest?, height_cm?, birth_date?, sex?}` (os três últimos aceitam `null`) |
 | `PATCH /api/workouts/{id}` | `{name?, is_active?}` |
 | `DELETE /api/workouts/{id}` | esconde o plano e apaga o PDF; o histórico fica |
 | `PUT /api/users/me/avatar` | a foto (multipart `file`: JPEG, PNG ou WebP, até 1 MB e 16 megapíxeis); fica guardada como JPEG quadrado até 512 px e substitui a anterior |
@@ -343,7 +359,7 @@ Revê sempre o ficheiro gerado em `backend/alembic/versions/`. O teste `test_mig
 backend/
   app/
     core/           config, sessão de BD, formato de erros, healthcheck, email, rate limit
-    auth/ users/ workouts/ exercises/ logs/ files/ progress/ notifications/ health/
+    auth/ users/ workouts/ exercises/ logs/ files/ progress/ notifications/ health/ body/
                     um domínio por pasta: router.py, schemas.py, models.py, service.py
     models.py       regista todos os modelos (Alembic e testes)
     main.py         app FastAPI; os routers dos domínios ficam em /api
@@ -352,7 +368,7 @@ backend/
 frontend/
   src/
     routes/         rotas (TanStack Router, file-based); _auth = só visitantes, _app = autenticado
-    features/       código por funcionalidade (auth, workouts, training, progress, settings, notifications, health)
+    features/       código por funcionalidade (auth, workouts, training, progress, settings, notifications, health, body)
     sw/             service worker (cache da PWA e Web Push)
     components/ui/  componentes shadcn (gerados pela CLI; ajustes do design notados em CLAUDE.md)
     components/     componentes partilhados (shell da app, logótipo)
