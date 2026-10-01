@@ -20,7 +20,7 @@ ENV VITE_APP_VERSION=${APP_VERSION}
 RUN npm run build
 
 # ---- prod: nginx serves the build and proxies /api to the backend ----
-FROM nginx:1.29-alpine AS prod
+FROM nginx:1.31-alpine AS prod
 # deploy.sh prunes old releases by this label, and nothing else on the server.
 LABEL mygymtracker.image=frontend
 COPY nginx/default.conf /etc/nginx/conf.d/default.conf
