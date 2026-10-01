@@ -13,9 +13,25 @@ O caminho de um commit até produção:
 
 1. **Push** para qualquer ramo ou pull request: o workflow **CI/CD** corre ruff, mypy, pytest, oxlint, tsc, Vitest e o build. Depois constrói as duas imagens de produção, arranca a stack completa num runner (Caddy em `localhost`) e verifica o health, os headers, um registo, o redirect para HTTPS e um backup (`smoke-test.sh`).
 2. **Push para o `main`**: as imagens são publicadas no GHCR (`ghcr.io/jnassula/my-gym-tracker/{backend,frontend}:<sha>`), e o workflow **Deploy** copia esta pasta para o servidor por SSH e corre `deploy.sh <sha>` lá.
-3. **`deploy.sh`** valida o `.env`, descarrega as imagens, faz um dump da base de dados (a versão nova pode migrá-la), reinicia o que mudou e espera que tudo fique saudável. Se a versão nova não arrancar, repõe a anterior sozinho. No fim, o workflow confirma que `https://<domínio>/health` responde com o commit novo.
+3. **`deploy.sh`** valida o `.env`, descarrega as imagens, faz um dump da base de dados (a versão nova pode migrá-la), reinicia o que mudou e espera que tudo fique saudável. Se a versão nova não arrancar, repõe a anterior sozinho. No fim, o workflow confirma que `https://<domínio>/health` responde com o commit novo e cria a tag da versão (ver **Versões**).
 
 Enquanto a variável `DEPLOY_HOST` não existir no GitHub, o passo de deploy é saltado e o resto do CI corre normalmente.
+
+## Versões
+
+Cada deploy tem a sua versão, e ninguém a escreve à mão: o CI calcula-a a partir dos commits desde a última versão publicada (`version.sh`), pelo tipo de cada commit (Conventional Commits).
+
+| Desde a última versão há… | A versão sobe | Exemplo |
+| --- | --- | --- |
+| um commit com `!` (`feat!:`, `fix(api)!:`) ou uma linha `BREAKING CHANGE:` | o primeiro número | `1.4.2` → `2.0.0` |
+| um `feat:` | o do meio | `1.4.2` → `1.5.0` |
+| só `fix:`, `docs:`, `chore:`, `refactor:`… | o último | `1.4.2` → `1.4.3` |
+
+- Um deploy é um passo, por muitos commits que leve. O primeiro deploy, sem nenhuma versão anterior, é a `1.0.0`.
+- A versão entra nas duas imagens quando são construídas. Vê-se em `GET /health` (`version`), no rodapé das **Definições** da app e na página servida (`<meta name="app-version">`); o `smoke-test.sh` confirma as duas.
+- As versões publicadas são as tags `vX.Y.Z` do repositório, cada uma com a sua *release* no GitHub. A tag só é criada depois de o deploy ficar saudável: um deploy que falha não gasta um número.
+- Um rollback volta a mostrar a versão dessa altura e não cria nenhuma tag.
+- Para saber a próxima versão antes de enviar: `git fetch --tags && sh deploy/version.sh`. Para começar noutro número (por exemplo `0.9.0`), cria essa tag à mão no commit que já está em produção.
 
 ## Preparar o servidor (uma vez)
 

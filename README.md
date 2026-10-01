@@ -311,7 +311,8 @@ A produção é um servidor com Docker: o Caddy (HTTPS com Let's Encrypt) à fre
 - **CI/CD** (`.github/workflows/ci.yml`), a cada push e pull request: ruff, mypy e pytest (com Postgres); oxlint, tsc, Vitest e o build; depois as imagens de produção são construídas e a stack completa arranca no runner para um smoke test. No `main`, as imagens vão para o GHCR, marcadas com o commit, e são publicadas no servidor (`deploy.yml`). Se a versão nova não ficar saudável, a anterior volta sozinha.
 - **Deploy** à mão ou rollback: Actions → Deploy → Run workflow, com o SHA do commit.
 - **CodeQL** analisa o Python, o TypeScript e os workflows. O **Dependabot** abre PRs semanais (uv, npm, Docker, Compose, Actions), agrupados por app.
-- `GET /health` diz o commit que está a correr (`release`).
+- **Versão**: cada deploy recebe a seguinte, calculada pelo CI a partir dos commits desde a última (`feat` sobe o número do meio, `!` o primeiro, o resto o último; `deploy/version.sh`). Aparece no rodapé das Definições e fica como tag `vX.Y.Z` e *release* no GitHub quando o deploy passa.
+- `GET /health` diz a versão (`version`) e o commit (`release`) que estão a correr.
 - Com `ENVIRONMENT=production`, o backend recusa arrancar com os valores de exemplo do `.env.example`, sem `COOKIE_SECURE` ou sem `https://` no `FRONTEND_URL`.
 
 ## Testes e linters
