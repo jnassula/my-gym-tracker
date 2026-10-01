@@ -103,7 +103,7 @@ export function SettingsScreen() {
               (connectedCount(health.data) > 0 ? (
                 <span className="flex items-center gap-1.5">
                   <span aria-hidden className="size-1.5 rounded-full bg-primary" />
-                  {t('sources.connected', { count: connectedCount(health.data) })}
+                  {connectedCount(health.data)}
                 </span>
               ) : (
                 t('sources.none')

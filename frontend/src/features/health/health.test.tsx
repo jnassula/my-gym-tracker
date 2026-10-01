@@ -190,7 +190,7 @@ describe('SourcesScreen', () => {
     serve({ 'GET /api/workouts': () => json([]), [SOURCES]: () => json(on('apple_health', 'health_connect')) })
     renderWithRouter(<SettingsScreen />)
 
-    expect(await screen.findByRole('link', { name: /Fontes de dados.*2 ligadas/ })).toHaveAttribute(
+    expect(await screen.findByRole('link', { name: /Dispositivos conectados.*2/ })).toHaveAttribute(
       'href',
       '/settings/sources',
     )
@@ -277,7 +277,7 @@ describe('SessionScreen', () => {
     })
     renderWithRouter(<SessionScreen sessionId="session-1" />)
 
-    expect(await screen.findByRole('link', { name: 'Ligar uma fonte de dados' })).toHaveAttribute(
+    expect(await screen.findByRole('link', { name: 'Ligar um dispositivo' })).toHaveAttribute(
       'href',
       '/settings/sources',
     )

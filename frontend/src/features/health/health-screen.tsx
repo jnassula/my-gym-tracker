@@ -168,7 +168,7 @@ function Connected({ sources, connection, onNewToken, busy }: ConnectedProps) {
               {confirm === 'token' ? t('health.newTokenTitle') : t('health.disconnectTitle', { name })}
             </AlertDialogTitle>
             <AlertDialogDescription>
-              {confirm === 'token' ? t('health.newTokenBody') : t('health.disconnectBody')}
+              {confirm === 'token' ? t('health.newTokenBody') : t('health.disconnectBody', { name })}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="grid grid-cols-2 gap-2">
