@@ -1,10 +1,12 @@
-"""The profile photo: stored like any upload, read back only by its owner."""
+"""The profile photo: kept as a small square JPEG, read back only by its owner."""
 
+import io
 import uuid
 from typing import Any
 
 import pytest
 from httpx import AsyncClient, Response
+from PIL import Image
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -13,9 +15,14 @@ from app.files.models import StoredFile
 from tests.conftest import MemoryStorage
 from tests.helpers import signup
 
-JPEG = b"\xff\xd8\xff\xe0" + b"photo" * 20
-PNG = b"\x89PNG\r\n\x1a\n" + b"photo" * 20
-WEBP = b"RIFF\x00\x00\x00\x00WEBPVP8 " + b"photo" * 20
+
+def picture(fmt: str = "JPEG", size: tuple[int, int] = (800, 600)) -> bytes:
+    out = io.BytesIO()
+    Image.new("RGB", size, (30, 160, 60)).save(out, format=fmt)
+    return out.getvalue()
+
+
+JPEG, PNG, WEBP = picture("JPEG"), picture("PNG"), picture("WEBP")
 
 
 async def upload(
@@ -40,12 +47,9 @@ async def test_a_new_account_has_no_photo(client: AsyncClient) -> None:
     assert (await client.get("/api/users/me", headers=headers)).json()["avatar_file_id"] is None
 
 
-@pytest.mark.parametrize(
-    ("data", "content_type", "extension"),
-    [(JPEG, "image/jpeg", "jpg"), (PNG, "image/png", "png"), (WEBP, "image/webp", "webp")],
-)
-async def test_the_photo_is_stored_and_read_back(
-    client: AsyncClient, storage: MemoryStorage, data: bytes, content_type: str, extension: str
+@pytest.mark.parametrize("data", [JPEG, PNG, WEBP], ids=["jpeg", "png", "webp"])
+async def test_the_photo_is_kept_as_a_square_jpeg_and_read_back(
+    client: AsyncClient, storage: MemoryStorage, data: bytes
 ) -> None:
     headers = await signup(client)
 
@@ -58,11 +62,15 @@ async def test_the_photo_is_stored_and_read_back(
     assert me["avatar_file_id"] == file_id
     [(key, (stored, stored_type))] = storage.objects.items()
     assert key == f"users/{me['id']}/avatar/{file_id}"
-    assert (stored, stored_type) == (data, content_type)
+    # Not the upload as it came: the server's own square JPEG of it (800 x 600 has a 600 side,
+    # scaled down to 512).
+    kept = Image.open(io.BytesIO(stored))
+    assert (stored_type, kept.format, kept.size) == ("image/jpeg", "JPEG", (512, 512))
+    assert stored != data
     content = await client.get(f"/api/files/{file_id}/content", headers=headers)
-    assert (content.status_code, content.content) == (200, data)
-    assert content.headers["content-type"] == content_type
-    assert f'filename="avatar.{extension}"' in content.headers["content-disposition"]
+    assert (content.status_code, content.content) == (200, stored)
+    assert content.headers["content-type"] == "image/jpeg"
+    assert 'filename="avatar.jpg"' in content.headers["content-disposition"]
 
 
 async def test_nobody_else_reads_the_photo(client: AsyncClient) -> None:
@@ -84,7 +92,7 @@ async def test_a_new_photo_replaces_the_old_one(
     second = (await upload(client, headers, PNG)).json()["avatar_file_id"]
 
     assert second != first  # a new id, so the app never shows a cached old photo
-    assert [data for data, _ in storage.objects.values()] == [PNG]
+    assert [key.rsplit("/", 1)[1] for key in storage.objects] == [second]
     assert await rows(db_session) == 1
     assert (await client.get(f"/api/files/{first}/content", headers=headers)).status_code == 404
 
@@ -118,7 +126,14 @@ async def test_deleting_the_file_itself_leaves_the_account_without_photo(
 
 @pytest.mark.parametrize(
     "data",
-    [b"%PDF-1.7 not a picture", b"<html><script>alert(1)</script>", b"GIF89a" + b"x" * 40, b""],
+    [
+        b"%PDF-1.7 not a picture",
+        b"<html><script>alert(1)</script>",
+        b"\xff\xd8\xff\xe0 a JPEG's first bytes and nothing behind them",
+        picture("GIF"),  # a real image, of a kind that isn't accepted
+        b"",
+    ],
+    ids=["pdf", "html", "fake-jpeg", "gif", "empty"],
 )
 async def test_only_images_are_accepted(
     client: AsyncClient, storage: MemoryStorage, data: bytes

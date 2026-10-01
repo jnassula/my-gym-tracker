@@ -1,5 +1,6 @@
 """Business logic for the users domain. Routers only map HTTP to these functions."""
 
+import asyncio
 import uuid
 
 from fastapi import UploadFile
@@ -8,11 +9,14 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.storage import Storage
 from app.files import service as files
+from app.files.errors import UnsupportedFileTypeError
 from app.files.models import FileKind
+from app.users import avatar
 from app.users.models import User
 from app.users.schemas import UserUpdate
 
-# The app sends a 512 px JPEG (some tens of KB); the cap only stops abuse.
+# The app sends a 512 px JPEG (some tens of KB). The cap bounds what is read into memory and
+# handed to the decoder.
 MAX_AVATAR_BYTES = 1024 * 1024
 
 
@@ -34,18 +38,22 @@ async def update_user(session: AsyncSession, user: User, data: UserUpdate) -> Us
 async def set_avatar(
     session: AsyncSession, storage: Storage, user: User, upload: UploadFile
 ) -> User:
-    """Store the photo and drop the one it replaces."""
+    """Store the photo, as the square JPEG the app keeps, and drop the one it replaces."""
     data = await files.read_upload(upload, max_bytes=MAX_AVATAR_BYTES)
-    content_type, extension = files.image_type(data)
+    try:
+        # Decoding and scaling are CPU-bound: keep them off the event loop.
+        photo = await asyncio.to_thread(avatar.normalise, data)
+    except avatar.NotAnImageError as error:
+        raise UnsupportedFileTypeError("Only JPEG, PNG and WebP images are accepted") from error
     previous = user.avatar_file_id
     stored = await files.store_file(
         session,
         storage,
         user_id=user.id,
         kind=FileKind.AVATAR,
-        filename=f"avatar.{extension}",
-        content_type=content_type,
-        data=data,
+        filename="avatar.jpg",
+        content_type="image/jpeg",
+        data=photo,
     )
     user.avatar_file_id = stored.id
     if previous is not None:

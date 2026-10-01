@@ -35,7 +35,8 @@ async def set_avatar(
     storage: StorageDep,
     file: Annotated[UploadFile, File(description="Profile photo: JPEG, PNG or WebP, up to 1 MB")],
 ) -> UserRead:
-    """Set or replace the profile photo. Only its owner can read it back."""
+    """Set or replace the profile photo: kept as a square JPEG of at most 512 px, without
+    metadata. Only its owner can read it back."""
     return UserRead.model_validate(await service.set_avatar(session, storage, user, file))
 
 
