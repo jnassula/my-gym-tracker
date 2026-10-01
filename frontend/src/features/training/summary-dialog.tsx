@@ -12,8 +12,10 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { healthQuery, shortcutUrl } from '@/features/health/api'
+import { syncAction } from '@/features/health/sources'
 import { sessionDetailQuery } from '@/features/progress/api'
 import { clock } from '@/features/workouts/format'
+import { isIos } from '@/lib/platform'
 
 import type { SessionSummary } from './types'
 import { formatVolume, formatWeight, type Unit } from './weight'
@@ -27,16 +29,28 @@ function Tile({ value, label }: { value: string; label: string }) {
   )
 }
 
-/** "FC média" once the shortcut synced the watch's data; until then, a way to sync. Coming back
- * from the Shortcuts app refetches (window focus), so the tile fills in by itself. */
+/** "FC média" once a data source synced the watch's data. Until then, on the iPhone that has
+ * the shortcut, a way to run it: coming back from the Shortcuts app refetches (window focus), so
+ * the tile fills in by itself. Elsewhere the data comes with the source's next sync. */
 function HeartRateTile({ sessionId }: { sessionId: string }) {
   const { t } = useTranslation()
   const health = useQuery(healthQuery())
-  const connected = health.data?.connected === true
-  const detail = useQuery({ ...sessionDetailQuery(sessionId), enabled: connected })
-  if (!connected) return null
+  const action = syncAction(health.data, isIos())
+  const detail = useQuery({ ...sessionDetailQuery(sessionId), enabled: action !== null })
+  if (action === null) return null
   const average = detail.data?.health?.avg_heart_rate
   if (average) return <Tile value={t('health.session.bpm', { value: average })} label={t('training.summary.avgHr')} />
+  if (action === 'wait') {
+    return (
+      <div className="grid gap-0.5 rounded-xl bg-background px-3 py-3">
+        <span className="flex items-center gap-1.5 text-[15px] leading-8 text-muted-foreground">
+          <WatchIcon aria-hidden weight="bold" className="size-4" />
+          {t('health.pending')}
+        </span>
+        <span className="text-xs text-muted-foreground">{t('training.summary.avgHr')}</span>
+      </div>
+    )
+  }
   return (
     <a
       href={shortcutUrl()}

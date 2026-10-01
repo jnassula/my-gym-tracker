@@ -26,7 +26,7 @@ export type AdminOverview = {
   workouts_total: number
   workouts_7d: Change
   funnel: Funnel
-  adoption: { apple_health: number; notifications: number }
+  adoption: { apple_health: number; health_connect: number; notifications: number }
   languages: Array<{ language: Language; users: number }>
 }
 

@@ -1,12 +1,10 @@
 /** This browser's side of Web Push: support, permission and the device's subscription. */
 
+import { isIos } from '@/lib/platform'
+
 const DEVICE_KEY = 'mygymtracker-push-endpoint'
 
 export type PushSupport = 'supported' | 'unsupported' | 'ios-install' | 'denied'
-
-function isIos(): boolean {
-  return /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
-}
 
 function isInstalled(): boolean {
   return (

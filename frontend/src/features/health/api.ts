@@ -3,17 +3,7 @@ import { queryOptions, useMutation, useQueryClient } from '@tanstack/react-query
 import { progressKeys } from '@/features/progress/api'
 import { api } from '@/lib/api'
 
-/** What the app keeps from the Health app ("O que lemos do relógio"). */
-export type HealthSettings = { heart_rate: boolean; calories: boolean }
-
-export type HealthStatus = {
-  connected: boolean
-  last_sync_at: string | null
-  settings: HealthSettings
-  /** This week (Monday to Sunday): sessions, and those with watch data. */
-  week_sessions: number
-  week_synced: number
-}
+import type { HealthSettings, HealthSources, Provider } from './sources'
 
 /** The name the user gives the shortcut; "Sincronizar agora" runs it by this name. */
 export const SHORTCUT_NAME = 'myGymTracker'
@@ -21,28 +11,33 @@ export const SHORTCUT_NAME = 'myGymTracker'
 /** Opens the Shortcuts app and runs the shortcut (iPhone only). */
 export const shortcutUrl = () => `shortcuts://run-shortcut?name=${encodeURIComponent(SHORTCUT_NAME)}`
 
-/** Where the shortcut posts the samples: this app's own address. */
+/** Where a source's bridge posts the samples: this app's own address. */
 export const syncUrl = () => `${window.location.origin}/api/health/sync`
+
+/** ngrok's free domains put a warning page in front of the API unless a header tells them not to. */
+export const viaNgrok = () => /\.ngrok(-free)?\.(app|dev|io)$/.test(window.location.hostname)
 
 export const healthKeys = { all: ['health'] as const }
 
 export const healthQuery = () =>
-  queryOptions({ queryKey: healthKeys.all, queryFn: () => api<HealthStatus>('/api/health') })
+  queryOptions({ queryKey: healthKeys.all, queryFn: () => api<HealthSources>('/api/health/connections') })
 
-/** A new token for the shortcut (shown once); connecting again replaces it. */
-export function useConnectHealth() {
+const connectionUrl = (provider: Provider) => `/api/health/connections/${provider}`
+
+/** A new token for the source's bridge (shown once); connecting again replaces it. */
+export function useConnectHealth(provider: Provider) {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: () => api<{ token: string }>('/api/health/connection', { method: 'POST' }),
+    mutationFn: () => api<{ token: string }>(connectionUrl(provider), { method: 'POST' }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: healthKeys.all }),
   })
 }
 
-/** Revokes the token and deletes everything imported. */
-export function useDisconnectHealth() {
+/** Revokes the token and deletes everything the source sent. */
+export function useDisconnectHealth(provider: Provider) {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: () => api<void>('/api/health/connection', { method: 'DELETE' }),
+    mutationFn: () => api<void>(connectionUrl(provider), { method: 'DELETE' }),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: healthKeys.all })
       await queryClient.invalidateQueries({ queryKey: progressKeys.all })
@@ -50,22 +45,26 @@ export function useDisconnectHealth() {
   })
 }
 
+const withSettings = (sources: HealthSources, provider: Provider, settings: Partial<HealthSettings>): HealthSources => ({
+  ...sources,
+  connections: sources.connections.map((connection) =>
+    connection.provider === provider
+      ? { ...connection, settings: { ...connection.settings, ...settings } }
+      : connection,
+  ),
+})
+
 /** Switches respond at once and go back if the server refuses. Only the changed fields are taken
  * from the reply, so a slow reply can't undo a newer switch. */
-export function useUpdateHealthSettings() {
+export function useUpdateHealthSettings(provider: Provider) {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (changes: Partial<HealthSettings>) =>
-      api<HealthSettings>('/api/health/settings', { method: 'PATCH', body: changes }),
+      api<HealthSettings>(`${connectionUrl(provider)}/settings`, { method: 'PATCH', body: changes }),
     onMutate: async (changes) => {
       await queryClient.cancelQueries({ queryKey: healthKeys.all })
-      const previous = queryClient.getQueryData<HealthStatus>(healthKeys.all)
-      if (previous) {
-        queryClient.setQueryData<HealthStatus>(healthKeys.all, {
-          ...previous,
-          settings: { ...previous.settings, ...changes },
-        })
-      }
+      const previous = queryClient.getQueryData<HealthSources>(healthKeys.all)
+      if (previous) queryClient.setQueryData<HealthSources>(healthKeys.all, withSettings(previous, provider, changes))
       return { previous }
     },
     onError: (_error, _changes, context) => {
@@ -75,10 +74,7 @@ export function useUpdateHealthSettings() {
       const changed = Object.fromEntries(
         Object.keys(changes).map((key) => [key, settings[key as keyof HealthSettings]]),
       )
-      queryClient.setQueryData<HealthStatus>(
-        healthKeys.all,
-        (data) => data && { ...data, settings: { ...data.settings, ...changed } },
-      )
+      queryClient.setQueryData<HealthSources>(healthKeys.all, (data) => data && withSettings(data, provider, changed))
       // Turning a kind of data off deletes it: the sessions' figures change.
       await queryClient.invalidateQueries({ queryKey: progressKeys.all })
     },

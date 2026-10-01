@@ -18,11 +18,21 @@ export function SettingsGroup({ title, children }: { title: string; children: Re
 
 const ROW = 'flex min-h-13 items-center gap-3 px-4 py-1.5 text-[15px]'
 
+/** The row's label, with a line of small print under it when there is one. */
+function RowLabel({ label, hint }: { label: string; hint?: string }) {
+  return (
+    <span className="grid flex-1 gap-0.5">
+      {label}
+      {hint && <span className="text-xs text-muted-foreground">{hint}</span>}
+    </span>
+  )
+}
+
 /** A label with a control on the right. */
-export function SettingsRow({ label, children }: { label: string; children: ReactNode }) {
+export function SettingsRow({ label, hint, children }: { label: string; hint?: string; children: ReactNode }) {
   return (
     <div className={ROW}>
-      <span className="flex-1">{label}</span>
+      <RowLabel label={label} hint={hint} />
       {children}
     </div>
   )
@@ -38,19 +48,18 @@ export function SwitchRow(props: {
   const id = useId()
   return (
     <label htmlFor={id} className={`${ROW} cursor-pointer`}>
-      <span className="grid flex-1 gap-0.5">
-        {props.label}
-        {props.hint && <span className="text-xs text-muted-foreground">{props.hint}</span>}
-      </span>
+      <RowLabel label={props.label} hint={props.hint} />
       <Switch id={id} checked={props.checked} onCheckedChange={props.onCheckedChange} />
     </label>
   )
 }
 
-function RowAnchor({ label, value, ...props }: ComponentProps<'a'> & { label: string; value?: ReactNode }) {
+type RowAnchorProps = ComponentProps<'a'> & { label: string; hint?: string; value?: ReactNode }
+
+function RowAnchor({ label, hint, value, ...props }: RowAnchorProps) {
   return (
     <a className={`${ROW} hover:bg-accent/50`} {...props}>
-      <span className="flex-1">{label}</span>
+      <RowLabel label={label} hint={hint} />
       {value !== undefined && <span className="text-[13px] text-muted-foreground">{value}</span>}
       <CaretRightIcon aria-hidden className="size-4 text-muted-foreground" />
     </a>

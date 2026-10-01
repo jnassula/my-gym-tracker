@@ -11,11 +11,13 @@ import { Spinner } from '@/components/ui/spinner'
 import { errorKey } from '@/features/auth/errors'
 import { FormAlert } from '@/features/auth/form-parts'
 import { healthQuery, shortcutUrl } from '@/features/health/api'
+import { syncAction } from '@/features/health/sources'
 import { weekdayOf } from '@/features/training/plan'
 import { formatWeight } from '@/features/training/weight'
 import { useWorkoutLabels } from '@/features/workouts/labels'
 import type { Weekday } from '@/features/workouts/types'
 import { useRequiredSession } from '@/lib/auth'
+import { isIos } from '@/lib/platform'
 import { cn } from '@/lib/utils'
 import { formatDayMonth, formatTime } from '@/lib/format'
 
@@ -26,7 +28,7 @@ import type { SessionDetail } from './types'
 
 const HEADING = 'text-[0.6875rem] font-medium tracking-widest text-primary uppercase'
 
-/** One session: duration, heart rate and calories from the Apple Watch (once synced), and each
+/** One session: duration, heart rate and calories from the watch (once synced), and each
  * exercise with its sets and heart-rate peak. */
 export function SessionScreen({ sessionId }: { sessionId: string }) {
   const detail = useQuery(sessionDetailQuery(sessionId))
@@ -146,23 +148,29 @@ function Tile({ label, value }: { label: string; value: string }) {
   )
 }
 
-/** No samples for this session yet: sync now (connected) or connect Apple Health. */
+/** No samples for this session yet: run the shortcut, wait for a source's next sync, or connect
+ * a data source. */
 function NoWatchData() {
   const { t } = useTranslation()
   const health = useQuery(healthQuery())
-  const connected = health.data?.connected
+  const action = syncAction(health.data, isIos())
   return (
     <Card className="grid gap-3 p-4 text-[13px]">
       <p className="text-muted-foreground">
-        {connected ? t('health.session.noDataConnected') : t('health.session.noData')}
+        {action === 'shortcut'
+          ? t('health.session.noDataShortcut')
+          : action === 'wait'
+            ? t('health.session.noDataWaiting')
+            : t('health.session.noData')}
       </p>
-      {connected ? (
+      {action === 'shortcut' && (
         <a href={shortcutUrl()} className={cn(buttonVariants({ variant: 'outline-primary', size: 'touch' }))}>
           {t('health.syncNow')}
         </a>
-      ) : (
-        <Link to="/settings/health" className={cn(buttonVariants({ variant: 'outline-primary', size: 'touch' }))}>
-          {t('health.connect')}
+      )}
+      {action === null && (
+        <Link to="/settings/sources" className={cn(buttonVariants({ variant: 'outline-primary', size: 'touch' }))}>
+          {t('sources.connect')}
         </Link>
       )}
     </Card>

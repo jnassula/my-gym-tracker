@@ -12,6 +12,7 @@ import { Spinner } from '@/components/ui/spinner'
 import { logout } from '@/features/auth/api'
 import { errorKey } from '@/features/auth/errors'
 import { healthQuery } from '@/features/health/api'
+import { connectedCount } from '@/features/health/sources'
 import { useUpdateMe, type UserChanges } from '@/features/settings/api'
 import { LinkRow, Segmented, SettingsGroup, SettingsRow, SwitchRow } from '@/features/settings/rows'
 import { UserAvatar } from '@/features/settings/user-avatar'
@@ -95,17 +96,17 @@ export function SettingsScreen() {
 
         <SettingsGroup title={t('settings.data')}>
           <LinkRow
-            to="/settings/health"
-            label="Apple Health"
+            to="/settings/sources"
+            label={t('sources.title')}
             value={
               health.data &&
-              (health.data.connected ? (
+              (connectedCount(health.data) > 0 ? (
                 <span className="flex items-center gap-1.5">
                   <span aria-hidden className="size-1.5 rounded-full bg-primary" />
-                  {t('health.connected')}
+                  {t('sources.connected', { count: connectedCount(health.data) })}
                 </span>
               ) : (
-                t('health.notConnected')
+                t('sources.none')
               ))
             }
           />

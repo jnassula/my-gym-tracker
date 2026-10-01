@@ -215,8 +215,8 @@
     "exercise_not_found": "Este exercício já não existe no plano.",
     "set_not_found": "Esta série já não existe.",
     "session_not_found": "Este treino já não existe.",
-    "health_token_invalid": "Este código do Apple Health já não é válido.",
-    "health_not_connected": "O Apple Health não está ligado.",
+    "health_token_invalid": "Este código já não é válido.",
+    "health_not_connected": "Esta fonte de dados não está ligada.",
     "forbidden": "Não tens acesso a esta página.",
     "account_disabled": "Esta conta foi inativada. Fala com quem gere a app.",
     "user_not_found": "Esta conta já não existe.",
@@ -616,17 +616,56 @@
     "footer": "Com a app fechada, as notificações chegam por Web Push (no iPhone, com a app instalada no ecrã inicial, iOS 16.4+).",
     "recordToast": "Novo PR: {{name}} — {{weight}}"
   },
+  "sources": {
+    "title": "Fontes de dados",
+    "intro": "De onde vêm a frequência cardíaca e as calorias dos teus treinos. Um browser não chega ao relógio: é o telemóvel que envia os dados.",
+    "connected_one": "{{count}} ligada",
+    "connected_other": "{{count}} ligadas",
+    "none": "Nenhuma",
+    "connect": "Ligar uma fonte de dados",
+    "apps": "Apps de saúde",
+    "services": "Relógios e serviços",
+    "soon": "Em breve",
+    "providers": {
+      "apple_health": {
+        "name": "Apple Health",
+        "hint": "iPhone, com um atalho",
+        "introTitle": "Os dados do Apple Watch nos teus treinos",
+        "introBody": "Um atalho no iPhone lê a frequência cardíaca e as calorias ativas que o Apple Watch regista, e envia-as para aqui. Cada treino passa a mostrar a FC média, as calorias e o pico de cada exercício.",
+        "privacy": "Só guardamos o que foi registado durante os teus treinos. O resto do dia fica no iPhone.",
+        "limitation": "Web app: a sincronização passa pela app Saúde no iPhone, com o atalho “myGymTracker”. Sem acesso direto ao relógio a partir do browser."
+      },
+      "health_connect": {
+        "name": "Health Connect",
+        "hint": "Android, com a app HC Webhook",
+        "introTitle": "Os dados do teu relógio nos teus treinos",
+        "introBody": "O Health Connect junta no Android o que o relógio regista (Wear OS, Samsung, Garmin, Fitbit e outros). A app HC Webhook lê de lá a frequência cardíaca e as calorias ativas e envia-as para aqui. Cada treino passa a mostrar a FC média, as calorias e o pico de cada exercício.",
+        "privacy": "Só guardamos o que foi registado durante os teus treinos. O que chegar fora de um treino espera até 3 horas, caso estejas a começar um, e é apagado.",
+        "limitation": "Web app: o Health Connect só existe dentro do Android. A sincronização passa pela HC Webhook, uma app de código aberto que não é nossa e que envia os dados só para o endereço que lhe deres."
+      }
+    },
+    "garmin": {
+      "name": "Garmin Connect",
+      "hint": "Pelo Health Connect ou pelo Apple Health",
+      "title": "Os dados do teu Garmin",
+      "body": "A Garmin só abre os seus dados a empresas, não a apps como esta. Mas a app Garmin Connect escreve-os na app de saúde do telemóvel, e é de lá que os lemos.",
+      "android": "No Android",
+      "androidBody": "Nas definições da app Garmin Connect, liga a partilha com o Health Connect e permite a frequência cardíaca e as calorias ativas. Depois liga aqui o Health Connect.",
+      "iphone": "No iPhone",
+      "iphoneBody": "Nas definições da app Garmin Connect, liga a partilha com a app Saúde e permite a frequência cardíaca e a energia ativa. Depois liga aqui o Apple Health.",
+      "activity": "Grava o treino como atividade no relógio (por exemplo, Força): durante uma atividade o relógio regista a frequência cardíaca com mais detalhe."
+    },
+    "strava": {
+      "name": "Strava",
+      "hint": "Atividades e frequência cardíaca"
+    }
+  },
   "health": {
-    "connect": "Ligar Apple Health",
+    "connect": "Ligar {{name}}",
     "connected": "Ligado",
     "notConnected": "Desligado",
     "syncNow": "Sincronizar agora",
-    "intro": {
-      "title": "Os dados do Apple Watch nos teus treinos",
-      "body": "Um atalho no iPhone lê a frequência cardíaca, as calorias ativas e a duração que o Apple Watch regista, e envia-as para aqui. Cada treino passa a mostrar a FC média, as calorias e o pico de cada exercício.",
-      "privacy": "Só guardamos o que foi registado durante os teus treinos. O resto do dia fica no iPhone."
-    },
-    "webLimitation": "Web app: a sincronização passa pela app Saúde no iPhone, com o atalho “myGymTracker”. Sem acesso direto ao relógio a partir do browser.",
+    "pending": "Por sincronizar",
     "lastSync": "Última sincronização {{when}}",
     "waiting": "À espera da primeira sincronização",
     "weekSynced": "{{synced}} de {{total}} treinos desta semana com dados do relógio",
@@ -638,13 +677,13 @@
     "readsFooter": "Desligar um destes apaga o que já foi importado desse tipo.",
     "newToken": "Gerar novo código",
     "newTokenTitle": "Gerar um novo código?",
-    "newTokenBody": "O código atual deixa de funcionar: vais ter de colar o novo no atalho. Os dados importados ficam.",
+    "newTokenBody": "O código atual deixa de funcionar: vais ter de colar o novo no telemóvel. Os dados importados ficam.",
     "newTokenConfirm": "Gerar",
-    "disconnect": "Desligar Apple Health",
-    "disconnectTitle": "Desligar o Apple Health?",
-    "disconnectBody": "O atalho deixa de funcionar e apagamos a frequência cardíaca, as calorias e as durações importadas. Os teus treinos ficam.",
+    "disconnect": "Desligar {{name}}",
+    "disconnectTitle": "Desligar {{name}}?",
+    "disconnectBody": "O código deixa de funcionar e apagamos a frequência cardíaca e as calorias que esta fonte enviou. Os teus treinos ficam.",
     "disconnectConfirm": "Desligar",
-    "disconnected": "Apple Health desligado.",
+    "disconnected": "{{name}} desligado.",
     "cancel": "Cancelar",
     "session": {
       "untitled": "Treino",
@@ -661,8 +700,9 @@
       "exerciseSets_one": "{{name}} · {{count}} série",
       "exerciseSets_other": "{{name}} · {{count}} séries",
       "peak": "Pico de {{value}} bpm",
-      "noData": "Sem dados do Apple Watch neste treino. Liga o Apple Health para ver a frequência cardíaca e as calorias.",
-      "noDataConnected": "Ainda sem dados do Apple Watch neste treino. Corre o atalho para os trazer.",
+      "noData": "Sem dados do relógio neste treino. Liga uma fonte de dados para ver a frequência cardíaca e as calorias.",
+      "noDataShortcut": "Ainda sem dados do relógio neste treino. Corre o atalho para os trazer.",
+      "noDataWaiting": "Ainda sem dados do relógio neste treino. Chegam com a próxima sincronização.",
       "showTable": "Ver tabela",
       "hideTable": "Esconder tabela",
       "time": "Hora",
@@ -673,7 +713,7 @@
       "intro": "Faz isto no iPhone, com esta página aberta: vais colar o endereço e o cabeçalho abaixo no atalho “{{name}}”. É só uma vez.",
       "address": "Endereço (URL)",
       "header": "Cabeçalho Authorization",
-      "tokenOnce": "O código só aparece agora. Se o perderes, gera outro em Apple Health.",
+      "tokenOnce": "O código só aparece agora. Se o perderes, gera outro em {{name}}.",
       "copy": "Copiar {{what}}",
       "copied": "Copiado",
       "copyFailed": "Não foi possível copiar.",
@@ -697,6 +737,23 @@
       "ngrok": "A testar com o ngrok? Junta também o cabeçalho ngrok-skip-browser-warning com o valor 1.",
       "run": "Correr o atalho agora",
       "done": "Concluído"
+    },
+    "hc": {
+      "title": "Configurar a HC Webhook no Android",
+      "intro": "Faz isto no telemóvel Android, com esta página aberta: vais colar o endereço e o cabeçalho abaixo na app HC Webhook. É só uma vez.",
+      "headerValue": "Valor do cabeçalho Authorization",
+      "store": "Abrir a HC Webhook na Google Play",
+      "steps": {
+        "install": "Instala a app HC Webhook e confirma que o Health Connect está configurado no telemóvel: é lá que o relógio, ou a app do relógio, escreve os dados.",
+        "types": "Em “Tipos de dados”, ativa só Frequência cardíaca e Calorias ativas, e concede as permissões que a app pedir.",
+        "resolution": "Nos dois tipos, escolhe a resolução “Completo”. Com totais diários as calorias não se conseguem atribuir ao treino, e com médias por minuto os picos ficam mais baixos.",
+        "webhook": "Em “URLs de webhook”, adiciona um webhook com o endereço acima, em formato JSON.",
+        "header": "Nesse webhook, em “Editar cabeçalhos”, adiciona um cabeçalho com a chave Authorization e o valor copiado acima.",
+        "schedule": "Em “Agendamento de sincronização”, escolhe Intervalo com 15 minutos e concede a permissão em segundo plano.",
+        "firstRun": "Faz uma “Sincronização manual” para experimentar: este ecrã passa a mostrar a última sincronização."
+      },
+      "once": "A app envia cada amostra uma só vez. O que chegar antes de o treino começar espera até 3 horas por ele; depois é apagado.",
+      "syncsItself": "A HC Webhook envia os dados sozinha, no intervalo que escolheste."
     }
   },
   "admin": {
@@ -765,6 +822,7 @@
     "adoption": {
       "title": "Utilização",
       "appleHealth": "Apple Health ligado",
+      "healthConnect": "Health Connect ligado",
       "notifications": "Notificações ativas",
       "language": "Idioma {{language}}",
       "deactivated": "Contas inativas"

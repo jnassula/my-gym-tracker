@@ -44,7 +44,7 @@ const overview: AdminOverview = {
   workouts_total: 12840,
   workouts_7d: { current: 905, previous: 880 },
   funnel: { registered: 1240, with_plan: 930, trained: 744, active_30d: 496 },
-  adoption: { apple_health: 124, notifications: 372 },
+  adoption: { apple_health: 124, health_connect: 62, notifications: 372 },
   languages: [
     { language: 'pt', users: 1116 },
     { language: 'en', users: 124 },
@@ -108,6 +108,7 @@ describe('DashboardScreen', () => {
     expect(within(plan).getByText('930 · 75%')).toBeInTheDocument()
     expect(within(screen.getByText('Treinaram nos últimos 30 dias').closest('li') as HTMLElement).getByText('496 · 40%')).toBeInTheDocument()
     expect(screen.getByText('Apple Health ligado').nextElementSibling).toHaveTextContent('124 · 10%')
+    expect(screen.getByText('Health Connect ligado').nextElementSibling).toHaveTextContent('62 · 5%')
     expect(screen.getByText('Idioma EN').nextElementSibling).toHaveTextContent('124 · 10%')
   })
 
@@ -175,7 +176,7 @@ describe('UsersScreen', () => {
 
 describe('SettingsScreen', () => {
   it('opens the backoffice for administrators only', async () => {
-    serve({ '/api/workouts': [], '/api/health': { connected: false } })
+    serve({ '/api/workouts': [], '/api/health/connections': { connections: [], week_sessions: 0, week_synced: 0 } })
     const { unmount } = renderWithRouter(<SettingsScreen />)
 
     expect(await screen.findByRole('link', { name: 'Backoffice' })).toHaveAttribute('href', '/admin')
