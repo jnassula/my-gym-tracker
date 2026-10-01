@@ -147,6 +147,7 @@ Os números de progresso ignoram as séries de aquecimento e seguem cada exercí
 Em **Progresso → Peso corporal** (também em Dispositivos conectados → Balança inteligente):
 
 - **Pesar agora** lê uma **Xiaomi Mi Body Composition Scale** (1 ou 2) por Bluetooth, no browser: escolhe a balança, sobe descalço e a app acompanha o peso até estabilizar, espera uns segundos pela impedância e guarda a leitura. Precisa do Web Bluetooth, que existe no Chrome e no Edge (Android e computador) e em nenhum browser do iPhone. A balança só fala com uma app de cada vez: fecha a Zepp Life antes.
+- **Pelos dispositivos conectados**: a app da balança escreve cada pesagem na app Saúde (iPhone) ou no Health Connect (Android), e o atalho ou a HC Webhook enviam-nas com os dados do relógio (peso e gordura corporal; interruptor "Peso e gordura corporal" em cada dispositivo). É o caminho da balança no iPhone. A mesma pesagem vista por duas vias fica uma só vez.
 - **Adicionar manualmente** aceita o peso (na unidade escolhida; a API recebe sempre kg), o dia e, se a tua balança a mostrar, a gordura corporal.
 - A **composição corporal** (gordura, músculo, água, massa óssea, gordura visceral, metabolismo basal) é calculada a partir do peso e da impedância que a balança mede, mais a altura, a idade e o sexo do **Perfil** (opcionais). Guarda-se a leitura, não o resultado: corrigir a altura corrige todas as pesagens. São as fórmulas da app Mi Fit, portadas de [lolouk44/xiaomi_mi_scale](https://github.com/lolouk44/xiaomi_mi_scale) (MIT), e são estimativas: servem para seguir a tendência.
 - O gráfico mostra o peso ou a gordura corporal em 4 semanas, 3 meses (um ponto por dia) ou 1 ano (a média de cada semana), com a lista das pesagens por baixo, onde se apaga uma.
@@ -222,14 +223,14 @@ As duas primeiras podem estar ligadas ao mesmo tempo. Cada treino fica com cada 
 ### Apple Health
 
 1. Em **Dispositivos conectados → Apple Health**, toca em "Ligar Apple Health". A app mostra o endereço e o cabeçalho `Authorization` a colar no atalho (o código só aparece dessa vez; "Gerar novo código" substitui-o).
-2. No iPhone, cria o atalho **myGymTracker** seguindo os passos no ecrã: duas vezes "Procurar amostras de Saúde" + "Formatar data" (ISO 8601 com hora) e um "Obter conteúdo do URL" (POST, JSON com `hr_t`, `hr_v`, `ae_t`, `ae_v`).
+2. No iPhone, cria o atalho **myGymTracker** seguindo os passos no ecrã: duas vezes "Procurar amostras de Saúde" + "Formatar data" (ISO 8601 com hora) e um "Obter conteúdo do URL" (POST, JSON com `hr_t`, `hr_v`, `ae_t`, `ae_v`). Opcional, para as pesagens da balança: o mesmo para o Peso (`bm_t`, `bm_v`, e a unidade em `bm_u`) e para a gordura corporal (`bf_t`, `bf_v`).
 3. Corre-o uma vez à mão para autorizar a leitura na Saúde e escolher "Permitir sempre" no envio para o endereço.
 4. Depois: "Sincronizar agora" (no ecrã Apple Health, no resumo do treino ou num treino sem dados; só aparece no iPhone) abre o atalho; uma automação diária em Atalhos serve de reserva.
 
 ### Health Connect
 
 1. Em **Dispositivos conectados → Health Connect**, toca em "Ligar Health Connect": a app mostra o endereço e o valor do cabeçalho `Authorization`.
-2. No Android, instala a HC Webhook e segue os passos no ecrã: ativa só Frequência cardíaca e Calorias ativas, ambas com resolução "Completo"; adiciona um webhook com o endereço, em JSON, e o cabeçalho `Authorization`; agenda um intervalo de 15 minutos.
+2. No Android, instala a HC Webhook e segue os passos no ecrã: ativa Frequência cardíaca e Calorias ativas (ambas com resolução "Completo") e, para as pesagens, Peso e Gordura corporal; adiciona um webhook com o endereço, em JSON, e o cabeçalho `Authorization`; agenda um intervalo de 15 minutos.
 3. Uma "Sincronização manual" na HC Webhook confirma que está a funcionar.
 
 A HC Webhook envia cada amostra uma só vez. Por isso, o que chegar fora de um treino espera até 3 horas (podes estar a começar um) e é apagado depois; um total diário de calorias é ignorado, porque não diz o que foi gasto no treino.
@@ -238,7 +239,7 @@ A HC Webhook envia cada amostra uma só vez. Por isso, o que chegar fora de um t
 
 - Só as amostras que caem dentro de um treino: de 5 minutos antes da primeira série até "Terminar treino" (ou 3 minutos depois da última série, no máximo 20). O resto do dia não fica cá.
 - Reenviar as mesmas amostras não duplica nada (cada corrida do atalho sobrepõe-se à anterior).
-- Desligar a frequência cardíaca ou as calorias apaga o que essa fonte já enviou desse tipo; desligar uma fonte revoga o código e apaga tudo o que veio dela. Os treinos ficam.
+- Desligar a frequência cardíaca, as calorias ou as pesagens apaga o que essa fonte já enviou desse tipo; desligar uma fonte revoga o código e apaga tudo o que veio dela. Os treinos ficam.
 
 Limitações: com o iPhone bloqueado a Saúde não deixa ler os dados, por isso uma automação a essa hora pode não enviar nada (a seguinte recupera). Nenhuma das pontes envia os treinos do relógio, por isso a duração é a do treino registado na app.
 
@@ -247,7 +248,7 @@ Limitações: com o iPhone bloqueado a Saúde não deixa ler os dados, por isso 
 | `GET /api/health/connections` | cada fonte (ligada ou não, última sincronização, o que guarda) e os treinos desta semana com dados do relógio |
 | `POST /api/health/connections/{fonte}` | gera o código da fonte (`apple_health`, `health_connect`), mostrado uma vez; de novo, substitui-o |
 | `DELETE /api/health/connections/{fonte}` | revoga o código e apaga os dados que a fonte enviou |
-| `PATCH /api/health/connections/{fonte}/settings` | `{heart_rate?, calories?}` |
+| `PATCH /api/health/connections/{fonte}/settings` | `{heart_rate?, calories?, body?}` |
 | `POST /api/health/sync` | as pontes: `Authorization: Bearer <código>`; o código diz de que fonte é o corpo (as listas do atalho, ou o JSON da HC Webhook) |
 
 `GET /api/health`, `POST`/`DELETE /api/health/connection` e `PATCH /api/health/settings` continuam a responder pelo Apple Health, para apps instaladas que ainda não se atualizaram.
