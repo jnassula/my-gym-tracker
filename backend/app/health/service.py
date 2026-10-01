@@ -17,6 +17,8 @@ from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth.security import hash_token
+from app.body import service as body
+from app.body.models import MeasurementSource
 from app.core.db import utcnow
 from app.health.errors import HealthNotConnectedError, HealthTokenInvalidError
 from app.health.metrics import (
@@ -27,6 +29,7 @@ from app.health.metrics import (
 )
 from app.health.models import HealthConnection, HealthProvider, HealthSample, HealthSampleType
 from app.health.schemas import (
+    Batch,
     ConnectionRead,
     HealthOverview,
     HealthRead,
@@ -60,6 +63,11 @@ async def _connection(
     session: AsyncSession, user_id: uuid.UUID, provider: HealthProvider
 ) -> HealthConnection | None:
     return await session.get(HealthConnection, {"user_id": user_id, "provider": provider})
+
+
+def _weighings_of(provider: HealthProvider) -> MeasurementSource:
+    """A source's weighings are kept by the body domain, under the same name."""
+    return MeasurementSource(provider.value)
 
 
 def enabled_types(connection: HealthConnection) -> set[HealthSampleType]:
@@ -138,6 +146,7 @@ async def disconnect(session: AsyncSession, user: User, provider: HealthProvider
     await session.execute(
         delete(HealthSample).where(HealthSample.user_id == user.id, HealthSample.source == provider)
     )
+    await body.forget(session, user.id, _weighings_of(provider))
     await session.execute(
         delete(HealthConnection).where(
             HealthConnection.user_id == user.id, HealthConnection.provider == provider
@@ -155,7 +164,9 @@ async def update_settings(
         raise HealthNotConnectedError
     for field in data.model_fields_set:
         setattr(connection, field, getattr(data, field))
-        if not getattr(data, field):
+        if getattr(data, field):
+            continue
+        if field in SETTING_TYPES:
             await session.execute(
                 delete(HealthSample).where(
                     HealthSample.user_id == user.id,
@@ -163,6 +174,8 @@ async def update_settings(
                     HealthSample.type == SETTING_TYPES[field],
                 )
             )
+        else:  # "body": the weighings it sent
+            await body.forget(session, user.id, _weighings_of(provider))
     await session.commit()
     return HealthSettings.model_validate(connection)
 
@@ -260,6 +273,25 @@ async def _holders(
         .distinct()
     )
     return {(row.session_id, row.type): row.source for row in rows}
+
+
+async def sync(
+    session: AsyncSession, user: User, connection: HealthConnection, batch: Batch
+) -> SyncResult:
+    """What a bridge's run brings: the weighings go to the body domain as they are, the watch's
+    samples to the sessions they fall in."""
+    weighings = 0
+    if connection.body:
+        readings = batch.body()
+        weighings = await body.take(
+            session,
+            user,
+            _weighings_of(connection.provider),
+            [(s.at, s.value) for s in readings.weights],
+            [(s.at, s.value) for s in readings.fats],
+        )
+    result = await store(session, user, connection, batch.samples())
+    return result.model_copy(update={"weighings": weighings})
 
 
 async def store(

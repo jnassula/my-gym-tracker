@@ -3,7 +3,7 @@
 import uuid
 from datetime import date, datetime
 from decimal import Decimal
-from typing import Annotated, Self
+from typing import Annotated, Literal, Self
 
 from pydantic import BaseModel, Field, model_validator
 
@@ -22,7 +22,8 @@ ImpedanceIn = Annotated[int, Field(ge=1, le=3000)]
 class MeasurementCreate(BaseModel):
     """A weighing, typed in or read from the scale. Always kg."""
 
-    source: MeasurementSource = MeasurementSource.MANUAL
+    # Not the data sources' own: those only come through their bridges.
+    source: Literal[MeasurementSource.MANUAL, MeasurementSource.SCALE] = MeasurementSource.MANUAL
     weight: BodyWeightIn
     # Manual entries: the user's local date (today when left out) and, if the scale shows it,
     # the body fat. A scale's reading is always "now": scales' own clocks are often wrong.

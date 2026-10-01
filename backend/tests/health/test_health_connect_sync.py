@@ -57,7 +57,7 @@ async def test_heart_rate_and_calories_inside_a_session_are_kept(gym: Gym, clock
     result = await sync(gym, await connect(gym), PAYLOAD)
 
     # Three heart rates in the session, one long before; six minutes of energy.
-    assert result == {"received": 10, "kept": 9, "sessions": 1}
+    assert result == {"received": 10, "kept": 9, "sessions": 1, "weighings": 0}
     health = (await gym.get(f"/api/progress/sessions/{session_id}"))["health"]
     assert (health["avg_heart_rate"], health["max_heart_rate"], health["calories"]) == (
         140,
@@ -88,7 +88,7 @@ async def test_a_sample_ahead_of_its_session_waits_for_it(
     # The app sends each sample once: what the window doesn't reach yet can't be dropped.
     result = await sync(gym, token, {"heart_rate": [{"bpm": 150, "time": utc(4.5)}]})
 
-    assert result == {"received": 1, "kept": 0, "sessions": 0}
+    assert result == {"received": 1, "kept": 0, "sessions": 0, "weighings": 0}
     assert (await gym.get(f"/api/progress/sessions/{session['id']}"))["health"] is None
 
     clock.advance(minutes=1)
@@ -177,7 +177,7 @@ async def test_each_source_has_its_own_connection(gym: Gym, clock: Clock) -> Non
 
     # Only Health Connect's token went: the shortcut's still works, and its samples are there.
     assert (await gym.client.post("/api/health/sync", json={}, headers=android)).status_code == 401
-    assert await sync(gym, apple, {}) == {"received": 0, "kept": 0, "sessions": 0}
+    assert await sync(gym, apple, {}) == {"received": 0, "kept": 0, "sessions": 0, "weighings": 0}
     health = (await gym.get(f"/api/progress/sessions/{session_id}"))["health"]
     assert (health["max_heart_rate"], health["calories"]) == (171, 21)
 
@@ -202,7 +202,7 @@ async def test_a_kind_turned_off_is_deleted_from_that_source_only(gym: Gym, cloc
         f"{CONNECTION}/settings", json={"calories": False}, headers=gym.headers
     )
 
-    assert response.json() == {"heart_rate": True, "calories": False}
+    assert response.json() == {"heart_rate": True, "calories": False, "body": True}
     health = (await gym.get(f"/api/progress/sessions/{session_id}"))["health"]
     assert (health["max_heart_rate"], health["calories"]) == (160, 21)
     status = await gym.get("/api/health/connections")
@@ -213,8 +213,13 @@ async def test_nothing_to_send(gym: Gym) -> None:
     token = await connect(gym)
     envelope = {"timestamp": utc(0), "app_version": "1.9.22"}
 
-    assert await sync(gym, token, {}) == {"received": 0, "kept": 0, "sessions": 0}
-    assert await sync(gym, token, envelope) == {"received": 0, "kept": 0, "sessions": 0}
+    assert await sync(gym, token, {}) == {"received": 0, "kept": 0, "sessions": 0, "weighings": 0}
+    assert await sync(gym, token, envelope) == {
+        "received": 0,
+        "kept": 0,
+        "sessions": 0,
+        "weighings": 0,
+    }
 
 
 async def test_sensor_glitches_and_backwards_intervals_are_dropped(gym: Gym, clock: Clock) -> None:
@@ -224,7 +229,12 @@ async def test_sensor_glitches_and_backwards_intervals_are_dropped(gym: Gym, clo
         "active_calories": [{"calories": 10, "start_time": utc(3), "end_time": utc(1)}],
     }
 
-    assert await sync(gym, await connect(gym), body) == {"received": 0, "kept": 0, "sessions": 0}
+    assert await sync(gym, await connect(gym), body) == {
+        "received": 0,
+        "kept": 0,
+        "sessions": 0,
+        "weighings": 0,
+    }
 
 
 @pytest.mark.parametrize(

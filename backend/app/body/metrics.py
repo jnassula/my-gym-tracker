@@ -2,10 +2,18 @@
 
 from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 from decimal import Decimal
 
 CENT = Decimal("0.01")
+TENTH = Decimal("0.1")
+# A scale's app writes the weight and the body fat of one weighing at the same instant; allow
+# for a health app that shifts one of them a little.
+PAIR_WITHIN = timedelta(minutes=2)
+# The same weighing seen twice: read from the scale here and sent later by the scale's app
+# through a data source, or sent by two data sources. Their clocks differ a little.
+SAME_WITHIN = timedelta(minutes=10)
+SAME_WEIGHT = Decimal("0.15")
 
 
 @dataclass(frozen=True)
@@ -53,3 +61,37 @@ def weekly(readings: Iterable[Reading]) -> list[Point]:
 def change(points: Sequence[Point]) -> Decimal | None:
     """From the first point to the last; nothing to compare with fewer than two."""
     return points[-1].weight - points[0].weight if len(points) > 1 else None
+
+
+@dataclass(frozen=True)
+class Weighing:
+    """A weighing as a data source reports it."""
+
+    at: datetime
+    weight: Decimal  # kg
+    body_fat_pct: Decimal | None
+
+
+def pair(
+    weights: Iterable[tuple[datetime, float]], fats: Sequence[tuple[datetime, float]]
+) -> list[Weighing]:
+    """Health apps keep weight and body fat as separate samples: each weight gets the body fat
+    measured with it (the nearest, within ``PAIR_WITHIN``). A body fat without a weight is
+    nothing to keep."""
+    weighings = []
+    for at, weight in weights:
+        near = [(abs(fat_at - at), fat) for fat_at, fat in fats if abs(fat_at - at) <= PAIR_WITHIN]
+        fat = min(near)[1] if near else None
+        weighings.append(
+            Weighing(
+                at,
+                Decimal(str(weight)).quantize(CENT),
+                Decimal(str(fat)).quantize(TENTH) if fat is not None else None,
+            )
+        )
+    return weighings
+
+
+def same_weighing(weighing: Weighing, at: datetime, weight: Decimal) -> bool:
+    """Whether a stored weighing (``at``, ``weight``) is this one, seen through another source."""
+    return abs(weighing.at - at) <= SAME_WITHIN and abs(weighing.weight - weight) <= SAME_WEIGHT

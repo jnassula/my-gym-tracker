@@ -10,6 +10,7 @@ from app.exercises.models import MuscleGroup
 from app.logs.schemas import Kg, WeightPoint
 
 Range = Literal["4w", "3m", "1y"]
+RANGE_DAYS: dict[Range, int] = {"4w": 28, "3m": 91, "1y": 365}
 DayStatus = Literal["trained", "missed", "rest", "today", "future"]
 
 

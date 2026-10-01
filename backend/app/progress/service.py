@@ -44,6 +44,7 @@ from app.progress.metrics import (
     weekly_tops,
 )
 from app.progress.schemas import (
+    RANGE_DAYS,
     CalendarDay,
     DayStatus,
     DayVolume,
@@ -68,7 +69,6 @@ from app.progress.schemas import (
 from app.users.models import User
 from app.workouts.models import WorkoutDay, WorkoutPlan
 
-RANGE_DAYS: dict[Range, int] = {"4w": 28, "3m": 91, "1y": 365}
 RECENT_SESSIONS = 8
 TABLE_ROWS = 5
 

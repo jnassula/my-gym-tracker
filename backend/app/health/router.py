@@ -45,10 +45,11 @@ async def update_settings(
 
 @router.post("/sync")
 async def sync(batch: BatchDep, token: HealthTokenUser, session: SessionDep) -> SyncResult:
-    """A bridge posts heart rate and active calories in its own shape (authenticated by its
-    source's token, not a session). Only samples inside a session are kept."""
+    """A bridge posts heart rate, active calories and weighings in its own shape (authenticated
+    by its source's token, not a session). Of the watch's samples, only those inside a session
+    are kept."""
     user, connection = token
-    return await service.store(session, user, connection, batch.samples())
+    return await service.sync(session, user, connection, batch)
 
 
 # --- Apple Health alone ---------------------------------------------------------------------------

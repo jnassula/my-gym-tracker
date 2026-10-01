@@ -15,7 +15,7 @@ async def test_not_connected_at_first(client: AsyncClient) -> None:
     assert body == {
         "connected": False,
         "last_sync_at": None,
-        "settings": {"heart_rate": True, "calories": True},
+        "settings": {"heart_rate": True, "calories": True, "body": True},
         "week_sessions": 0,
         "week_synced": 0,
     }
@@ -45,7 +45,7 @@ async def test_settings_can_be_changed(client: AsyncClient) -> None:
 
     response = await client.patch("/api/health/settings", json={"calories": False}, headers=headers)
 
-    assert response.json() == {"heart_rate": True, "calories": False}
+    assert response.json() == {"heart_rate": True, "calories": False, "body": True}
     body = (await client.get("/api/health", headers=headers)).json()
     assert body["settings"]["calories"] is False
 

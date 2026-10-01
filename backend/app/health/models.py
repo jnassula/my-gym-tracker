@@ -70,3 +70,5 @@ class HealthConnection(CreatedAt, Base):
     last_sync_at: Mapped[datetime | None]
     heart_rate: Mapped[bool] = mapped_column(default=True, server_default=true())
     calories: Mapped[bool] = mapped_column(default=True, server_default=true())
+    # Weighings (weight, body fat): kept by the body domain.
+    body: Mapped[bool] = mapped_column(default=True, server_default=true())

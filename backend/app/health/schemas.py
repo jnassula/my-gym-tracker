@@ -1,5 +1,6 @@
 """Request/response schemas for the health domain."""
 
+from dataclasses import dataclass
 from datetime import datetime
 from typing import Annotated, Self
 
@@ -30,11 +31,14 @@ class HealthSettings(BaseModel):
 
     heart_rate: bool = True
     calories: bool = True
+    # Weighings (weight and body fat), which go to the body domain, not to a session.
+    body: bool = True
 
 
 class HealthSettingsUpdate(BaseModel):
     heart_rate: bool | None = None
     calories: bool | None = None
+    body: bool | None = None
 
     @model_validator(mode="after")
     def _something_to_change(self) -> Self:
@@ -128,19 +132,58 @@ def _samples(
     return [s for s in samples if low <= s.value <= high]
 
 
+@dataclass(frozen=True)
+class BodyBatch:
+    """The weighings in a batch, as health apps keep them: weights (kg) and body fat (%) apart."""
+
+    weights: list[Sample]
+    fats: list[Sample]
+
+
+# The Health app's unit for body mass, as the shortcut's "Unit" gives it.
+KG_PER_UNIT = {"kg": 1.0, "lb": 0.45359237, "lbs": 0.45359237, "st": 6.35029318}
+
+
+def _percent(value: float) -> float:
+    """The Health app keeps body fat as a fraction (0.185); some shortcuts give 18.5."""
+    return value * 100 if value <= 1 else value
+
+
 class SyncBatch(BaseModel):
     """What the shortcut posts: for heart rate (``hr``) and active calories (``ae``), the samples'
-    start instants (``_t``) and values (``_v``) in the same order, as lists or one per line."""
+    start instants (``_t``) and values (``_v``) in the same order, as lists or one per line.
+    Optionally the same for body mass (``bm``, with its unit in ``bm_u``) and body fat (``bf``)."""
 
     hr_t: Texts
     hr_v: Texts
     ae_t: Texts
     ae_v: Texts
+    bm_t: Texts
+    bm_v: Texts
+    bm_u: Texts  # one per sample, or just one: they are all in the Health app's unit
+    bf_t: Texts
+    bf_v: Texts
 
     @model_validator(mode="after")
     def _readable(self) -> Self:
         self.samples()
+        self.body()
         return self
+
+    def body(self) -> BodyBatch:
+        unit = str(self.bm_u[0]).strip().lower() if self.bm_u else "kg"
+        if unit not in KG_PER_UNIT:
+            raise ValueError("the weight's unit as kg, lb or st")
+        anything = (float("-inf"), float("inf"))  # the body domain drops what is out of range
+        return BodyBatch(
+            weights=[
+                Sample(s.at, s.value * KG_PER_UNIT[unit])
+                for s in _samples(self.bm_t, self.bm_v, anything)
+            ],
+            fats=[
+                Sample(s.at, _percent(s.value)) for s in _samples(self.bf_t, self.bf_v, anything)
+            ],
+        )
 
     def samples(self) -> dict[HealthSampleType, list[Sample]]:
         return {
@@ -162,6 +205,16 @@ class _Energy(BaseModel):
     end_time: AwareDatetime
 
 
+class _Mass(BaseModel):
+    kilograms: float
+    time: AwareDatetime
+
+
+class _BodyFat(BaseModel):
+    percentage: float
+    time: AwareDatetime
+
+
 class HealthConnectBatch(BaseModel):
     """What the HC Webhook app posts from Android (its docs/webhook.md): one list per kind of
     record, left out when there is none, among many kinds the app doesn't read. Instants are UTC
@@ -169,6 +222,14 @@ class HealthConnectBatch(BaseModel):
 
     heart_rate: list[_HeartRate] = []
     active_calories: list[_Energy] = []
+    weight: list[_Mass] = []
+    body_fat: list[_BodyFat] = []
+
+    def body(self) -> BodyBatch:
+        return BodyBatch(
+            weights=[Sample(record.time, record.kilograms) for record in self.weight],
+            fats=[Sample(record.time, _percent(record.percentage)) for record in self.body_fat],
+        )
 
     def samples(self) -> dict[HealthSampleType, list[Sample]]:
         low, high = HEART_RATE_RANGE
@@ -202,3 +263,4 @@ class SyncResult(BaseModel):
     received: int  # samples of the kinds the app keeps
     kept: int  # inside a session
     sessions: int  # sessions they belong to
+    weighings: int = 0  # weighings kept (they need no session)

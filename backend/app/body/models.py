@@ -15,6 +15,10 @@ WEIGHT_KG = (10, 300)
 class MeasurementSource(StrEnum):
     MANUAL = "manual"  # typed in
     SCALE = "scale"  # read from a smart scale over Bluetooth, in the browser
+    # Sent by a data source's bridge (``health.HealthProvider``, same values): the scale's own
+    # app wrote the weighing into the phone's health app.
+    APPLE_HEALTH = "apple_health"
+    HEALTH_CONNECT = "health_connect"
 
 
 class BodyMeasurement(UUIDPrimaryKey, CreatedAt, Base):
@@ -44,5 +48,9 @@ class BodyMeasurement(UUIDPrimaryKey, CreatedAt, Base):
     weight: Mapped[Decimal] = mapped_column(Numeric(5, 2))
     # Ohms, from a scale that measures it (bare feet on its electrodes).
     impedance: Mapped[int | None] = mapped_column(SmallInteger)
-    # Typed in with a manual entry, for someone whose scale shows it.
+    # Typed in with a manual entry, for someone whose scale shows it, or as a data source's
+    # bridge reported it.
     body_fat_pct: Mapped[Decimal | None] = mapped_column(Numeric(4, 1))
+    # A weighing from a bridge that the user deleted: the row stays, hidden, so that the bridge
+    # sending it again (the shortcut re-sends its last days on every run) doesn't bring it back.
+    deleted_at: Mapped[datetime | None]

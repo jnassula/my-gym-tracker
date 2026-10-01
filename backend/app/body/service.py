@@ -10,17 +10,28 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.body.composition import age_on, bmi, compose
 from app.body.errors import MeasurementDateError, MeasurementNotFoundError
-from app.body.metrics import Reading, change, daily, weekly
-from app.body.models import BodyMeasurement
+from app.body.metrics import (
+    SAME_WITHIN,
+    Reading,
+    Weighing,
+    change,
+    daily,
+    pair,
+    same_weighing,
+    weekly,
+)
+from app.body.models import WEIGHT_KG, BodyMeasurement, MeasurementSource
 from app.body.schemas import BodyOverview, BodyPoint, MeasurementCreate, MeasurementRead
 from app.core.db import utcnow
-from app.progress.schemas import Range
-from app.progress.service import RANGE_DAYS
+from app.progress.schemas import RANGE_DAYS, Range
 from app.users.models import User
 
 # A manual entry for an earlier day has no time of its own.
 NOON = time(12, 0)
 EARLIEST_DAY = date(2000, 1, 1)
+# Sources that send weighings through a data source's bridge, not this app's own screens.
+BRIDGES = frozenset({MeasurementSource.APPLE_HEALTH, MeasurementSource.HEALTH_CONNECT})
+BODY_FAT_PCT = (2, 75)
 
 
 def now() -> datetime:
@@ -70,6 +81,7 @@ async def overview(session: AsyncSession, user: User, range_: Range) -> BodyOver
             select(BodyMeasurement)
             .where(
                 BodyMeasurement.user_id == user.id,
+                BodyMeasurement.deleted_at.is_(None),
                 BodyMeasurement.measured_at >= datetime.combine(since, time.min, _zone(user)),
             )
             .order_by(BodyMeasurement.measured_at)
@@ -80,7 +92,7 @@ async def overview(session: AsyncSession, user: User, range_: Range) -> BodyOver
         if rows
         else await session.scalar(
             select(BodyMeasurement)
-            .where(BodyMeasurement.user_id == user.id)
+            .where(BodyMeasurement.user_id == user.id, BodyMeasurement.deleted_at.is_(None))
             .order_by(BodyMeasurement.measured_at.desc())
             .limit(1)
         )
@@ -137,11 +149,93 @@ async def add(session: AsyncSession, user: User, data: MeasurementCreate) -> Mea
 
 
 async def remove(session: AsyncSession, user: User, measurement_id: uuid.UUID) -> None:
-    deleted = await session.scalar(
-        delete(BodyMeasurement)
-        .where(BodyMeasurement.id == measurement_id, BodyMeasurement.user_id == user.id)
-        .returning(BodyMeasurement.id)
+    """Delete a weighing. One that a bridge sent is hidden instead, or its next run would bring
+    it back."""
+    row = await session.scalar(
+        select(BodyMeasurement).where(
+            BodyMeasurement.id == measurement_id,
+            BodyMeasurement.user_id == user.id,
+            BodyMeasurement.deleted_at.is_(None),
+        )
     )
-    if deleted is None:
+    if row is None:
         raise MeasurementNotFoundError
+    if row.source in BRIDGES:
+        row.deleted_at = now()
+    else:
+        await session.delete(row)
     await session.commit()
+
+
+# --- weighings a data source sends ----------------------------------------------------------------
+
+
+async def take(
+    session: AsyncSession,
+    user: User,
+    source: MeasurementSource,
+    weights: list[tuple[datetime, float]],
+    fats: list[tuple[datetime, float]],
+) -> int:
+    """Keep the weighings a data source's bridge sent (the caller commits); how many were kept.
+
+    Sending one again updates it. One that is already here from another source (weighed over
+    Bluetooth and sent later by the scale's app, or sent by both data sources) is left out, and
+    so is one the user deleted.
+    """
+    low, high = BODY_FAT_PCT
+    weighings = [
+        Weighing(
+            w.at,
+            w.weight,
+            w.body_fat_pct if w.body_fat_pct and low <= w.body_fat_pct <= high else None,
+        )
+        for w in pair(weights, fats)
+        # Out of range is a mistyped entry in the health app, and a date ahead a wrong clock.
+        if WEIGHT_KG[0] <= w.weight <= WEIGHT_KG[1] and w.at <= now() + SAME_WITHIN
+    ]
+    if not weighings:
+        return 0
+    instants = [w.at for w in weighings]
+    others = (
+        await session.execute(
+            select(BodyMeasurement.measured_at, BodyMeasurement.weight).where(
+                BodyMeasurement.user_id == user.id,
+                BodyMeasurement.source != source,
+                BodyMeasurement.measured_at >= min(instants) - SAME_WITHIN,
+                BodyMeasurement.measured_at <= max(instants) + SAME_WITHIN,
+            )
+        )
+    ).all()
+    # One row per instant (a later duplicate in the batch wins).
+    values = {
+        w.at: {
+            "id": uuid.uuid4(),
+            "user_id": user.id,
+            "measured_at": w.at,
+            "source": source,
+            "weight": w.weight,
+            "body_fat_pct": w.body_fat_pct,
+        }
+        for w in weighings
+        if not any(same_weighing(w, other.measured_at, other.weight) for other in others)
+    }
+    if values:
+        statement = insert(BodyMeasurement).values(list(values.values()))
+        await session.execute(
+            statement.on_conflict_do_update(
+                index_elements=["user_id", "source", "measured_at"],
+                set_={key: statement.excluded[key] for key in ("weight", "body_fat_pct")},
+                where=BodyMeasurement.deleted_at.is_(None),
+            )
+        )
+    return len(values)
+
+
+async def forget(session: AsyncSession, user_id: uuid.UUID, source: MeasurementSource) -> None:
+    """Delete everything a data source sent, hidden weighings included (the caller commits)."""
+    await session.execute(
+        delete(BodyMeasurement).where(
+            BodyMeasurement.user_id == user_id, BodyMeasurement.source == source
+        )
+    )

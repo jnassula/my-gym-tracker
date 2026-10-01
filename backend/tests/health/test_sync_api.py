@@ -54,7 +54,7 @@ async def test_only_what_falls_in_a_session_is_kept(gym: Gym, clock: Clock) -> N
 
     result = await sync(gym, token, BATCH)
 
-    assert result == {"received": 9, "kept": 6, "sessions": 1}
+    assert result == {"received": 9, "kept": 6, "sessions": 1, "weighings": 0}
     health = (await gym.get(f"/api/progress/sessions/{session_id}"))["health"]
     assert (health["avg_heart_rate"], health["max_heart_rate"], health["calories"]) == (
         148,
@@ -81,7 +81,12 @@ async def test_sending_the_same_samples_again_changes_nothing(gym: Gym, clock: C
     token = await connect(gym)
     await sync(gym, token, BATCH)
 
-    assert await sync(gym, token, BATCH) == {"received": 9, "kept": 6, "sessions": 1}
+    assert await sync(gym, token, BATCH) == {
+        "received": 9,
+        "kept": 6,
+        "sessions": 1,
+        "weighings": 0,
+    }
 
     health = (await gym.get(f"/api/progress/sessions/{session_id}"))["health"]
     assert len(health["heart_rate"]) == 4
@@ -99,21 +104,36 @@ async def test_a_lone_sample_arrives_as_text_and_numbers_as_the_region_writes_th
         gym, await connect(gym), {"hr_t": at(1), "hr_v": "150", "ae_t": [at(1)], "ae_v": ["12,4"]}
     )
 
-    assert result == {"received": 2, "kept": 2, "sessions": 1}
+    assert result == {"received": 2, "kept": 2, "sessions": 1, "weighings": 0}
 
 
 async def test_lists_in_text_fields_arrive_one_per_line(gym: Gym, clock: Clock) -> None:
     await train(gym, clock)
     body = {key: "\n".join(values) for key, values in BATCH.items()}
 
-    assert await sync(gym, await connect(gym), body) == {"received": 9, "kept": 6, "sessions": 1}
+    assert await sync(gym, await connect(gym), body) == {
+        "received": 9,
+        "kept": 6,
+        "sessions": 1,
+        "weighings": 0,
+    }
 
 
 async def test_nothing_to_send(gym: Gym) -> None:
     empty = {"hr_t": "", "hr_v": "", "ae_t": "", "ae_v": ""}
 
-    assert await sync(gym, await connect(gym), {}) == {"received": 0, "kept": 0, "sessions": 0}
-    assert await sync(gym, await connect(gym), empty) == {"received": 0, "kept": 0, "sessions": 0}
+    assert await sync(gym, await connect(gym), {}) == {
+        "received": 0,
+        "kept": 0,
+        "sessions": 0,
+        "weighings": 0,
+    }
+    assert await sync(gym, await connect(gym), empty) == {
+        "received": 0,
+        "kept": 0,
+        "sessions": 0,
+        "weighings": 0,
+    }
 
 
 async def test_sensor_glitches_are_dropped(gym: Gym, clock: Clock) -> None:
@@ -121,7 +141,7 @@ async def test_sensor_glitches_are_dropped(gym: Gym, clock: Clock) -> None:
 
     result = await sync(gym, await connect(gym), {"hr_t": [at(1), at(2)], "hr_v": ["0", "400"]})
 
-    assert result == {"received": 0, "kept": 0, "sessions": 0}
+    assert result == {"received": 0, "kept": 0, "sessions": 0, "weighings": 0}
 
 
 @pytest.mark.parametrize(
@@ -201,4 +221,9 @@ async def test_another_users_sessions_are_not_theirs(
     response = await client.post("/api/health/connection", headers=other)
     token = {"Authorization": f"Bearer {response.json()['token']}"}
 
-    assert await sync(gym, token, BATCH) == {"received": 9, "kept": 0, "sessions": 0}
+    assert await sync(gym, token, BATCH) == {
+        "received": 9,
+        "kept": 0,
+        "sessions": 0,
+        "weighings": 0,
+    }
