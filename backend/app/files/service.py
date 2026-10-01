@@ -34,6 +34,23 @@ def require_pdf(data: bytes) -> None:
         raise UnsupportedFileTypeError("Only PDF files are accepted")
 
 
+# What a browser can show as a profile photo, told apart by the first bytes.
+_PNG = b"\x89PNG\r\n\x1a\n"
+_JPEG = b"\xff\xd8\xff"
+
+
+def image_type(data: bytes) -> tuple[str, str]:
+    """The (content type, extension) of a JPEG, PNG or WebP. As for PDFs, the bytes decide:
+    what the client declares is never stored or served."""
+    if data.startswith(_JPEG):
+        return "image/jpeg", "jpg"
+    if data.startswith(_PNG):
+        return "image/png", "png"
+    if data[:4] == b"RIFF" and data[8:12] == b"WEBP":
+        return "image/webp", "webp"
+    raise UnsupportedFileTypeError("Only JPEG, PNG and WebP images are accepted")
+
+
 def _safe_filename(filename: str | None) -> str:
     name = PurePath(filename or "upload").name.strip() or "upload"
     return name[-_MAX_FILENAME:]
@@ -78,13 +95,20 @@ async def get_user_file(
     return stored
 
 
-async def delete_file(
+async def remove_file(
     session: AsyncSession, storage: Storage, user_id: uuid.UUID, file_id: uuid.UUID
 ) -> None:
+    """Delete the row and the object. The caller commits."""
     stored = await get_user_file(session, user_id, file_id)
     await session.delete(stored)
     await session.flush()
     await storage.delete(stored.object_key)
+
+
+async def delete_file(
+    session: AsyncSession, storage: Storage, user_id: uuid.UUID, file_id: uuid.UUID
+) -> None:
+    await remove_file(session, storage, user_id, file_id)
     await session.commit()
 
 

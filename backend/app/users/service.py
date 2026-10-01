@@ -2,11 +2,18 @@
 
 import uuid
 
+from fastapi import UploadFile
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.storage import Storage
+from app.files import service as files
+from app.files.models import FileKind
 from app.users.models import User
 from app.users.schemas import UserUpdate
+
+# The app sends a 512 px JPEG (some tens of KB); the cap only stops abuse.
+MAX_AVATAR_BYTES = 1024 * 1024
 
 
 async def get_user(session: AsyncSession, user_id: uuid.UUID) -> User | None:
@@ -21,4 +28,36 @@ async def update_user(session: AsyncSession, user: User, data: UserUpdate) -> Us
     for field in data.model_fields_set:
         setattr(user, field, getattr(data, field))
     await session.commit()
+    return user
+
+
+async def set_avatar(
+    session: AsyncSession, storage: Storage, user: User, upload: UploadFile
+) -> User:
+    """Store the photo and drop the one it replaces."""
+    data = await files.read_upload(upload, max_bytes=MAX_AVATAR_BYTES)
+    content_type, extension = files.image_type(data)
+    previous = user.avatar_file_id
+    stored = await files.store_file(
+        session,
+        storage,
+        user_id=user.id,
+        kind=FileKind.AVATAR,
+        filename=f"avatar.{extension}",
+        content_type=content_type,
+        data=data,
+    )
+    user.avatar_file_id = stored.id
+    if previous is not None:
+        await files.remove_file(session, storage, user.id, previous)
+    await session.commit()
+    return user
+
+
+async def remove_avatar(session: AsyncSession, storage: Storage, user: User) -> User:
+    if user.avatar_file_id is not None:
+        previous, user.avatar_file_id = user.avatar_file_id, None
+        await session.flush()  # the user lets go of the photo before its row goes
+        await files.remove_file(session, storage, user.id, previous)
+        await session.commit()
     return user

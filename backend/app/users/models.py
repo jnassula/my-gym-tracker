@@ -1,7 +1,8 @@
+import uuid
 from datetime import datetime
 from enum import StrEnum
 
-from sqlalchemy import CheckConstraint, String, true
+from sqlalchemy import CheckConstraint, ForeignKey, String, true
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.db import Base, CreatedAt, UUIDPrimaryKey, enum_check, str_enum
@@ -46,3 +47,8 @@ class User(UUIDPrimaryKey, CreatedAt, Base):
     auto_rest: Mapped[bool] = mapped_column(default=True, server_default=true())
     # Set by an administrator (backoffice): the account can't sign in, its data stays.
     deactivated_at: Mapped[datetime | None]
+    # The profile photo, a `files` row of kind "avatar". `files` points back at the user, so
+    # the constraint is added on its own (use_alter): neither table has to come first.
+    avatar_file_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("files.id", ondelete="SET NULL", use_alter=True)
+    )

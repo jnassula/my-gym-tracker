@@ -10,6 +10,7 @@ from app.core.db import Base, CreatedAt, UUIDPrimaryKey, enum_check, str_enum
 class FileKind(StrEnum):
     WORKOUT_PDF = "workout_pdf"
     HEALTH_EXPORT = "health_export"
+    AVATAR = "avatar"
 
 
 class StoredFile(UUIDPrimaryKey, CreatedAt, Base):

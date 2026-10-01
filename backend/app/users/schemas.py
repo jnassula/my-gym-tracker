@@ -44,6 +44,8 @@ class UserRead(BaseModel):
     timezone: str
     unit: WeightUnit
     auto_rest: bool
+    # The profile photo: its bytes are at /api/files/{id}/content. A new photo is a new id.
+    avatar_file_id: uuid.UUID | None
     created_at: datetime
 
     @computed_field  # type: ignore[prop-decorator]
