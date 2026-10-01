@@ -1,22 +1,21 @@
 import { useQuery } from '@tanstack/react-query'
 import { cn } from 'cn'
 import { useTranslation } from 'react-i18next'
-import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from 'recharts'
 
 import { Page } from '@/components/app-shell/page'
 import { Card } from '@/components/ui/card'
-import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from '@/components/ui/chart'
 import { Spinner } from '@/components/ui/spinner'
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import { errorKey } from '@/features/auth/errors'
 import { FormAlert } from '@/features/auth/form-parts'
-import { formatNumber, formatVolume, formatWeight, toUnit, type Unit } from '@/features/training/weight'
+import { formatNumber, formatVolume, formatWeight, toUnit } from '@/features/training/weight'
 import { useWorkoutLabels } from '@/features/workouts/labels'
 import { useRequiredSession } from '@/lib/auth'
 
 import { exerciseProgressQuery } from './api'
 import { formatShortDate, formatWeightChange } from './format'
-import { RANGES, type ExerciseProgress, type Range, type WeightPoint } from './types'
+import { RangePicker } from './range-picker'
+import { TrendChart } from './trend-chart'
+import type { ExerciseProgress, Range } from './types'
 
 const HEADING = 'text-[0.6875rem] font-medium tracking-widest text-primary uppercase'
 
@@ -54,30 +53,6 @@ export function ExerciseProgressScreen({ exerciseId, range, onRangeChange }: Exe
   )
 }
 
-function RangePicker({ range, onChange }: { range: Range; onChange: (range: Range) => void }) {
-  const { t } = useTranslation()
-  return (
-    <ToggleGroup
-      value={[range]}
-      // Pressing the selected range again would clear it: keep one selected.
-      onValueChange={(value) => value[0] && onChange(value[0] as Range)}
-      aria-label={t('progress.rangeLabel')}
-      spacing={0}
-      className="grid w-full grid-cols-3 rounded-xl bg-card p-1"
-    >
-      {RANGES.map((item) => (
-        <ToggleGroupItem
-          key={item}
-          value={item}
-          className="h-10 rounded-lg text-[13px] text-muted-foreground aria-pressed:bg-background aria-pressed:text-foreground"
-        >
-          {t(`progress.range.${item}`)}
-        </ToggleGroupItem>
-      ))}
-    </ToggleGroup>
-  )
-}
-
 function Tile({ label, value, tone }: { label: string; value: string; tone?: 'up' | 'down' }) {
   return (
     <div className="grid gap-0.5 rounded-xl bg-card p-3">
@@ -111,7 +86,11 @@ function Details({ data }: { data: ExerciseProgress }) {
         {data.points.length === 0 ? (
           <p className="text-sm text-muted-foreground">{t('progress.detail.empty')}</p>
         ) : (
-          <WeightChart points={data.points} unit={unit} />
+          <TrendChart
+            points={data.points.map((point) => ({ date: point.date, value: toUnit(point.weight, unit) }))}
+            label={t('progress.detail.heaviest')}
+            unit={unit}
+          />
         )}
       </Card>
 
@@ -160,69 +139,5 @@ function Details({ data }: { data: ExerciseProgress }) {
         </table>
       )}
     </>
-  )
-}
-
-/** One series: a 2px line over a 10% wash, 8px dots ringed in the card colour, crosshair tooltip. */
-function WeightChart({ points, unit }: { points: WeightPoint[]; unit: Unit }) {
-  const { t, i18n } = useTranslation()
-  const locale = i18n.language
-  const config = {
-    weight: { label: t('progress.detail.heaviest'), color: 'var(--chart-1)' },
-  } satisfies ChartConfig
-  const data = points.map((point) => ({ date: point.date, weight: toUnit(point.weight, unit) }))
-
-  return (
-    <ChartContainer config={config} className="aspect-auto h-48 w-full">
-      <AreaChart data={data} margin={{ top: 12, right: 12, bottom: 0, left: 0 }} accessibilityLayer>
-        <CartesianGrid vertical={false} />
-        <XAxis
-          dataKey="date"
-          tickLine={false}
-          axisLine={false}
-          tickMargin={8}
-          minTickGap={24}
-          tickFormatter={(value: string) => formatShortDate(value, locale)}
-        />
-        <YAxis
-          width={40}
-          tickLine={false}
-          axisLine={false}
-          tickMargin={4}
-          domain={['auto', 'auto']}
-          tickFormatter={(value: number) => formatNumber(value, locale)}
-        />
-        <ChartTooltip
-          cursor={{ stroke: 'var(--color-border)' }}
-          content={
-            <ChartTooltipContent
-              labelFormatter={(_, payload) => {
-                const date = payload[0]?.payload?.date as string | undefined
-                return date ? formatShortDate(date, locale) : ''
-              }}
-              formatter={(value) => (
-                <div className="flex w-full items-center justify-between gap-4">
-                  <span className="text-muted-foreground">{config.weight.label}</span>
-                  <span className="font-medium text-foreground tabular-nums">
-                    {formatNumber(Number(value), locale)} {unit}
-                  </span>
-                </div>
-              )}
-            />
-          }
-        />
-        <Area
-          dataKey="weight"
-          type="linear"
-          stroke="var(--color-weight)"
-          strokeWidth={2}
-          fill="var(--color-weight)"
-          fillOpacity={0.1}
-          dot={{ r: 4, fill: 'var(--color-weight)', stroke: 'var(--color-card)', strokeWidth: 2 }}
-          activeDot={{ r: 5, fill: 'var(--color-weight)', stroke: 'var(--color-card)', strokeWidth: 2 }}
-          isAnimationActive={false}
-        />
-      </AreaChart>
-    </ChartContainer>
   )
 }
