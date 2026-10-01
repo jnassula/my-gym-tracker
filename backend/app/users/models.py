@@ -1,8 +1,8 @@
 import uuid
-from datetime import datetime
+from datetime import date, datetime
 from enum import StrEnum
 
-from sqlalchemy import CheckConstraint, ForeignKey, String, false, true
+from sqlalchemy import CheckConstraint, ForeignKey, SmallInteger, String, false, true
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.db import Base, CreatedAt, UUIDPrimaryKey, enum_check, str_enum
@@ -19,12 +19,27 @@ class WeightUnit(StrEnum):
     LB = "lb"
 
 
+class Sex(StrEnum):
+    """What the body composition formulas ask for (they know no other value)."""
+
+    MALE = "male"
+    FEMALE = "female"
+
+
+# What a height in centimetres may be (also the request's bounds).
+HEIGHT_CM = (50, 260)
+
+
 class User(UUIDPrimaryKey, CreatedAt, Base):
     __tablename__ = "users"
     __table_args__ = (
         enum_check("language", Language),
         enum_check("unit", WeightUnit),
+        enum_check("sex", Sex),
         CheckConstraint("email = lower(email)", name="email_lowercase"),
+        CheckConstraint(
+            f"height_cm BETWEEN {HEIGHT_CM[0]} AND {HEIGHT_CM[1]}", name="height_cm_range"
+        ),
     )
 
     # Always lower-cased (enforced by a CHECK), so the unique constraint is case-insensitive.
@@ -55,3 +70,8 @@ class User(UUIDPrimaryKey, CreatedAt, Base):
     avatar_file_id: Mapped[uuid.UUID | None] = mapped_column(
         ForeignKey("files.id", ondelete="SET NULL", use_alter=True)
     )
+    # Optional, and only for the body composition a scale's impedance is turned into
+    # (``body.composition``): without all three, a weighing shows the weight alone.
+    height_cm: Mapped[int | None] = mapped_column(SmallInteger)
+    birth_date: Mapped[date | None]
+    sex: Mapped[Sex | None] = mapped_column(str_enum(Sex))

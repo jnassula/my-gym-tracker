@@ -1,6 +1,7 @@
 """Imports every domain's models so ``Base.metadata`` is complete (Alembic, tests)."""
 
 from app.auth.models import RefreshToken
+from app.body.models import BodyMeasurement
 from app.core.db import Base
 from app.exercises.models import Exercise
 from app.files.models import StoredFile
@@ -12,6 +13,7 @@ from app.workouts.models import WorkoutDay, WorkoutPlan
 
 __all__ = [
     "Base",
+    "BodyMeasurement",
     "Exercise",
     "ExerciseLog",
     "HealthConnection",

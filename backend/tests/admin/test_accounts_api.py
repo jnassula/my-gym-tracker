@@ -9,6 +9,7 @@ from httpx import AsyncClient
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.body.models import BodyMeasurement
 from app.files.models import FileKind, StoredFile
 from app.logs.models import ExerciseLog, WorkoutSession
 from app.notifications.scheduler import run_due
@@ -154,6 +155,7 @@ async def test_deleting_an_account_removes_everything_it_owns(
     storage: MemoryStorage,
 ) -> None:
     await gym.log(SQUAT, 80, 10)
+    await client.post("/api/body/measurements", json={"weight": 78.4}, headers=gym.headers)
     athlete = (await account(client, admin, ATHLETE))["id"]
     key = f"users/{athlete}/workout_pdf/{uuid.uuid4()}"
     await storage.put(key, b"%PDF-1.7", "application/pdf")
@@ -174,7 +176,7 @@ async def test_deleting_an_account_removes_everything_it_owns(
 
     assert response.status_code == 204
     assert list(storage.objects) == ["users/someone-else/workout_pdf/1"]
-    for table in (WorkoutPlan, WorkoutSession, ExerciseLog, StoredFile):
+    for table in (WorkoutPlan, WorkoutSession, ExerciseLog, StoredFile, BodyMeasurement):
         assert await db_session.scalar(select(func.count()).select_from(table)) == 0
     assert await db_session.scalar(select(User.id).where(User.email == ATHLETE)) is None
     assert (await client.get("/api/users/me", headers=gym.headers)).status_code == 401
