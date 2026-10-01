@@ -4,7 +4,6 @@ from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.pool import NullPool
 
-from app import __version__
 from app.core.config import get_settings
 from app.core.db import get_session
 from app.main import app
@@ -17,7 +16,7 @@ async def test_health_reports_ok_when_database_is_reachable(client: AsyncClient)
     assert response.status_code == 200
     assert response.json() == {
         "status": "ok",
-        "version": __version__,
+        "version": get_settings().app_version,
         "release": get_settings().app_release,
         "database": "ok",
         "storage": "ok",

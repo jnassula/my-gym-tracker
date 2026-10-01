@@ -17,8 +17,10 @@ class Settings(BaseSettings):
     database_url: str = Field(description="SQLAlchemy async URL, e.g. postgresql+asyncpg://...")
     cors_origins: list[str] = Field(default_factory=list)
     log_level: str = "INFO"
-    # The deployed build (the commit), baked into the production image by CI; shown in /health.
+    # The deployed build (the commit) and its version, baked into the production image by CI and
+    # shown in /health. The version is worked out from the git history (deploy/version.sh).
     app_release: str = "dev"
+    app_version: str = "dev"
 
     # --- auth ---
     jwt_secret: SecretStr = Field(min_length=32)

@@ -9,6 +9,9 @@ import { VitePWA } from 'vite-plugin-pwa'
 // In Docker the backend is reachable as http://backend:8000; locally it defaults to the
 // host port published by docker compose.
 const apiTarget = process.env.API_PROXY_TARGET ?? 'http://localhost:8200'
+// The build's version (deploy/version.sh, passed by the production image's build). The app reads
+// it as import.meta.env.VITE_APP_VERSION (src/lib/version.ts).
+const appVersion = process.env.VITE_APP_VERSION ?? 'dev'
 
 // https://vite.dev/config/
 export default defineConfig({
@@ -17,6 +20,13 @@ export default defineConfig({
     tanstackRouter({ target: 'react', autoCodeSplitting: true }),
     react(),
     tailwindcss(),
+    // The served page says which build it is, so a deploy can check it from the outside
+    // (deploy/smoke-test.sh).
+    {
+      name: 'app-version',
+      transformIndexHtml: (html) =>
+        html.replace('</head>', `  <meta name="app-version" content="${appVersion}" />\n  </head>`),
+    },
     VitePWA({
       // Our own service worker (src/sw), so it can also receive push notifications.
       strategies: 'injectManifest',

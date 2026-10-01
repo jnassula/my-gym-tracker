@@ -8,7 +8,6 @@ from fastapi import APIRouter, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from slowapi.errors import RateLimitExceeded
 
-from app import __version__
 from app.admin.router import router as admin_router
 from app.auth.router import router as auth_router
 from app.body.router import router as body_router
@@ -66,7 +65,7 @@ def create_app() -> FastAPI:
 
     app = FastAPI(
         title="myGymTracker API",
-        version=__version__,
+        version=settings.app_version,
         lifespan=lifespan,
         responses={"default": {"model": ErrorResponse}},
     )

@@ -10,7 +10,6 @@ from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app import __version__
 from app.core.config import get_settings
 from app.core.db import SessionDep
 from app.core.storage import Storage, get_storage
@@ -52,7 +51,7 @@ async def check_health(session: AsyncSession, storage: Storage) -> HealthStatus:
     database, storage_status = await asyncio.gather(check_database(session), check_storage(storage))
     return HealthStatus(
         status="ok" if database == storage_status == "ok" else "degraded",
-        version=__version__,
+        version=get_settings().app_version,
         release=get_settings().app_release,
         database=database,
         storage=storage_status,

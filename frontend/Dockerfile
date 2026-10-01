@@ -14,6 +14,9 @@ FROM base AS build
 COPY package.json package-lock.json ./
 RUN --mount=type=cache,target=/root/.npm npm ci --no-fund --no-audit
 COPY . .
+# The version CI worked out for this build (deploy/version.sh), shown in Definições.
+ARG APP_VERSION=dev
+ENV VITE_APP_VERSION=${APP_VERSION}
 RUN npm run build
 
 # ---- prod: nginx serves the build and proxies /api to the backend ----

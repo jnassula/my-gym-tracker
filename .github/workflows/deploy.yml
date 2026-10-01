@@ -1,5 +1,6 @@
 # Puts one commit's images live on the server: copies deploy/ there, runs deploy.sh (backup,
-# pull, restart, wait until healthy, roll back if not) and checks the public site.
+# pull, restart, wait until healthy, roll back if not), checks the public site and, for a version
+# that is live for the first time, tags it (vX.Y.Z, with a GitHub release).
 # CI/CD calls it for every push to main. By hand (Actions → Deploy → Run workflow) it puts an
 # earlier commit back: a rollback. Setup in deploy/README.md.
 name: Deploy
@@ -34,6 +35,9 @@ jobs:
     name: Production
     runs-on: ubuntu-24.04
     timeout-minutes: 20
+    permissions:
+      contents: write # tags the version that went live
+      packages: read
     environment:
       name: production
       url: https://${{ vars.APP_DOMAIN }}
@@ -102,3 +106,21 @@ jobs:
           APP_DOMAIN: ${{ vars.APP_DOMAIN }}
           RELEASE: ${{ steps.release.outputs.sha }}
         run: sh deploy/smoke-test.sh "https://$APP_DOMAIN" "$RELEASE"
+      - name: Tag the version that is live
+        env:
+          GH_TOKEN: ${{ github.token }}
+          APP_DOMAIN: ${{ vars.APP_DOMAIN }}
+          RELEASE: ${{ steps.release.outputs.sha }}
+        run: |
+          # The version is baked into the image (deploy/version.sh, at build time): what the
+          # live site reports is the one to record. Only now, so a deploy that failed doesn't
+          # use a number up. A rollback, or the same release again, finds its tag already there.
+          version=$(curl --fail --silent --show-error --retry 3 "https://$APP_DOMAIN/health" | jq --raw-output .version)
+          if ! printf '%s' "$version" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "::warning::/health reports the version '$version': nothing to tag"
+          elif gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/v$version" > /dev/null 2>&1; then
+            echo "v$version is tagged already"
+          else
+            gh release create "v$version" --repo "$GITHUB_REPOSITORY" --target "$RELEASE" \
+              --title "v$version" --generate-notes
+          fi

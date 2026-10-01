@@ -1,5 +1,6 @@
 [project]
 name = "mygymtracker-api"
+# Not the app's version (that comes with each deploy: APP_VERSION, deploy/version.sh).
 version = "0.1.0"
 description = "myGymTracker API"
 requires-python = ">=3.13"

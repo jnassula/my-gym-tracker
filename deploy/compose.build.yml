@@ -8,8 +8,12 @@ services:
       target: prod
       args:
         APP_RELEASE: ${IMAGE_TAG:?set in .env}
+        # CI passes what deploy/version.sh prints; a local build may too.
+        APP_VERSION: ${APP_VERSION:-dev}
 
   frontend:
     build:
       context: ../frontend
       target: prod
+      args:
+        APP_VERSION: ${APP_VERSION:-dev}
