@@ -197,16 +197,22 @@ async def take(
     if not weighings:
         return 0
     instants = [w.at for w in weighings]
-    others = (
+    nearby = (
         await session.execute(
-            select(BodyMeasurement.measured_at, BodyMeasurement.weight).where(
+            select(
+                BodyMeasurement.source,
+                BodyMeasurement.measured_at,
+                BodyMeasurement.weight,
+                BodyMeasurement.deleted_at,
+            ).where(
                 BodyMeasurement.user_id == user.id,
-                BodyMeasurement.source != source,
                 BodyMeasurement.measured_at >= min(instants) - SAME_WITHIN,
                 BodyMeasurement.measured_at <= max(instants) + SAME_WITHIN,
             )
         )
     ).all()
+    others = [row for row in nearby if row.source != source]
+    deleted = {row.measured_at for row in nearby if row.source == source and row.deleted_at}
     # One row per instant (a later duplicate in the batch wins).
     values = {
         w.at: {
@@ -218,7 +224,8 @@ async def take(
             "body_fat_pct": w.body_fat_pct,
         }
         for w in weighings
-        if not any(same_weighing(w, other.measured_at, other.weight) for other in others)
+        if w.at not in deleted
+        and not any(same_weighing(w, other.measured_at, other.weight) for other in others)
     }
     if values:
         statement = insert(BodyMeasurement).values(list(values.values()))
@@ -226,7 +233,6 @@ async def take(
             statement.on_conflict_do_update(
                 index_elements=["user_id", "source", "measured_at"],
                 set_={key: statement.excluded[key] for key in ("weight", "body_fat_pct")},
-                where=BodyMeasurement.deleted_at.is_(None),
             )
         )
     return len(values)

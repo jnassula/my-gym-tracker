@@ -109,9 +109,9 @@ async def test_a_deleted_weighing_doesnt_come_back_with_the_next_run(gym: Gym) -
 
     deleted = await gym.client.delete(f"/api/body/measurements/{measurement}", headers=gym.headers)
     again = await gym.client.delete(f"/api/body/measurements/{measurement}", headers=gym.headers)
-    await sync(gym, token, body)  # the shortcut sends its last days on every run
+    rerun = await sync(gym, token, body)  # the shortcut sends its last days on every run
 
-    assert (deleted.status_code, again.status_code) == (204, 404)
+    assert (deleted.status_code, again.status_code, rerun["weighings"]) == (204, 404, 0)
     assert (await gym.get("/api/body"))["latest"] is None
     # Nor through the other data source.
     await sync(
