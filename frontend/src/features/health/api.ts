@@ -1,5 +1,6 @@
 import { queryOptions, useMutation, useQueryClient } from '@tanstack/react-query'
 
+import { bodyKeys } from '@/features/body/api'
 import { progressKeys } from '@/features/progress/api'
 import { api } from '@/lib/api'
 
@@ -41,6 +42,7 @@ export function useDisconnectHealth(provider: Provider) {
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: healthKeys.all })
       await queryClient.invalidateQueries({ queryKey: progressKeys.all })
+      await queryClient.invalidateQueries({ queryKey: bodyKeys.all })
     },
   })
 }
@@ -75,8 +77,9 @@ export function useUpdateHealthSettings(provider: Provider) {
         Object.keys(changes).map((key) => [key, settings[key as keyof HealthSettings]]),
       )
       queryClient.setQueryData<HealthSources>(healthKeys.all, (data) => data && withSettings(data, provider, changed))
-      // Turning a kind of data off deletes it: the sessions' figures change.
+      // Turning a kind of data off deletes it: the sessions' figures and the weighings change.
       await queryClient.invalidateQueries({ queryKey: progressKeys.all })
+      await queryClient.invalidateQueries({ queryKey: bodyKeys.all })
     },
   })
 }

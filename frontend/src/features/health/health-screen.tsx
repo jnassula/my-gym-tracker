@@ -217,6 +217,12 @@ function ReadSettings({ provider, settings }: { provider: Provider; settings: He
           checked={settings.calories}
           onCheckedChange={(on) => save({ calories: on })}
         />
+        <SwitchRow
+          label={t('health.body')}
+          hint={t('health.bodyHint')}
+          checked={settings.body}
+          onCheckedChange={(on) => save({ body: on })}
+        />
       </SettingsGroup>
       <p className="px-1 text-xs text-muted-foreground">{t('health.readsFooter')}</p>
     </div>

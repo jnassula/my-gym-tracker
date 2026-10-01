@@ -582,7 +582,9 @@
     "latest": "Latest weighing",
     "source": {
       "manual": "Typed in",
-      "scale": "Scale"
+      "scale": "Scale",
+      "apple_health": "Apple Health",
+      "health_connect": "Health Connect"
     },
     "metricLabel": "What the chart shows",
     "metric": {
@@ -658,8 +660,9 @@
         "failed": "The connection to the scale was lost. Tap it to wake it and try again."
       },
       "support": {
-        "ios": "Browsers on the iPhone have no Bluetooth. Weigh yourself with the scale's app and add the weight here manually.",
-        "unsupported": "This browser has no Bluetooth. Open the app in Chrome, on Android or a computer, or add the weight manually."
+        "ios": "Browsers on the iPhone have no Bluetooth. With Apple Health connected, the weighings from the scale's app arrive by themselves; or add the weight manually.",
+        "unsupported": "This browser has no Bluetooth. Open the app in Chrome, on Android or a computer, or add the weight manually.",
+        "iosLink": "Open Apple Health"
       }
     }
   },
@@ -740,7 +743,7 @@
         "name": "Apple Health",
         "hint": "iPhone, with a shortcut",
         "introTitle": "Your Apple Watch data in your workouts",
-        "introBody": "A shortcut on your iPhone reads the heart rate and active calories your Apple Watch records and sends them here. Each workout then shows the average heart rate, the calories and each exercise's peak.",
+        "introBody": "A shortcut on your iPhone reads the heart rate and active calories your Apple Watch records and sends them here. Each workout then shows the average heart rate, the calories and each exercise's peak. It also brings the weighings your scale's app writes there.",
         "privacy": "Only what was recorded during your workouts is kept. The rest of your day stays on the iPhone.",
         "limitation": "Web app: syncing goes through the Health app on the iPhone, with the “myGymTracker” shortcut. A browser can't reach the watch directly."
       },
@@ -748,7 +751,7 @@
         "name": "Health Connect",
         "hint": "Android, with the HC Webhook app",
         "introTitle": "Your watch's data in your workouts",
-        "introBody": "Health Connect gathers on Android what your watch records (Wear OS, Samsung, Garmin, Fitbit and others). The HC Webhook app reads the heart rate and active calories from it and sends them here. Each workout then shows the average heart rate, the calories and each exercise's peak.",
+        "introBody": "Health Connect gathers on Android what your watch records (Wear OS, Samsung, Garmin, Fitbit and others). The HC Webhook app reads the heart rate and active calories from it and sends them here. Each workout then shows the average heart rate, the calories and each exercise's peak. It also brings the weighings your scale's app writes there.",
         "privacy": "Only what was recorded during your workouts is kept. What arrives outside a workout waits up to 3 hours, in case you are starting one, and is deleted.",
         "limitation": "Web app: Health Connect only exists inside Android. Syncing goes through HC Webhook, an open-source app that isn't ours and sends the data only to the address you give it."
       }
@@ -783,11 +786,13 @@
     "lastSync": "Last synced {{when}}",
     "waiting": "Waiting for the first sync",
     "weekSynced": "{{synced}} of {{total}} workouts this week with watch data",
-    "reads": "What we read from the watch",
+    "reads": "What we read",
     "heartRate": "Heart rate",
     "heartRateHint": "Average, and the peak per exercise",
     "calories": "Active calories",
     "caloriesHint": "During the workout",
+    "body": "Weight and body fat",
+    "bodyHint": "The scale's weighings, under Body weight",
     "readsFooter": "Turning one of these off deletes what was imported of it.",
     "newToken": "Create a new code",
     "newTokenTitle": "Create a new code?",
@@ -795,7 +800,7 @@
     "newTokenConfirm": "Create",
     "disconnect": "Disconnect {{name}}",
     "disconnectTitle": "Disconnect {{name}}?",
-    "disconnectBody": "The code stops working and the heart rate and calories that came from {{name}} are deleted. Your workouts stay.",
+    "disconnectBody": "The code stops working and the heart rate, calories and weighings that came from {{name}} are deleted. Your workouts stay.",
     "disconnectConfirm": "Disconnect",
     "disconnected": "{{name}} disconnected.",
     "cancel": "Cancel",
@@ -840,7 +845,9 @@
         "energyDates": "Add “Format Date” for the samples from step 4, as in step 3.",
         "post": "Add “Get Contents of URL” with the address above. Under Show More: method POST; under Headers, Authorization with the value copied above; request body JSON with these four Text fields:",
         "firstRun": "Run the shortcut once by hand. Allow access to Heart Rate and Active Energy and, when it asks whether to send the data to this address, choose “Always Allow”. If it warns about a large amount of data, turn on sharing large amounts of data in Settings → Shortcuts → Advanced.",
-        "automation": "Optional: in Automation, + → Time of Day (say 9 pm, daily) → Run Immediately → the “{{name}}” shortcut. The Health app can't be read while the iPhone is locked: what fails one day goes the next."
+        "automation": "Optional: in Automation, + → Time of Day (say 9 pm, daily) → Run Immediately → the “{{name}}” shortcut. The Health app can't be read while the iPhone is locked: what fails one day goes the next.",
+        "weight": "Optional, for the scale's weighings: before step 6, add “Find Health Samples” with the type Weight and “Format Date”, as in steps 2 and 3. In the request body, add the fields bm_t (the formatted date), bm_v (the samples → Value) and bm_u (the samples → Unit).",
+        "bodyFat": "The same for Body Fat Percentage, with the fields bf_t (the formatted date) and bf_v (the samples → Value)."
       },
       "fields": {
         "hr_t": "the formatted date from step 3",
@@ -859,8 +866,8 @@
       "store": "Open HC Webhook on Google Play",
       "steps": {
         "install": "Install the HC Webhook app and make sure Health Connect is set up on the phone: that is where the watch, or the watch's app, writes its data.",
-        "types": "Under “Data Types”, turn on only Heart Rate and Active Calories, and grant the permissions the app asks for.",
-        "resolution": "For both types, choose the “Full” resolution. With daily totals the calories can't be matched to the workout, and with per-minute averages the peaks come out lower.",
+        "types": "Under “Data Types”, turn on Heart Rate and Active Calories and, for the scale's weighings, Weight and Body Fat. Grant the permissions the app asks for.",
+        "resolution": "For heart rate and active calories, choose the “Full” resolution. With daily totals the calories can't be matched to the workout, and with per-minute averages the peaks come out lower.",
         "webhook": "Under “Webhook URLs”, add a webhook with the address above, in JSON format.",
         "header": "On that webhook, under “Edit Headers”, add a header with the key Authorization and the value copied above.",
         "schedule": "Under “Sync Schedule”, choose Interval with 15 minutes and grant the background permission.",

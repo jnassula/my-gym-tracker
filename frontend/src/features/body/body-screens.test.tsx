@@ -118,7 +118,7 @@ describe('BodyScreen', () => {
     expect(screen.getByText('Variação no período').nextElementSibling).toHaveTextContent('−0,55 kg')
     expect(screen.getByRole('heading', { name: 'Peso por dia' })).toBeInTheDocument()
     const rows = within(screen.getByRole('table', { name: 'Pesagens' })).getAllByRole('row').slice(1)
-    expect(rows.map((row) => row.textContent)).toEqual(['28 set. · 18:3078,45 kg22,5 %', '21 set.79 kg—'])
+    expect(rows.map((row) => row.textContent)).toEqual(['28 set. · 18:30Balança78,45 kg22,5 %', '21 set.Escrita à mão79 kg—'])
   })
 
   it('offers the body fat on the chart only when a weighing has it', async () => {
@@ -138,6 +138,18 @@ describe('BodyScreen', () => {
     expect(await screen.findByRole('heading', { name: 'Peso por dia' })).toBeInTheDocument()
     expect(screen.getByText('Variação no período').nextElementSibling).toHaveTextContent('−0,55 kg')
     expect(screen.queryByRole('group', { name: 'O que o gráfico mostra' })).not.toBeInTheDocument()
+  })
+
+  it('says where a weighing sent by a data source came from, with its time', async () => {
+    const sent = weighing({ id: 'm-3', source: 'apple_health', measured_at: '2026-09-27T06:40:00Z', body_fat_pct: 22 })
+    serve({ [BODY]: () => json({ ...filled, latest: sent, measurements: [sent] }) })
+    renderWithRouter(<BodyScreen {...props} />)
+
+    expect(await screen.findByText('27 set. · 7:40 · Apple Health')).toBeInTheDocument()
+    const [row] = within(screen.getByRole('table', { name: 'Pesagens' })).getAllByRole('row').slice(1)
+    expect(row).toHaveTextContent('27 set. · 7:40Apple Health78,4 kg22 %')
+    // Its body fat is the health app's own figure, not this app's estimate.
+    expect(screen.queryByText(/é uma estimativa/)).not.toBeInTheDocument()
   })
 
   it('asks for the profile when a scale’s weighing can’t show its composition', async () => {
@@ -161,6 +173,7 @@ describe('BodyScreen', () => {
     // No Bluetooth in any browser on an iPhone: typing it in is the way, and the screen says why.
     expect(screen.queryByRole('button', { name: 'Pesar agora' })).not.toBeInTheDocument()
     expect(screen.getByText(/No iPhone os browsers não têm Bluetooth/)).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Abrir o Apple Health' })).toHaveAttribute('href', '/settings/health')
     await userEvent.click(screen.getByRole('button', { name: 'Adicionar manualmente' }))
     const dialog = await screen.findByRole('dialog')
     await userEvent.click(within(dialog).getByRole('button', { name: 'Guardar' }))

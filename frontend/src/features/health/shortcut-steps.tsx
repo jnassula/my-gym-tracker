@@ -4,7 +4,8 @@ import { SHORTCUT_NAME, viaNgrok } from './api'
 import { SetupSteps } from './setup-steps'
 
 // Action names as the Shortcuts app shows them (checked against its pt-PT strings).
-const STEPS = ['name', 'heartRate', 'heartRateDates', 'energy', 'energyDates', 'post', 'firstRun', 'automation'] as const
+// The last two are optional: the scale's weighings, for whoever has one.
+const STEPS = ['name', 'heartRate', 'heartRateDates', 'energy', 'energyDates', 'post', 'firstRun', 'automation', 'weight', 'bodyFat'] as const
 // The JSON body's fields: dates and values of heart rate (hr) and active energy (ae).
 const FIELDS = ['hr_t', 'hr_v', 'ae_t', 'ae_v'] as const
 

@@ -36,7 +36,7 @@ const disconnected = (provider: Provider): Connection => ({
   provider,
   connected: false,
   last_sync_at: null,
-  settings: { heart_rate: true, calories: true },
+  settings: { heart_rate: true, calories: true, body: true },
 })
 
 const off: HealthSources = {
@@ -119,7 +119,7 @@ describe('HealthScreen', () => {
     serve({
       [SOURCES]: () => json(on('apple_health', 'health_connect')),
       'PATCH /api/health/connections/health_connect/settings': (body) =>
-        json({ heart_rate: true, calories: true, ...(body as object) }),
+        json({ heart_rate: true, calories: true, body: true, ...(body as object) }),
     })
     renderWithRouter(<HealthScreen provider="health_connect" />)
 
@@ -132,6 +132,11 @@ describe('HealthScreen', () => {
       expect(requests('PATCH /api/health/connections/health_connect/settings')).toEqual([{ calories: false }]),
     )
     expect(screen.getByRole('switch', { name: /Calorias ativas/ })).not.toBeChecked()
+    // The scale's weighings are a kind of their own.
+    await userEvent.click(screen.getByRole('switch', { name: /Peso e gordura corporal/ }))
+    await waitFor(() =>
+      expect(requests('PATCH /api/health/connections/health_connect/settings')[1]).toEqual({ body: false }),
+    )
   })
 
   it('runs the shortcut from the iPhone only', async () => {

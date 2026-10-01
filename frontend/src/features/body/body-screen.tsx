@@ -73,7 +73,14 @@ export function BodyScreen({ range, metric, onRangeChange, onMetricChange }: Bod
           <Button size="hero" onClick={() => setAdding('manual')}>
             {t('body.addManual')}
           </Button>
-          <p className="px-1 text-xs text-muted-foreground">{t(`body.scale.support.${support}`)}</p>
+          <p className="px-1 text-xs text-muted-foreground">
+            {t(`body.scale.support.${support}`)}{' '}
+            {support === 'ios' && (
+              <Link to="/settings/health" className="text-primary underline-offset-4 hover:underline">
+                {t('body.scale.support.iosLink')}
+              </Link>
+            )}
+          </p>
         </>
       )}
     </div>
@@ -228,6 +235,7 @@ function Measurements({ measurements, unit }: { measurements: Measurement[]; uni
             <tr key={measurement.id} className="border-t">
               <th scope="row" className="px-1 py-1 text-left font-normal">
                 {when(measurement)}
+                <span className="block text-xs text-muted-foreground">{t(`body.source.${measurement.source}`)}</span>
               </th>
               <td className="px-1 py-1 text-right tabular-nums">
                 {formatWeight(measurement.weight, unit, i18n.language)}

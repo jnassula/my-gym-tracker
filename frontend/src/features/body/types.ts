@@ -1,6 +1,7 @@
 import type { Range } from '@/features/progress/types'
 
-export type MeasurementSource = 'manual' | 'scale'
+/** Typed in, read from the scale over Bluetooth, or sent by a data source's bridge. */
+export type MeasurementSource = 'manual' | 'scale' | 'apple_health' | 'health_connect'
 
 /** One weighing. The composition figures are worked out by the server from the scale's
  * impedance and the profile (height, age, sex); `body_fat_pct` may also be typed in. */

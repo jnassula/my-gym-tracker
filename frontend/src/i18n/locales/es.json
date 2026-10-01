@@ -582,7 +582,9 @@
     "latest": "Último pesaje",
     "source": {
       "manual": "Escrito a mano",
-      "scale": "Báscula"
+      "scale": "Báscula",
+      "apple_health": "Apple Health",
+      "health_connect": "Health Connect"
     },
     "metricLabel": "Qué muestra el gráfico",
     "metric": {
@@ -658,8 +660,9 @@
         "failed": "Se perdió la conexión con la báscula. Písala para despertarla e inténtalo otra vez."
       },
       "support": {
-        "ios": "En el iPhone los navegadores no tienen Bluetooth. Pésate con la app de la báscula y añade aquí el peso manualmente.",
-        "unsupported": "Este navegador no tiene Bluetooth. Abre la app en Chrome, en un Android o un ordenador, o añade el peso manualmente."
+        "ios": "En el iPhone los navegadores no tienen Bluetooth. Con Apple Health conectado, los pesajes de la app de la báscula llegan solos; o añade el peso manualmente.",
+        "unsupported": "Este navegador no tiene Bluetooth. Abre la app en Chrome, en un Android o un ordenador, o añade el peso manualmente.",
+        "iosLink": "Abrir Apple Health"
       }
     }
   },
@@ -740,7 +743,7 @@
         "name": "Apple Health",
         "hint": "iPhone, con un atajo",
         "introTitle": "Los datos del Apple Watch en tus entrenamientos",
-        "introBody": "Un atajo en el iPhone lee la frecuencia cardiaca y las calorías activas que registra el Apple Watch, y las envía aquí. Cada entrenamiento muestra la FC media, las calorías y el pico de cada ejercicio.",
+        "introBody": "Un atajo en el iPhone lee la frecuencia cardiaca y las calorías activas que registra el Apple Watch, y las envía aquí. Cada entrenamiento muestra la FC media, las calorías y el pico de cada ejercicio. También trae los pesajes que la app de tu báscula escribe ahí.",
         "privacy": "Solo guardamos lo registrado durante tus entrenamientos. El resto del día se queda en el iPhone.",
         "limitation": "App web: la sincronización pasa por la app Salud del iPhone, con el atajo «myGymTracker». Desde el navegador no hay acceso directo al reloj."
       },
@@ -748,7 +751,7 @@
         "name": "Health Connect",
         "hint": "Android, con la app HC Webhook",
         "introTitle": "Los datos de tu reloj en tus entrenamientos",
-        "introBody": "Health Connect reúne en Android lo que registra el reloj (Wear OS, Samsung, Garmin, Fitbit y otros). La app HC Webhook lee de ahí la frecuencia cardiaca y las calorías activas y las envía aquí. Cada entrenamiento muestra la FC media, las calorías y el pico de cada ejercicio.",
+        "introBody": "Health Connect reúne en Android lo que registra el reloj (Wear OS, Samsung, Garmin, Fitbit y otros). La app HC Webhook lee de ahí la frecuencia cardiaca y las calorías activas y las envía aquí. Cada entrenamiento muestra la FC media, las calorías y el pico de cada ejercicio. También trae los pesajes que la app de tu báscula escribe ahí.",
         "privacy": "Solo guardamos lo registrado durante tus entrenamientos. Lo que llegue fuera de un entrenamiento espera hasta 3 horas, por si estás empezando uno, y se borra.",
         "limitation": "App web: Health Connect solo existe dentro de Android. La sincronización pasa por HC Webhook, una app de código abierto que no es nuestra y que envía los datos solo a la dirección que le des."
       }
@@ -783,11 +786,13 @@
     "lastSync": "Última sincronización {{when}}",
     "waiting": "Esperando la primera sincronización",
     "weekSynced": "{{synced}} de {{total}} entrenamientos de esta semana con datos del reloj",
-    "reads": "Qué leemos del reloj",
+    "reads": "Qué leemos",
     "heartRate": "Frecuencia cardiaca",
     "heartRateHint": "FC media y picos por ejercicio",
     "calories": "Calorías activas",
     "caloriesHint": "Durante el entrenamiento",
+    "body": "Peso y grasa corporal",
+    "bodyHint": "Los pesajes de la báscula, en Peso corporal",
     "readsFooter": "Desactivar uno de estos borra lo que ya se importó de ese tipo.",
     "newToken": "Generar un código nuevo",
     "newTokenTitle": "¿Generar un código nuevo?",
@@ -795,7 +800,7 @@
     "newTokenConfirm": "Generar",
     "disconnect": "Desconectar {{name}}",
     "disconnectTitle": "¿Desconectar {{name}}?",
-    "disconnectBody": "El código deja de funcionar y borramos la frecuencia cardiaca y las calorías que vinieron de {{name}}. Tus entrenamientos se quedan.",
+    "disconnectBody": "El código deja de funcionar y borramos la frecuencia cardiaca, las calorías y los pesajes que vinieron de {{name}}. Tus entrenamientos se quedan.",
     "disconnectConfirm": "Desconectar",
     "disconnected": "{{name}} desconectado.",
     "cancel": "Cancelar",
@@ -840,7 +845,9 @@
         "energyDates": "Añade «Formatear fecha» para las muestras del paso 4, como en el paso 3.",
         "post": "Añade «Obtener contenido de URL» con la dirección de arriba. En Mostrar más: método POST; en Encabezados, Authorization con el valor copiado arriba; cuerpo de la solicitud JSON con estos cuatro campos de texto:",
         "firstRun": "Ejecuta el atajo una vez a mano. Permite el acceso a Frecuencia cardiaca y Energía activa y, cuando pregunte si puede enviar los datos a esta dirección, elige «Permitir siempre». Si avisa de una gran cantidad de datos, activa compartir grandes cantidades de datos en Ajustes → Atajos → Avanzado.",
-        "automation": "Opcional: en Automatización, + → Hora del día (por ejemplo a las 21:00, a diario) → Ejecutar inmediatamente → atajo «{{name}}». Con el iPhone bloqueado no se pueden leer los datos de Salud: lo que falle un día se envía al siguiente."
+        "automation": "Opcional: en Automatización, + → Hora del día (por ejemplo a las 21:00, a diario) → Ejecutar inmediatamente → atajo «{{name}}». Con el iPhone bloqueado no se pueden leer los datos de Salud: lo que falle un día se envía al siguiente.",
+        "weight": "Opcional, para los pesajes de la báscula: antes del paso 6, añade «Buscar muestras de Salud» con el tipo Peso y «Formatear fecha», como en los pasos 2 y 3. En el cuerpo de la solicitud, añade los campos bm_t (la fecha formateada), bm_v (las muestras → Valor) y bm_u (las muestras → Unidad).",
+        "bodyFat": "Lo mismo para el Porcentaje de grasa corporal, con los campos bf_t (la fecha formateada) y bf_v (las muestras → Valor)."
       },
       "fields": {
         "hr_t": "la fecha formateada del paso 3",
@@ -859,8 +866,8 @@
       "store": "Abrir HC Webhook en Google Play",
       "steps": {
         "install": "Instala la app HC Webhook y comprueba que Health Connect está configurado en el teléfono: ahí es donde el reloj, o la app del reloj, escribe los datos.",
-        "types": "En «Tipos de datos», activa solo Frecuencia cardíaca y Calorías activas, y concede los permisos que pida la app.",
-        "resolution": "En los dos tipos, elige la resolución «Completo». Con totales diarios las calorías no se pueden atribuir al entrenamiento, y con medias por minuto los picos salen más bajos.",
+        "types": "En «Tipos de datos», activa Frecuencia cardíaca y Calorías activas y, para los pesajes de la báscula, Peso y Grasa corporal. Concede los permisos que pida la app.",
+        "resolution": "En la frecuencia cardíaca y las calorías activas, elige la resolución «Completo». Con totales diarios las calorías no se pueden atribuir al entrenamiento, y con medias por minuto los picos salen más bajos.",
         "webhook": "En «URL de webhook», agrega un webhook con la dirección de arriba, en formato JSON.",
         "header": "En ese webhook, en «Editar encabezados», agrega un encabezado con la llave Authorization y el valor copiado arriba.",
         "schedule": "En «Programación de sincronización», elige Intervalo con 15 minutos y concede el permiso en segundo plano.",

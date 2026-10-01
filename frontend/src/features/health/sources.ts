@@ -4,8 +4,9 @@
 export const PROVIDERS = ['apple_health', 'health_connect'] as const
 export type Provider = (typeof PROVIDERS)[number]
 
-/** What the app keeps from a source ("O que lemos do relógio"). */
-export type HealthSettings = { heart_rate: boolean; calories: boolean }
+/** What the app keeps from a source ("O que lemos"): the watch's heart rate and calories for
+ * the workouts, and the scale's weighings (`body`). */
+export type HealthSettings = { heart_rate: boolean; calories: boolean; body: boolean }
 
 export type Connection = {
   provider: Provider
@@ -33,7 +34,7 @@ export function connectionOf(sources: HealthSources, provider: Provider): Connec
       provider,
       connected: false,
       last_sync_at: null,
-      settings: { heart_rate: true, calories: true },
+      settings: { heart_rate: true, calories: true, body: true },
     }
   )
 }
