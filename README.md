@@ -144,7 +144,7 @@ Os números de progresso ignoram as séries de aquecimento e seguem cada exercí
 ## Definições
 
 - **Perfil** (nome), **idioma** (pt/en/es), **unidades** (kg/lb), **tema escuro**, **descanso automático** (registar uma série inicia o descanso) e **fuso horário** (pesquisa, ou o do dispositivo). As alterações aplicam-se logo e gravam-se em segundo plano.
-- **Foto de perfil** (Definições → Perfil): adicionar, alterar ou remover. O browser recorta a imagem num quadrado ao centro, reduz para 512 px e envia um JPEG (algumas dezenas de KB, sem os dados da câmara, como o local onde foi tirada). Fica no armazenamento de objetos e só a própria pessoa a vê; aparece no Início, nas Definições e no Perfil. Sem foto, mostra-se a inicial do nome.
+- **Foto de perfil** (Definições → Perfil): adicionar, alterar ou remover. O browser recorta a imagem num quadrado ao centro, reduz para 512 px e envia um JPEG de algumas dezenas de KB. O servidor não confia nisso: descodifica o que recebe (com o Pillow), endireita a foto, recorta, reduz e grava um JPEG novo sem metadados, por isso os dados da câmara (como o local onde foi tirada) nunca ficam guardados, venha a foto da app ou de um pedido direto à API. Fica no armazenamento de objetos e só a própria pessoa a vê; aparece no Início, nas Definições e no Perfil. Sem foto, mostra-se a inicial do nome.
 - Datas e números seguem o idioma: pt → pt-PT, en → en-GB, es → es-ES (`intlLocale()` em `src/i18n`).
 - **PDFs importados**: renomear o plano, torná-lo ativo, abrir o PDF original e apagar. Apagar esconde o plano e apaga o PDF do armazenamento; as cargas registadas continuam no histórico e no progresso.
 - **Notificações**: ver abaixo.
@@ -154,7 +154,7 @@ Os números de progresso ignoram as séries de aquecimento e seguem cada exercí
 | `PATCH /api/users/me` | `{name?, language?, timezone?, unit?, auto_rest?}` |
 | `PATCH /api/workouts/{id}` | `{name?, is_active?}` |
 | `DELETE /api/workouts/{id}` | esconde o plano e apaga o PDF; o histórico fica |
-| `PUT /api/users/me/avatar` | a foto (multipart `file`: JPEG, PNG ou WebP pelos seus bytes, até 1 MB); substitui a anterior |
+| `PUT /api/users/me/avatar` | a foto (multipart `file`: JPEG, PNG ou WebP, até 1 MB e 16 megapíxeis); fica guardada como JPEG quadrado até 512 px e substitui a anterior |
 | `DELETE /api/users/me/avatar` | remove a foto |
 | `GET /api/files/{id}/content` | o PDF original, ou a foto (`avatar_file_id` do utilizador), só para o dono |
 

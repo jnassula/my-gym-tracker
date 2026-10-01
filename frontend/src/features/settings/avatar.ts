@@ -1,4 +1,8 @@
-/** The profile photo, made in the browser: a centred square, small, without the camera's metadata. */
+/**
+ * The profile photo, made in the browser: a centred square, small, without the camera's metadata.
+ * It saves the upload (a phone photo is several MB); the server does the same again to whatever
+ * it gets (`app/users/avatar.py`), so nothing here is a security measure.
+ */
 
 /** Side of the square that is uploaded: sharp at 3x on the largest avatar, some tens of KB. */
 export const AVATAR_SIZE = 512

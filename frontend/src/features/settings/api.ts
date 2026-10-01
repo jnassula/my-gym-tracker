@@ -79,7 +79,7 @@ export function useSetAvatar() {
     },
     onSuccess: ({ photo, user }) => {
       const previous = sessionStore.get()?.user.avatar_file_id
-      // What was just sent is what the server has: no need to download it again.
+      // The server keeps this same picture (re-encoded): no need to download it again.
       if (user.avatar_file_id) {
         queryClient.setQueryData(avatarQuery(user.avatar_file_id).queryKey, URL.createObjectURL(photo))
       }
