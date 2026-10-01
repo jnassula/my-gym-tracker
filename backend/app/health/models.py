@@ -15,36 +15,55 @@ class HealthSampleType(StrEnum):
     DURATION = "duration"
 
 
+class HealthProvider(StrEnum):
+    """A data source. The web reaches none of them directly: each has a bridge on the phone."""
+
+    APPLE_HEALTH = "apple_health"  # an iPhone shortcut reads the Health app
+    HEALTH_CONNECT = "health_connect"  # the HC Webhook app reads Health Connect on Android
+
+
 class HealthSample(UUIDPrimaryKey, Base):
     __tablename__ = "health_samples"
     __table_args__ = (
         enum_check("type", HealthSampleType),
+        enum_check("source", HealthProvider),
         # A shortcut run re-sends what overlaps the last one: one row per instant and type.
         Index("uq_health_samples_user_type_time", "user_id", "type", "recorded_at", unique=True),
         Index("ix_health_samples_user_time", "user_id", "recorded_at"),
     )
 
     user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
-    # The session whose time window holds the sample. Only samples inside a session are kept.
+    # The session whose time window holds the sample. Without one it is waiting for a session
+    # (``service.WAIT``) or about to be deleted: only samples inside a session are kept.
     session_id: Mapped[uuid.UUID | None] = mapped_column(
         ForeignKey("workout_sessions.id", ondelete="SET NULL"), index=True
     )
     type: Mapped[HealthSampleType] = mapped_column(str_enum(HealthSampleType))
+    # The source that sent it: disconnecting one deletes only its own samples.
+    source: Mapped[HealthProvider] = mapped_column(
+        str_enum(HealthProvider), server_default=HealthProvider.APPLE_HEALTH.value
+    )
     value: Mapped[float] = mapped_column(Double)
     recorded_at: Mapped[datetime]
 
 
 class HealthConnection(CreatedAt, Base):
-    """Apple Health for one user: the iPhone shortcut's token and what the app keeps.
+    """One data source of one user: its bridge's token and what the app keeps from it.
 
-    There is no HealthKit on the web, so a shortcut on the iPhone reads the Health app and posts
-    the samples with this token. No row = not connected.
+    There is no HealthKit or Health Connect on the web, so a bridge on the phone reads the health
+    app and posts the samples with this token. No row = not connected.
     """
 
     __tablename__ = "health_connections"
+    __table_args__ = (enum_check("provider", HealthProvider),)
 
     user_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("users.id", ondelete="CASCADE"), primary_key=True
+    )
+    provider: Mapped[HealthProvider] = mapped_column(
+        str_enum(HealthProvider),
+        primary_key=True,
+        server_default=HealthProvider.APPLE_HEALTH.value,
     )
     # SHA-256 of the token (it is random, so a fast hash is enough, as for refresh tokens).
     token_hash: Mapped[str] = mapped_column(String(64), unique=True)

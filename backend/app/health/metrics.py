@@ -1,10 +1,11 @@
-"""Pure arithmetic for Apple Health data: which session a sample belongs to, and its figures.
+"""Pure arithmetic for the watch's data: which session a sample belongs to, and its figures.
 
 A session's time window runs from a little before its first logged set (that set, a warm-up) to
-its end ("Terminar treino", or a few minutes after the last set). The Shortcuts app can't read
-Apple Watch workouts, so the logged sets are all there is to place a session in time.
+its end ("Terminar treino", or a few minutes after the last set). The bridges don't send the
+watch's workouts, so the logged sets are all there is to place a session in time.
 """
 
+import math
 import uuid
 from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
@@ -22,6 +23,10 @@ SET_AFTER = timedelta(seconds=30)
 # The chart gets at most this many points (averaged buckets).
 CHART_POINTS = 90
 MIN_BUCKET = timedelta(seconds=15)
+# Energy written over an interval is kept as one sample per minute of it.
+PIECE = timedelta(minutes=1)
+# An interval longer than this is a day's total, which says nothing about the workout in it.
+MAX_INTERVAL = timedelta(hours=4)
 
 
 @dataclass(frozen=True)
@@ -63,6 +68,18 @@ def assign(
     """The session each instant falls in (the one starting last, if windows overlap)."""
     ordered = sorted(windows.items(), key=lambda item: item[1].start, reverse=True)
     return [next((sid for sid, window in ordered if at in window), None) for at in instants]
+
+
+def spread(start: datetime, end: datetime, value: float) -> list[Sample]:
+    """An interval's total as one sample per minute, so that a session gets only the minutes
+    inside its window. Nothing for an interval that runs backwards or is too long to tell."""
+    span = end - start
+    if span < timedelta(0) or span > MAX_INTERVAL:
+        return []
+    if span <= PIECE:
+        return [Sample(start, value)]
+    pieces = [start + PIECE * index for index in range(math.ceil(span / PIECE))]
+    return [Sample(at, value * (min(at + PIECE, end) - at) / span) for at in pieces]
 
 
 def average(samples: Sequence[Sample]) -> int | None:

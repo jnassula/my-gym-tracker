@@ -1,1 +1,1 @@
-"""Apple Health samples (heart rate, calories, duration) per session."""
+"""Data sources (Apple Health, Health Connect): their samples (heart rate, calories) per session."""

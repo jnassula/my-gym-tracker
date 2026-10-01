@@ -49,5 +49,5 @@ async def week_comparison(user: CurrentUser, session: SessionDep) -> WeekCompari
 async def session_detail(
     session_id: uuid.UUID, user: CurrentUser, session: SessionDep
 ) -> SessionDetail:
-    """One session's exercises and, once the shortcut has synced, the Apple Watch's data."""
+    """One session's exercises and, once a data source has synced, the watch's data."""
     return await service.session_detail(session, user, session_id)

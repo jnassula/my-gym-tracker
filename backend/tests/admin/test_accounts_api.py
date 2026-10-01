@@ -130,16 +130,18 @@ async def test_a_deactivated_account_gets_no_health_sync_and_no_reminders(
     db_session: AsyncSession,
     push_sender: FakePushSender,
 ) -> None:
-    connection = await client.post("/api/health/connection", headers=gym.headers)
-    token = connection.json()["token"]
+    tokens = [
+        (await client.post(f"/api/health/connections/{source}", headers=gym.headers)).json()
+        for source in ("apple_health", "health_connect")
+    ]
     await client.post("/api/notifications/subscriptions", json=DEVICE, headers=gym.headers)
     await set_active(client, admin, ATHLETE, active=False)
 
-    sync = await client.post(
-        "/api/health/sync", json={}, headers={"Authorization": f"Bearer {token}"}
-    )
-
-    assert (sync.status_code, sync.json()["code"]) == (401, "health_token_invalid")
+    for token in tokens:
+        sync = await client.post(
+            "/api/health/sync", json={}, headers={"Authorization": f"Bearer {token['token']}"}
+        )
+        assert (sync.status_code, sync.json()["code"]) == (401, "health_token_invalid")
     # 17:40 in Lisbon on a training day: the reminder would be due.
     assert await run_due(db_session, push_sender, MONDAY.replace(hour=16, minute=40)) == 0
 

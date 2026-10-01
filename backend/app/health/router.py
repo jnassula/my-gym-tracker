@@ -4,7 +4,9 @@ from app.auth.dependencies import CurrentUser
 from app.core.db import SessionDep
 from app.health import service
 from app.health.dependencies import BatchDep, HealthTokenUser
+from app.health.models import HealthProvider
 from app.health.schemas import (
+    HealthOverview,
     HealthRead,
     HealthSettings,
     HealthSettingsUpdate,
@@ -15,35 +17,62 @@ from app.health.schemas import (
 router = APIRouter(prefix="/health", tags=["health"])
 
 
-@router.get("")
-async def read(user: CurrentUser, session: SessionDep) -> HealthRead:
-    """Whether the shortcut is set up, its last sync, and what the app keeps."""
-    return await service.read(session, user)
+@router.get("/connections")
+async def overview(user: CurrentUser, session: SessionDep) -> HealthOverview:
+    """Every data source: whether its bridge is set up, its last sync, and what the app keeps."""
+    return await service.overview(session, user)
 
 
-@router.post("/connection", status_code=status.HTTP_201_CREATED)
-async def connect(user: CurrentUser, session: SessionDep) -> HealthToken:
-    """A token for the iPhone shortcut, shown once. Calling it again replaces the token."""
-    return await service.connect(session, user)
+@router.post("/connections/{provider}", status_code=status.HTTP_201_CREATED)
+async def connect(provider: HealthProvider, user: CurrentUser, session: SessionDep) -> HealthToken:
+    """A token for the source's bridge, shown once. Calling it again replaces the token."""
+    return await service.connect(session, user, provider)
 
 
-@router.delete("/connection", status_code=status.HTTP_204_NO_CONTENT)
-async def disconnect(user: CurrentUser, session: SessionDep) -> None:
-    """Revoke the token and delete everything imported from the Health app."""
-    await service.disconnect(session, user)
+@router.delete("/connections/{provider}", status_code=status.HTTP_204_NO_CONTENT)
+async def disconnect(provider: HealthProvider, user: CurrentUser, session: SessionDep) -> None:
+    """Revoke the token and delete everything imported from the source."""
+    await service.disconnect(session, user, provider)
 
 
-@router.patch("/settings")
+@router.patch("/connections/{provider}/settings")
 async def update_settings(
-    body: HealthSettingsUpdate, user: CurrentUser, session: SessionDep
+    provider: HealthProvider, body: HealthSettingsUpdate, user: CurrentUser, session: SessionDep
 ) -> HealthSettings:
-    """Turning a kind of data off also deletes what was imported of it."""
-    return await service.update_settings(session, user, body)
+    """Turning a kind of data off also deletes what the source sent of it."""
+    return await service.update_settings(session, user, provider, body)
 
 
 @router.post("/sync")
 async def sync(batch: BatchDep, token: HealthTokenUser, session: SessionDep) -> SyncResult:
-    """The iPhone shortcut posts a few days of heart rate and active calories (authenticated by
-    the Apple Health token, not a session). Only samples inside a session are kept."""
+    """A bridge posts heart rate and active calories in its own shape (authenticated by its
+    source's token, not a session). Only samples inside a session are kept."""
     user, connection = token
     return await service.store(session, user, connection, batch.samples())
+
+
+# --- Apple Health alone ---------------------------------------------------------------------------
+# What the app called before there were other sources. An installed app keeps calling these until
+# it updates: remove them a release after this one.
+
+
+@router.get("", deprecated=True)
+async def read_apple_health(user: CurrentUser, session: SessionDep) -> HealthRead:
+    return await service.read(session, user)
+
+
+@router.post("/connection", status_code=status.HTTP_201_CREATED, deprecated=True)
+async def connect_apple_health(user: CurrentUser, session: SessionDep) -> HealthToken:
+    return await service.connect(session, user, HealthProvider.APPLE_HEALTH)
+
+
+@router.delete("/connection", status_code=status.HTTP_204_NO_CONTENT, deprecated=True)
+async def disconnect_apple_health(user: CurrentUser, session: SessionDep) -> None:
+    await service.disconnect(session, user, HealthProvider.APPLE_HEALTH)
+
+
+@router.patch("/settings", deprecated=True)
+async def update_apple_health_settings(
+    body: HealthSettingsUpdate, user: CurrentUser, session: SessionDep
+) -> HealthSettings:
+    return await service.update_settings(session, user, HealthProvider.APPLE_HEALTH, body)

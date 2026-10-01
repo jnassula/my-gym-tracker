@@ -29,7 +29,8 @@ class Funnel(BaseModel):
 
 
 class Adoption(BaseModel):
-    apple_health: int
+    apple_health: int  # accounts with that data source connected
+    health_connect: int
     notifications: int  # accounts with at least one device subscribed
 
 

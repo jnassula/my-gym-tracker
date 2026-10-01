@@ -6,7 +6,7 @@ from httpx import AsyncClient
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.health.models import HealthConnection
+from app.health.models import HealthConnection, HealthProvider
 from app.users.models import User
 from tests.helpers import make_admin, signup
 from tests.training import Clock, Gym
@@ -93,6 +93,13 @@ async def test_overview(
     await joined(db_session, "atleta@example.pt", clock.now - timedelta(days=3))
     athlete = await db_session.scalar(select(User.id).where(User.email == "atleta@example.pt"))
     db_session.add(HealthConnection(user_id=athlete, token_hash="a" * 64))
+    for email, token in [("atleta@example.pt", "b"), ("bruno@example.pt", "c")]:
+        account = await db_session.scalar(select(User.id).where(User.email == email))
+        db_session.add(
+            HealthConnection(
+                user_id=account, provider=HealthProvider.HEALTH_CONNECT, token_hash=token * 64
+            )
+        )
     await db_session.flush()
     clock.advance(days=-7)  # last Monday
     await gym.log(SQUAT, 80, 10)
@@ -112,7 +119,7 @@ async def test_overview(
         "workouts_total": 2,
         "workouts_7d": {"current": 1, "previous": 1},
         "funnel": {"registered": 4, "with_plan": 1, "trained": 1, "active_30d": 1},
-        "adoption": {"apple_health": 1, "notifications": 0},
+        "adoption": {"apple_health": 1, "health_connect": 2, "notifications": 0},
         "languages": [{"language": "pt", "users": 3}, {"language": "en", "users": 1}],
     }
 

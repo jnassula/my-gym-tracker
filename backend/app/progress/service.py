@@ -391,7 +391,7 @@ def _today_comparison(
     return TodayComparison(day_id=day.id, label=day.label, exercises=rows)
 
 
-# --- one session (with the Apple Watch's data, once synced) --------------------------------------
+# --- one session (with the watch's data, once synced) --------------------------------------------
 
 
 async def session_detail(session: AsyncSession, user: User, session_id: uuid.UUID) -> SessionDetail:

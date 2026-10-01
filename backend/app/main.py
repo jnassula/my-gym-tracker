@@ -19,6 +19,7 @@ from app.core.rate_limit import limiter, rate_limit_exceeded_handler
 from app.core.storage import ensure_bucket
 from app.exercises.router import router as exercises_router
 from app.files.router import router as files_router
+from app.health import sweeper
 from app.health.router import router as health_router
 from app.logs.router import router as logs_router
 from app.notifications import scheduler
@@ -46,16 +47,14 @@ DOMAIN_ROUTERS = (
 async def lifespan(_: FastAPI) -> AsyncIterator[None]:
     await ensure_bucket()
     sender = get_push_sender()
-    reminders = (
-        asyncio.create_task(scheduler.run_forever(SessionLocal, sender))
-        if sender.public_key is not None
-        else None
-    )
+    background = [asyncio.create_task(sweeper.run_forever(SessionLocal))]
+    if sender.public_key is not None:
+        background.append(asyncio.create_task(scheduler.run_forever(SessionLocal, sender)))
     yield
-    if reminders is not None:
-        reminders.cancel()
+    for task in background:
+        task.cancel()
         with contextlib.suppress(asyncio.CancelledError):
-            await reminders
+            await task
     await engine.dispose()
 
 

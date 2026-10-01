@@ -3,21 +3,28 @@
 from datetime import datetime
 from typing import Annotated, Self
 
-from pydantic import BaseModel, BeforeValidator, ConfigDict, Field, model_validator
+from pydantic import (
+    AwareDatetime,
+    BaseModel,
+    BeforeValidator,
+    ConfigDict,
+    Field,
+    model_validator,
+)
 
-from app.health.metrics import Sample
-from app.health.models import HealthSampleType
+from app.health.metrics import Sample, spread
+from app.health.models import HealthProvider, HealthSampleType
 
 # One shortcut run sends a few days of samples; this is far above that.
 MAX_SAMPLES = 50_000
-# Values outside these are sensor glitches: they are dropped, not refused (the shortcut would
+# Values outside these are sensor glitches: they are dropped, not refused (the bridge would
 # resend them on every run).
 HEART_RATE_RANGE = (25.0, 250.0)
 CALORIES_RANGE = (0.0, 2_000.0)
 
 
 class HealthSettings(BaseModel):
-    """What the app keeps from the Health app ("O que lemos do relógio")."""
+    """What the app keeps from a source ("O que lemos do relógio")."""
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -38,17 +45,34 @@ class HealthSettingsUpdate(BaseModel):
         return self
 
 
-class HealthRead(BaseModel):
+class ConnectionRead(BaseModel):
+    provider: HealthProvider
     connected: bool
     last_sync_at: datetime | None
     settings: HealthSettings
+
+
+class HealthOverview(BaseModel):
+    """Every source, connected or not, in the order the screen lists them."""
+
+    connections: list[ConnectionRead]
     # This week (Monday to Sunday, the user's time zone): sessions, and those with watch data.
     week_sessions: int
     week_synced: int
 
 
+class HealthRead(BaseModel):
+    """Apple Health alone, as the app read it before there were other sources."""
+
+    connected: bool
+    last_sync_at: datetime | None
+    settings: HealthSettings
+    week_sessions: int
+    week_synced: int
+
+
 class HealthToken(BaseModel):
-    """Shown once, to paste into the shortcut."""
+    """Shown once, to paste into the bridge."""
 
     token: str
 
@@ -125,8 +149,55 @@ class SyncBatch(BaseModel):
         }
 
 
+class _HeartRate(BaseModel):
+    # With a sample resolution in minutes the app sends a bucket instead (avg, min, max): ``bpm``
+    # is then its average and ``time`` its start.
+    bpm: float
+    time: AwareDatetime
+
+
+class _Energy(BaseModel):
+    calories: float  # kcal over the interval
+    start_time: AwareDatetime
+    end_time: AwareDatetime
+
+
+class HealthConnectBatch(BaseModel):
+    """What the HC Webhook app posts from Android (its docs/webhook.md): one list per kind of
+    record, left out when there is none, among many kinds the app doesn't read. Instants are UTC
+    ("2026-09-29T17:02:05Z")."""
+
+    heart_rate: list[_HeartRate] = []
+    active_calories: list[_Energy] = []
+
+    def samples(self) -> dict[HealthSampleType, list[Sample]]:
+        low, high = HEART_RATE_RANGE
+        least, most = CALORIES_RANGE
+        return {
+            HealthSampleType.HEART_RATE: [
+                Sample(record.time, record.bpm)
+                for record in self.heart_rate
+                if low <= record.bpm <= high
+            ],
+            HealthSampleType.CALORIES: [
+                piece
+                for record in self.active_calories
+                if least <= record.calories <= most
+                for piece in spread(record.start_time, record.end_time, record.calories)
+            ],
+        }
+
+
+Batch = SyncBatch | HealthConnectBatch
+# Each source's bridge posts to the same address in its own shape.
+PARSERS: dict[HealthProvider, type[SyncBatch] | type[HealthConnectBatch]] = {
+    HealthProvider.APPLE_HEALTH: SyncBatch,
+    HealthProvider.HEALTH_CONNECT: HealthConnectBatch,
+}
+
+
 class SyncResult(BaseModel):
-    """What the shortcut sees after a run."""
+    """What the bridge sees after a run."""
 
     received: int  # samples of the kinds the app keeps
     kept: int  # inside a session

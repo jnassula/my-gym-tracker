@@ -11,6 +11,7 @@ from app.health.metrics import (
     peak,
     session_window,
     set_peak,
+    spread,
     total,
 )
 
@@ -73,3 +74,18 @@ def test_the_chart_averages_into_buckets() -> None:
 
     assert chart(heart_rate, window) == [Sample(at(0), 105), Sample(at(1), 130)]
     assert chart([], window) == []
+
+
+def test_an_intervals_energy_is_spread_over_its_minutes() -> None:
+    pieces = spread(at(0), at(2.5), 10)
+
+    # Two whole minutes and half of one.
+    assert [(p.at, p.value) for p in pieces] == [(at(0), 4), (at(1), 4), (at(2), 2)]
+    assert spread(at(0), at(0.5), 3) == [Sample(at(0), 3)]
+    assert spread(at(0), at(0), 3) == [Sample(at(0), 3)]
+
+
+def test_an_interval_that_runs_backwards_or_for_most_of_a_day_is_left_out() -> None:
+    assert spread(at(5), at(0), 10) == []
+    assert spread(at(0), at(24 * 60), 900) == []
+    assert len(spread(at(0), at(90), 400)) == 90

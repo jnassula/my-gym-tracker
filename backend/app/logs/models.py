@@ -21,7 +21,7 @@ from app.core.db import Base, UUIDPrimaryKey, utcnow
 class WorkoutSession(UUIDPrimaryKey, Base):
     """One day of the plan trained on one date. Starts with its first logged set (or check).
 
-    Groups sets for "per session" progress and Apple Health matching.
+    Groups sets for "per session" progress and matching the watch's samples.
     """
 
     __tablename__ = "workout_sessions"

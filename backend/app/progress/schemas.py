@@ -153,7 +153,7 @@ class SessionExercise(BaseModel):
 
 
 class SessionHealth(BaseModel):
-    """What the Apple Watch recorded during the session (after a shortcut sync)."""
+    """What the watch recorded during the session (after a data source synced)."""
 
     starts_at: datetime  # the session's window (a little before the first set to after the last)
     ends_at: datetime

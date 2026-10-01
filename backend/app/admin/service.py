@@ -42,7 +42,7 @@ from app.admin.schemas import (
 from app.auth.service import revoke_all_sessions
 from app.core.storage import Storage
 from app.files.models import StoredFile
-from app.health.models import HealthConnection
+from app.health.models import HealthConnection, HealthProvider
 from app.logs import service as logs
 from app.logs.models import WorkoutSession
 from app.notifications.models import PushSubscription
@@ -61,9 +61,11 @@ MONTH = timedelta(days=30)
 logger = logging.getLogger(__name__)
 
 
-async def _count(session: AsyncSession, column: InstrumentedAttribute[uuid.UUID]) -> int:
-    """How many accounts a table mentions."""
-    return await session.scalar(select(func.count(distinct(column)))) or 0
+async def _count(
+    session: AsyncSession, column: InstrumentedAttribute[uuid.UUID], *where: ColumnElement[bool]
+) -> int:
+    """How many accounts a table mentions (in the rows that match)."""
+    return await session.scalar(select(func.count(distinct(column))).where(*where)) or 0
 
 
 async def overview(session: AsyncSession) -> AdminOverview:
@@ -120,7 +122,16 @@ async def overview(session: AsyncSession) -> AdminOverview:
             active_30d=workouts[6],
         ),
         adoption=Adoption(
-            apple_health=await _count(session, HealthConnection.user_id),
+            apple_health=await _count(
+                session,
+                HealthConnection.user_id,
+                HealthConnection.provider == HealthProvider.APPLE_HEALTH,
+            ),
+            health_connect=await _count(
+                session,
+                HealthConnection.user_id,
+                HealthConnection.provider == HealthProvider.HEALTH_CONNECT,
+            ),
             notifications=await _count(session, PushSubscription.user_id),
         ),
         languages=[LanguageCount(language=row[0], users=row[1]) for row in languages],
