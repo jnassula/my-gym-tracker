@@ -45,6 +45,8 @@ ignore = ["PLR2004", "PLR0913"]
 "alembic/versions/**" = ["E501", "W291"]
 # The parser matches real-world text: en dashes (8–12) and multiplication signs (3×12).
 "app/workouts/parser/**" = ["RUF001", "RUF003"]
+# A table of names in three languages: one exercise per line reads better than wrapped.
+"app/exercises/library.py" = ["E501"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["app"]

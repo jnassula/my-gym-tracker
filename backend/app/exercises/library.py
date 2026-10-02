@@ -1,0 +1,173 @@
+"""The base exercise library: common gym exercises by muscle group, named in the three
+languages the app speaks. The user's own exercises (from their plans) come first in the
+library; this list fills in the rest. Names follow how trainers write them in Portugal and
+Brazil ("Supino Reto com Barra", "Cadeira Extensora"), since those are the plans we read."""
+
+from app.exercises.models import MuscleGroup
+from app.users.models import Language
+
+# (group, pt, en, es)
+_BASE: list[tuple[MuscleGroup, str, str, str]] = [
+    # Warm-up
+    (MuscleGroup.WARMUP, "Esteira", "Treadmill", "Cinta de correr"),
+    (MuscleGroup.WARMUP, "Bicicleta", "Stationary bike", "Bicicleta estática"),
+    (MuscleGroup.WARMUP, "Elíptica", "Elliptical", "Elíptica"),
+    (MuscleGroup.WARMUP, "Remo", "Rowing machine", "Remo"),
+    (MuscleGroup.WARMUP, "Mobilidade", "Mobility", "Movilidad"),
+    (MuscleGroup.WARMUP, "Alongamento", "Stretching", "Estiramientos"),
+    (MuscleGroup.WARMUP, "Corda", "Jump rope", "Comba"),
+    # Chest
+    (MuscleGroup.CHEST, "Supino Reto com Barra", "Barbell bench press", "Press de banca con barra"),
+    (MuscleGroup.CHEST, "Supino Reto com Halteres", "Dumbbell bench press", "Press de banca con mancuernas"),
+    (MuscleGroup.CHEST, "Supino Inclinado com Barra", "Incline barbell bench press", "Press inclinado con barra"),
+    (MuscleGroup.CHEST, "Supino Inclinado com Halteres", "Incline dumbbell bench press", "Press inclinado con mancuernas"),
+    (MuscleGroup.CHEST, "Supino Declinado", "Decline bench press", "Press declinado"),
+    (MuscleGroup.CHEST, "Supino Máquina", "Machine chest press", "Press de pecho en máquina"),
+    (MuscleGroup.CHEST, "Supino Smith", "Smith machine bench press", "Press de banca en multipower"),
+    (MuscleGroup.CHEST, "Crucifixo com Halteres", "Dumbbell fly", "Aperturas con mancuernas"),
+    (MuscleGroup.CHEST, "Crucifixo Inclinado com Halteres", "Incline dumbbell fly", "Aperturas inclinadas con mancuernas"),
+    (MuscleGroup.CHEST, "Crucifixo Máquina", "Pec deck", "Contractor de pecho"),
+    (MuscleGroup.CHEST, "Crucifixo Polia Alta", "High cable fly", "Cruces en polea alta"),
+    (MuscleGroup.CHEST, "Crucifixo Polia Baixa", "Low cable fly", "Cruces en polea baja"),
+    (MuscleGroup.CHEST, "Crossover", "Cable crossover", "Cruces en polea"),
+    (MuscleGroup.CHEST, "Flexão de Braços", "Push-up", "Flexiones"),
+    (MuscleGroup.CHEST, "Mergulho nas Paralelas", "Chest dip", "Fondos en paralelas"),
+    (MuscleGroup.CHEST, "Pullover com Halter", "Dumbbell pullover", "Pullover con mancuerna"),
+    # Back
+    (MuscleGroup.BACK, "Puxador Frontal", "Lat pulldown", "Jalón al pecho"),
+    (MuscleGroup.BACK, "Puxador Frontal Pegada Supinada", "Underhand lat pulldown", "Jalón al pecho supino"),
+    (MuscleGroup.BACK, "Puxador Frontal com Triângulo", "Close-grip lat pulldown", "Jalón al pecho con triángulo"),
+    (MuscleGroup.BACK, "Puxador Horizontal com Triângulo", "Seated cable row (V-bar)", "Remo en polea baja con triángulo"),
+    (MuscleGroup.BACK, "Remada Baixa", "Seated cable row", "Remo en polea baja"),
+    (MuscleGroup.BACK, "Remada Curvada com Barra", "Barbell bent-over row", "Remo con barra"),
+    (MuscleGroup.BACK, "Remada Curvada Pegada Supinada", "Underhand barbell row", "Remo con barra supino"),
+    (MuscleGroup.BACK, "Remada Unilateral com Halter", "One-arm dumbbell row", "Remo con mancuerna a una mano"),
+    (MuscleGroup.BACK, "Remada Cavalinho", "T-bar row", "Remo en barra T"),
+    (MuscleGroup.BACK, "Remada Articulada Máquina", "Machine row", "Remo en máquina"),
+    (MuscleGroup.BACK, "Remada Alta", "Upright row", "Remo al mentón"),
+    (MuscleGroup.BACK, "Barra Fixa", "Pull-up", "Dominadas"),
+    (MuscleGroup.BACK, "Barra Fixa Assistida", "Assisted pull-up", "Dominadas asistidas"),
+    (MuscleGroup.BACK, "Pulldown com Corda", "Straight-arm pulldown", "Pullover en polea con cuerda"),
+    (MuscleGroup.BACK, "Levantamento Terra", "Deadlift", "Peso muerto"),
+    (MuscleGroup.BACK, "Encolhimento com Halteres", "Dumbbell shrug", "Encogimientos con mancuernas"),
+    (MuscleGroup.BACK, "Encolhimento com Barra", "Barbell shrug", "Encogimientos con barra"),
+    (MuscleGroup.BACK, "Hiperextensão Lombar", "Back extension", "Hiperextensiones lumbares"),
+    (MuscleGroup.BACK, "Good Morning", "Good morning", "Buenos días"),
+    # Shoulders
+    (MuscleGroup.SHOULDERS, "Desenvolvimento com Halteres", "Dumbbell shoulder press", "Press de hombros con mancuernas"),
+    (MuscleGroup.SHOULDERS, "Desenvolvimento com Barra", "Barbell overhead press", "Press militar con barra"),
+    (MuscleGroup.SHOULDERS, "Desenvolvimento Máquina", "Machine shoulder press", "Press de hombros en máquina"),
+    (MuscleGroup.SHOULDERS, "Desenvolvimento Arnold", "Arnold press", "Press Arnold"),
+    (MuscleGroup.SHOULDERS, "Elevação Lateral com Halteres", "Dumbbell lateral raise", "Elevaciones laterales con mancuernas"),
+    (MuscleGroup.SHOULDERS, "Elevação Lateral na Polia", "Cable lateral raise", "Elevaciones laterales en polea"),
+    (MuscleGroup.SHOULDERS, "Elevação Lateral Máquina", "Machine lateral raise", "Elevaciones laterales en máquina"),
+    (MuscleGroup.SHOULDERS, "Elevação Frontal com Halteres", "Dumbbell front raise", "Elevaciones frontales con mancuernas"),
+    (MuscleGroup.SHOULDERS, "Elevação Frontal com Barra", "Barbell front raise", "Elevaciones frontales con barra"),
+    (MuscleGroup.SHOULDERS, "Crucifixo Invertido com Halteres", "Bent-over dumbbell reverse fly", "Pájaros con mancuernas"),
+    (MuscleGroup.SHOULDERS, "Crucifixo Invertido Máquina", "Reverse pec deck", "Aperturas invertidas en máquina"),
+    (MuscleGroup.SHOULDERS, "Face Pull", "Face pull", "Face pull"),
+    (MuscleGroup.SHOULDERS, "Remada Alta com Barra", "Barbell upright row", "Remo al mentón con barra"),
+    # Biceps
+    (MuscleGroup.BICEPS, "Rosca Direta com Barra", "Barbell curl", "Curl de bíceps con barra"),
+    (MuscleGroup.BICEPS, "Rosca Direta com Barra W", "EZ-bar curl", "Curl con barra Z"),
+    (MuscleGroup.BICEPS, "Rosca Alternada com Halteres", "Alternating dumbbell curl", "Curl alterno con mancuernas"),
+    (MuscleGroup.BICEPS, "Rosca Martelo", "Hammer curl", "Curl martillo"),
+    (MuscleGroup.BICEPS, "Rosca Scott", "Preacher curl", "Curl en banco Scott"),
+    (MuscleGroup.BICEPS, "Rosca Concentrada", "Concentration curl", "Curl concentrado"),
+    (MuscleGroup.BICEPS, "Rosca na Polia Baixa", "Cable curl", "Curl en polea baja"),
+    (MuscleGroup.BICEPS, "Rosca Inclinada com Halteres", "Incline dumbbell curl", "Curl inclinado con mancuernas"),
+    (MuscleGroup.BICEPS, "Rosca Máquina", "Machine curl", "Curl en máquina"),
+    (MuscleGroup.BICEPS, "Rosca 21", "21s curl", "Curl 21"),
+    # Triceps
+    (MuscleGroup.TRICEPS, "Tríceps na Polia com Barra", "Cable triceps pushdown", "Extensión de tríceps en polea con barra"),
+    (MuscleGroup.TRICEPS, "Tríceps na Polia com Corda", "Rope triceps pushdown", "Extensión de tríceps en polea con cuerda"),
+    (MuscleGroup.TRICEPS, "Tríceps Testa", "Skull crusher", "Press francés"),
+    (MuscleGroup.TRICEPS, "Tríceps Francês", "Overhead dumbbell extension", "Extensión de tríceps sobre la cabeza"),
+    (MuscleGroup.TRICEPS, "Tríceps Coice", "Triceps kickback", "Patada de tríceps"),
+    (MuscleGroup.TRICEPS, "Tríceps Banco", "Bench dip", "Fondos en banco"),
+    (MuscleGroup.TRICEPS, "Mergulho nas Paralelas (Tríceps)", "Triceps dip", "Fondos en paralelas (tríceps)"),
+    (MuscleGroup.TRICEPS, "Supino Fechado", "Close-grip bench press", "Press de banca cerrado"),
+    (MuscleGroup.TRICEPS, "Tríceps Máquina", "Machine triceps extension", "Extensión de tríceps en máquina"),
+    # Forearms
+    (MuscleGroup.FOREARMS, "Rosca de Punho", "Wrist curl", "Curl de muñeca"),
+    (MuscleGroup.FOREARMS, "Rosca de Punho Inversa", "Reverse wrist curl", "Curl de muñeca inverso"),
+    (MuscleGroup.FOREARMS, "Rosca Inversa", "Reverse curl", "Curl inverso"),
+    (MuscleGroup.FOREARMS, "Farmer's Walk", "Farmer's walk", "Paseo del granjero"),
+    (MuscleGroup.FOREARMS, "Suspensão na Barra", "Dead hang", "Colgarse de la barra"),
+    # Abs
+    (MuscleGroup.ABS, "Abdominal Supra", "Crunch", "Abdominales"),
+    (MuscleGroup.ABS, "Abdominal Infra", "Reverse crunch", "Abdominales inferiores"),
+    (MuscleGroup.ABS, "Abdominal na Polia", "Cable crunch", "Abdominales en polea"),
+    (MuscleGroup.ABS, "Abdominal Máquina", "Machine crunch", "Abdominales en máquina"),
+    (MuscleGroup.ABS, "Elevação de Pernas", "Leg raise", "Elevación de piernas"),
+    (MuscleGroup.ABS, "Elevação de Pernas na Barra", "Hanging leg raise", "Elevación de piernas colgado"),
+    (MuscleGroup.ABS, "Prancha", "Plank", "Plancha"),
+    (MuscleGroup.ABS, "Prancha Lateral", "Side plank", "Plancha lateral"),
+    (MuscleGroup.ABS, "Abdominal Oblíquo", "Oblique crunch", "Abdominales oblicuos"),
+    (MuscleGroup.ABS, "Rotação de Tronco na Polia", "Cable woodchop", "Giro de tronco en polea"),
+    (MuscleGroup.ABS, "Roda Abdominal", "Ab wheel rollout", "Rueda abdominal"),
+    (MuscleGroup.ABS, "Abdominal Bicicleta", "Bicycle crunch", "Abdominales bicicleta"),
+    (MuscleGroup.ABS, "Mountain Climber", "Mountain climber", "Escaladores"),
+    # Quads
+    (MuscleGroup.QUADS, "Agachamento Livre", "Barbell back squat", "Sentadilla con barra"),
+    (MuscleGroup.QUADS, "Agachamento Frontal", "Front squat", "Sentadilla frontal"),
+    (MuscleGroup.QUADS, "Agachamento Smith", "Smith machine squat", "Sentadilla en multipower"),
+    (MuscleGroup.QUADS, "Agachamento Hack", "Hack squat", "Sentadilla hack"),
+    (MuscleGroup.QUADS, "Agachamento Goblet", "Goblet squat", "Sentadilla goblet"),
+    (MuscleGroup.QUADS, "Agachamento Búlgaro", "Bulgarian split squat", "Sentadilla búlgara"),
+    (MuscleGroup.QUADS, "Agachamento Sumô", "Sumo squat", "Sentadilla sumo"),
+    (MuscleGroup.QUADS, "Leg Press 45°", "Leg press", "Prensa de piernas"),
+    (MuscleGroup.QUADS, "Leg Press Horizontal", "Horizontal leg press", "Prensa horizontal"),
+    (MuscleGroup.QUADS, "Cadeira Extensora", "Leg extension", "Extensión de cuádriceps"),
+    (MuscleGroup.QUADS, "Afundo", "Lunge", "Zancadas"),
+    (MuscleGroup.QUADS, "Afundo com Halteres", "Dumbbell lunge", "Zancadas con mancuernas"),
+    (MuscleGroup.QUADS, "Passada", "Walking lunge", "Zancadas caminando"),
+    (MuscleGroup.QUADS, "Step Up", "Step-up", "Subida al cajón"),
+    (MuscleGroup.QUADS, "Agachamento Pêndulo", "Pendulum squat", "Sentadilla péndulo"),
+    # Hamstrings
+    (MuscleGroup.HAMSTRINGS, "Mesa Flexora", "Lying leg curl", "Curl femoral tumbado"),
+    (MuscleGroup.HAMSTRINGS, "Cadeira Flexora", "Seated leg curl", "Curl femoral sentado"),
+    (MuscleGroup.HAMSTRINGS, "Flexora em Pé", "Standing leg curl", "Curl femoral de pie"),
+    (MuscleGroup.HAMSTRINGS, "Stiff com Barra", "Stiff-leg deadlift", "Peso muerto piernas rígidas"),
+    (MuscleGroup.HAMSTRINGS, "Stiff com Halteres", "Dumbbell stiff-leg deadlift", "Peso muerto con mancuernas"),
+    (MuscleGroup.HAMSTRINGS, "Levantamento Terra Romeno", "Romanian deadlift", "Peso muerto rumano"),
+    (MuscleGroup.HAMSTRINGS, "Nordic Curl", "Nordic hamstring curl", "Curl nórdico"),
+    (MuscleGroup.HAMSTRINGS, "Glute Ham Raise", "Glute-ham raise", "Glute ham raise"),
+    # Glutes
+    (MuscleGroup.GLUTES, "Elevação Pélvica", "Hip thrust", "Hip thrust"),
+    (MuscleGroup.GLUTES, "Elevação Pélvica Máquina", "Machine hip thrust", "Hip thrust en máquina"),
+    (MuscleGroup.GLUTES, "Ponte de Glúteo", "Glute bridge", "Puente de glúteo"),
+    (MuscleGroup.GLUTES, "Cadeira Abdutora", "Hip abduction machine", "Máquina de abductores"),
+    (MuscleGroup.GLUTES, "Abdução na Polia", "Cable hip abduction", "Abducción en polea"),
+    (MuscleGroup.GLUTES, "Glúteo na Polia", "Cable kickback", "Patada de glúteo en polea"),
+    (MuscleGroup.GLUTES, "Glúteo Quatro Apoios", "Donkey kick", "Patada de glúteo en cuadrupedia"),
+    (MuscleGroup.GLUTES, "Levantamento Terra Sumô", "Sumo deadlift", "Peso muerto sumo"),
+    (MuscleGroup.GLUTES, "Abdução Lateral com Caneleira", "Side-lying leg raise", "Abducción lateral con tobillera"),
+    # Adductors
+    (MuscleGroup.ADDUCTORS, "Cadeira Adutora", "Hip adduction machine", "Máquina de aductores"),
+    (MuscleGroup.ADDUCTORS, "Adução na Polia", "Cable hip adduction", "Aducción en polea"),
+    (MuscleGroup.ADDUCTORS, "Copenhagen Plank", "Copenhagen plank", "Plancha Copenhague"),
+    # Calves
+    (MuscleGroup.CALVES, "Gémeos em Pé", "Standing calf raise", "Elevación de gemelos de pie"),
+    (MuscleGroup.CALVES, "Gémeos Sentado", "Seated calf raise", "Elevación de gemelos sentado"),
+    (MuscleGroup.CALVES, "Gémeos no Leg Press", "Leg press calf raise", "Gemelos en prensa"),
+    (MuscleGroup.CALVES, "Gémeos Smith", "Smith machine calf raise", "Gemelos en multipower"),
+    (MuscleGroup.CALVES, "Gémeos Unilateral com Halter", "Single-leg dumbbell calf raise", "Gemelos a una pierna con mancuerna"),
+    # Cardio as a main exercise
+    (MuscleGroup.CARDIO, "Corrida na Esteira", "Treadmill run", "Carrera en cinta"),
+    (MuscleGroup.CARDIO, "Caminhada Inclinada", "Incline walk", "Caminata inclinada"),
+    (MuscleGroup.CARDIO, "Bicicleta HIIT", "Bike intervals", "Intervalos en bicicleta"),
+    (MuscleGroup.CARDIO, "Escada", "Stair climber", "Escaladora"),
+    (MuscleGroup.CARDIO, "Remo Ergómetro", "Rowing ergometer", "Remo ergómetro"),
+    (MuscleGroup.CARDIO, "Burpees", "Burpees", "Burpees"),
+    (MuscleGroup.CARDIO, "Battle Rope", "Battle ropes", "Cuerdas de batalla"),
+    (MuscleGroup.CARDIO, "Sled Push", "Sled push", "Empuje de trineo"),
+]  # fmt: skip
+
+_COLUMN = {Language.PT: 1, Language.EN: 2, Language.ES: 3}
+
+
+def base_entries(language: Language) -> list[tuple[str, MuscleGroup]]:
+    """(name, group) in the user's language, in the list's order (by group)."""
+    column = _COLUMN[language]
+    return [(str(entry[column]), entry[0]) for entry in _BASE]
