@@ -6,17 +6,16 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '
 import { Field, FieldLabel } from '@/components/ui/field'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 
-import type { DraftDay, DraftExercise } from './import-draft'
 import { useWorkoutLabels } from './labels'
-import { MUSCLE_GROUPS, type MuscleGroup } from './types'
+import { MUSCLE_GROUPS, type MuscleGroup, type Weekday } from './types'
 
 type Target = { day: string; group: MuscleGroup | null }
 
 type MoveDialogProps = {
   open: boolean
-  exercise: DraftExercise | null
+  exercise: { key: string; muscle_group: MuscleGroup | null } | null
   currentDay: string
-  days: DraftDay[]
+  days: Array<{ key: string; weekday: Weekday | null }>
   onOpenChange: (open: boolean) => void
   onMove: (target: Target) => void
 }
@@ -51,7 +50,7 @@ function MoveForm({
   onMove,
 }: {
   initial: Target
-  days: DraftDay[]
+  days: Array<{ key: string; weekday: Weekday | null }>
   onCancel: () => void
   onMove: (target: Target) => void
 }) {

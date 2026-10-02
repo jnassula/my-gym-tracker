@@ -64,7 +64,11 @@ function mapDay(draft: Draft, key: string, update: (day: DraftDay) => DraftDay):
 }
 
 /** Swap with the neighbour of the same muscle group (the rows the user sees together). */
-function shift(exercises: DraftExercise[], key: string, direction: -1 | 1): DraftExercise[] {
+export function shift<T extends { key: string; muscle_group: MuscleGroup | null }>(
+  exercises: T[],
+  key: string,
+  direction: -1 | 1,
+): T[] {
   const index = exercises.findIndex((e) => e.key === key)
   if (index < 0) return exercises
   const group = exercises[index].muscle_group

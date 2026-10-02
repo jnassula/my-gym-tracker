@@ -19,11 +19,13 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { cn } from '@/lib/utils'
 
-import type { DraftExercise } from './import-draft'
 import { useWorkoutLabels } from './labels'
+import type { ExerciseFields, ParseWarning } from './types'
 
 type ExerciseRowProps = {
-  exercise: DraftExercise
+  exercise: ExerciseFields & { key: string; warnings?: ParseWarning[] }
+  /** Replaces the "3×12 · 1:30" line, e.g. to add the techniques of a plan being built. */
+  scheme?: string
   canMoveUp: boolean
   canMoveDown: boolean
   onEdit: () => void
@@ -32,9 +34,10 @@ type ExerciseRowProps = {
   onDelete: () => void
 }
 
-/** One exercise in the import review: tap to edit, ⋯ for the other actions. */
+/** One exercise in the import review or the plan builder: tap to edit, ⋯ for the rest. */
 export function ExerciseRow({
   exercise,
+  scheme: schemeOverride,
   canMoveUp,
   canMoveDown,
   onEdit,
@@ -44,8 +47,9 @@ export function ExerciseRow({
 }: ExerciseRowProps) {
   const { t } = useTranslation()
   const labels = useWorkoutLabels()
-  const flagged = exercise.warnings.length > 0
-  const scheme = labels.scheme(exercise)
+  const warnings = exercise.warnings ?? []
+  const flagged = warnings.length > 0
+  const scheme = schemeOverride ?? labels.scheme(exercise)
 
   return (
     <li
@@ -57,7 +61,7 @@ export function ExerciseRow({
       <button type="button" onClick={onEdit} className="min-w-0 flex-1 py-1.5 text-left">
         <span className="block text-sm font-medium">{exercise.name}</span>
         {scheme && <span className="block text-xs text-muted-foreground">{scheme}</span>}
-        {exercise.warnings.map((warning) => (
+        {warnings.map((warning) => (
           <span key={warning} className="flex items-center gap-1 text-xs text-warning">
             <WarningIcon className="size-3.5 shrink-0" />
             {t(`import.warnings.${warning}`)}

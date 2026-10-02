@@ -57,7 +57,8 @@ export function ImportErrorState({
   )
 }
 
-export function ImportSuccess({ plan }: { plan: Plan }) {
+/** The plan is saved: what it holds and where to go. `title` replaces "… importado". */
+export function ImportSuccess({ plan, title }: { plan: Plan; title?: string }) {
   const { t } = useTranslation()
   const exercises = plan.days.flatMap((day) => day.exercises)
   const groups = new Set(
@@ -68,7 +69,7 @@ export function ImportSuccess({ plan }: { plan: Plan }) {
       <Card className="gap-2 px-4 ring-primary/60" role="status">
         <div className="flex items-center gap-2">
           <CheckCircleIcon className="size-6 text-primary" weight="fill" />
-          <h2 className="text-lg">{t('import.success.title', { name: plan.name })}</h2>
+          <h2 className="text-lg">{title ?? t('import.success.title', { name: plan.name })}</h2>
         </div>
         <p className="text-sm text-muted-foreground">
           {t('import.success.summary', {

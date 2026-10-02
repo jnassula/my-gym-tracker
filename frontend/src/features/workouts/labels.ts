@@ -12,6 +12,9 @@ export function useWorkoutLabels() {
       weekday === null ? t('weekdays.none') : t(`weekdays.short.${weekday}`),
     weekdayLong: (weekday: Weekday | null) =>
       weekday === null ? t('weekdays.none') : t(`weekdays.long.${weekday}`),
+    /** "3 dias · 11 exercícios". */
+    summary: (days: number, exercises: number) =>
+      `${t('workouts.dayCount', { count: days })} · ${t('workouts.exerciseCount', { count: exercises })}`,
     scheme: (exercise: Pick<ExerciseFields, 'sets' | 'reps' | 'rest_seconds' | 'rest_max_seconds'>) =>
       formatScheme(exercise, { setsOnly: (sets) => t('exercise.setsOnly', { sets }) }),
   }

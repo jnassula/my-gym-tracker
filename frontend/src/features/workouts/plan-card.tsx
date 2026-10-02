@@ -24,7 +24,11 @@ export function PlanCard({ plan }: { plan: PlanSummary }) {
               {plan.is_active && <Badge>{t('workouts.active')}</Badge>}
             </div>
             <p className="text-sm text-muted-foreground">
-              {t('workouts.summary', { days: plan.weekdays.length, exercises: plan.exercise_count })}
+              {t(plan.source_file ? 'workouts.imported' : 'workouts.created', {
+                date: formatDate(plan.created_at.slice(0, 10), i18n.language),
+              })}
+              {' · '}
+              {labels.summary(plan.weekdays.length, plan.exercise_count)}
             </p>
           </div>
           <CaretRightIcon className="mt-1 size-4 text-muted-foreground" />
