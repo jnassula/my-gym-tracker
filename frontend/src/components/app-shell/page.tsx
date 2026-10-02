@@ -36,7 +36,7 @@ export function Page({ title, kicker, back, backLink, action, children }: PagePr
   const { t } = useTranslation()
   const hasBack = Boolean(back || backLink)
   return (
-    <div className="mx-auto w-full max-w-md px-5 pt-[max(env(safe-area-inset-top),0.75rem)] pb-6">
+    <div className="mx-auto w-full max-w-md px-5 pt-[calc(env(safe-area-inset-top)+0.75rem)] pb-6">
       <header className="flex min-h-14 items-center gap-1">
         {backLink ??
           (back && (

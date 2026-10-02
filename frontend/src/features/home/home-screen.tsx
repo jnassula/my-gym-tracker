@@ -38,7 +38,7 @@ export function HomeScreen() {
   const active = plans.data?.find((plan) => plan.is_active)
 
   return (
-    <div className="mx-auto w-full max-w-md px-5 pt-[max(env(safe-area-inset-top),0.75rem)] pb-6">
+    <div className="mx-auto w-full max-w-md px-5 pt-[calc(env(safe-area-inset-top)+0.75rem)] pb-6">
       <Greeting />
       <div className="grid gap-4 pt-4">
         {plans.isPending || overview.isPending ? (

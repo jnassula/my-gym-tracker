@@ -12,7 +12,7 @@ export const Route = createFileRoute('/_auth/welcome')({
 function Welcome() {
   const { t } = useTranslation()
   return (
-    <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col bg-radial-[at_50%_20%] from-accent to-background to-60% px-7 pt-[max(env(safe-area-inset-top),1rem)] pb-[max(env(safe-area-inset-bottom),2rem)] text-center">
+    <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col bg-radial-[at_50%_20%] from-accent to-background to-60% px-7 pt-[calc(env(safe-area-inset-top)+1rem)] pb-[max(env(safe-area-inset-bottom),2rem)] text-center">
       <div className="flex flex-1 flex-col items-center justify-center gap-4.5">
         <LogoMark />
         <h1 className="text-3xl">{t('app.name')}</h1>

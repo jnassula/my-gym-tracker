@@ -19,7 +19,7 @@ const SECTIONS: Section[] = [
 export function AdminShell({ children }: { children: ReactNode }) {
   const { t } = useTranslation()
   return (
-    <div className="mx-auto min-h-dvh w-full max-w-5xl px-5 pt-[max(env(safe-area-inset-top),0.75rem)] pb-10">
+    <div className="mx-auto min-h-dvh w-full max-w-5xl px-5 pt-[calc(env(safe-area-inset-top)+0.75rem)] pb-10">
       <header className="flex min-h-14 flex-wrap items-center gap-x-4 gap-y-1">
         <Link to="/admin" className="flex min-h-11 items-center gap-2.5">
           <LogoMark className="size-7 text-primary" />

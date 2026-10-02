@@ -13,7 +13,7 @@ type AuthScreenProps = {
 /** Shared frame of the unauthenticated screens: flush-left title, form, footer pinned low. */
 export function AuthScreen({ title, subtitle, back, footer, children }: AuthScreenProps) {
   return (
-    <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col px-6 pt-[max(env(safe-area-inset-top),1rem)] pb-[max(env(safe-area-inset-bottom),1.75rem)]">
+    <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col px-6 pt-[calc(env(safe-area-inset-top)+1rem)] pb-[max(env(safe-area-inset-bottom),1.75rem)]">
       {back && (
         <Link
           to={back.to}
