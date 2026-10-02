@@ -27,26 +27,13 @@ function Workouts() {
   const { t } = useTranslation()
   const labels = useWorkoutLabels()
   const plans = useQuery(plansQuery())
+  // "+ Novo treino" is the bottom bar's button; the empty state repeats it as the hero.
   const [adding, setAdding] = useState(false)
   // Read on each visit: the builder writes it as the user edits.
   const [draft] = useState(loadDraft)
 
   return (
-    <Page
-      title={t('nav.workouts')}
-      action={
-        <Button
-          variant="outline-primary"
-          size="touch"
-          className="h-11 px-3"
-          aria-label={t('builder.new.buttonLabel')}
-          onClick={() => setAdding(true)}
-        >
-          <PlusIcon />
-          {t('builder.new.button')}
-        </Button>
-      }
-    >
+    <Page title={t('nav.workouts')}>
       {plans.isPending ? (
         <Spinner className="mx-auto size-6 text-muted-foreground" />
       ) : plans.isError ? (

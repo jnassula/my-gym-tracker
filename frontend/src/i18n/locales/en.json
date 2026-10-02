@@ -365,7 +365,6 @@
   },
   "builder": {
     "new": {
-      "button": "New",
       "buttonLabel": "New workout",
       "title": "New workout",
       "copyName": "{{name}} (copy)",

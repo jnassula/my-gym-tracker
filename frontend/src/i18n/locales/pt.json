@@ -365,7 +365,6 @@
   },
   "builder": {
     "new": {
-      "button": "Novo",
       "buttonLabel": "Novo treino",
       "title": "Novo treino",
       "copyName": "{{name}} (cópia)",
