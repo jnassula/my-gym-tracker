@@ -6,8 +6,8 @@ from dataclasses import dataclass
 from datetime import date, datetime, timedelta
 from decimal import Decimal
 
+from app.exercises.key import ExerciseKey
 from app.exercises.models import MuscleGroup
-from app.logs.service import ExerciseKey
 
 
 @dataclass(frozen=True)

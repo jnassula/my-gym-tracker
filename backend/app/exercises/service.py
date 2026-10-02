@@ -7,16 +7,16 @@ from sqlalchemy import func, select
 from sqlalchemy.dialects.postgresql import distinct_on
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.exercises.key import ExerciseKey, exercise_key
 from app.exercises.library import base_entries
 from app.exercises.models import Exercise, MuscleGroup
 from app.exercises.schemas import Library, LibraryEntry, LibrarySource
 from app.logs.models import ExerciseLog
-from app.logs.service import ExerciseKey, exercise_key
 from app.users.models import User
 from app.workouts.models import WorkoutDay, WorkoutPlan
 
 
-async def _last_weights(session: AsyncSession, user: User) -> dict[ExerciseKey, Decimal]:
+async def last_weights(session: AsyncSession, user: User) -> dict[ExerciseKey, Decimal]:
     """The newest set's weight per exercise key, deleted plans included (history outlives them)."""
     rows = await session.execute(
         select(Exercise.name, Exercise.muscle_group, ExerciseLog.weight)
@@ -36,7 +36,7 @@ async def library(session: AsyncSession, user: User) -> Library:
         .where(WorkoutPlan.user_id == user.id, WorkoutPlan.deleted_at.is_(None))
         .order_by(WorkoutPlan.created_at.desc(), WorkoutDay.position, Exercise.position)
     )
-    weights = await _last_weights(session, user)
+    weights = await last_weights(session, user)
     entries: dict[ExerciseKey, LibraryEntry] = {}
     for name, group, plan_name in rows.all():
         key = exercise_key(name, group)

@@ -15,6 +15,7 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from app.exercises.key import exercise_key
 from app.exercises.models import Exercise, MuscleGroup
 from app.health import service as health
 from app.health.metrics import (
@@ -31,7 +32,7 @@ from app.health.models import HealthSampleType
 from app.logs.errors import SessionNotFoundError
 from app.logs.models import ExerciseLog, WorkoutSession
 from app.logs.schemas import WeightPoint
-from app.logs.service import count_done, exercise_key, get_exercise, local_today
+from app.logs.service import count_done, get_exercise, local_today
 from app.progress.metrics import (
     LoggedSet,
     adherence,

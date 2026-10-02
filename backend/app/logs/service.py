@@ -19,7 +19,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.core.db import utcnow
-from app.exercises.models import Exercise, MuscleGroup
+from app.exercises.key import ExerciseKey, exercise_key
+from app.exercises.models import Exercise
 from app.logs.errors import (
     DayNotFoundError,
     ExerciseNotFoundError,
@@ -75,15 +76,6 @@ def count_done(
         if exercise.id in workout.done_exercise_ids
         or sets_logged.get(exercise.id, 0) >= planned_sets(exercise)
     )
-
-
-ExerciseKey = tuple[str, MuscleGroup | None]
-
-
-def exercise_key(name: str, group: MuscleGroup | None) -> ExerciseKey:
-    """Same name and group: the same exercise in another plan. The group keeps a warm-up
-    "Cadeira Extensora 2x20 (carga leve)" apart from the working one."""
-    return name.strip().lower(), group
 
 
 # --- ownership -----------------------------------------------------------------------------------
