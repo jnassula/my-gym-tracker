@@ -82,6 +82,14 @@ beforeEach(() => {
   serve({
     'GET /api/workouts': () => json([summary]),
     'GET /api/workouts/plan-1': () => json(plan),
+    'GET /api/exercises/library': () =>
+      json({
+        entries: [
+          { name: 'Supino Reto com Barra', muscle_group: 'chest', source: 'plan', plan_name: 'Treino 01', last_weight: '60.00' },
+          { name: 'Supino Inclinado com Halteres', muscle_group: 'chest', source: 'base', plan_name: null, last_weight: null },
+          { name: 'Remada Curvada', muscle_group: 'back', source: 'base', plan_name: null, last_weight: null },
+        ],
+      }),
     'POST /api/workouts': (body) => {
       const sent = body as PlanCreate
       return json({ ...plan, id: 'plan-2', name: sent.name, is_active: sent.activate, days: [] }, 201)
@@ -112,21 +120,38 @@ describe('BuilderScreen', () => {
     // Step 2: the template laid its group cards over Monday.
     expect(await screen.findByText('Passo 2 de 3 · Segunda')).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: 'Quadríceps' })).toBeInTheDocument()
+    // "+ exercício" opens the library at that group: search without accents, add with one tap.
     await u.click(screen.getByRole('button', { name: 'Adicionar exercício em Peitoral' }))
-    await u.type(await screen.findByLabelText('Nome do exercício'), 'Supino Reto')
+    const library = await screen.findByRole('dialog')
+    expect(within(library).getByRole('radio', { name: 'Peitoral' })).toHaveAttribute('aria-checked', 'true')
+    await u.type(within(library).getByLabelText('Procurar exercício…'), 'supino reto')
+    expect(within(library).getByText('Peitoral · última 60 kg')).toBeInTheDocument()
+    expect(within(library).queryByText('Supino Inclinado com Halteres')).not.toBeInTheDocument()
+    await u.click(within(library).getByRole('button', { name: 'Adicionar Supino Reto com Barra' }))
+    expect(await within(library).findByLabelText('Supino Reto com Barra já está neste dia')).toBeInTheDocument()
+    // A name nobody has becomes a custom exercise in the group.
+    await u.clear(within(library).getByLabelText('Procurar exercício…'))
+    await u.type(within(library).getByLabelText('Procurar exercício…'), 'Supino Máquina Unilateral')
+    await u.click(within(library).getByRole('button', { name: 'Criar Supino Máquina Unilateral' }))
+    await u.keyboard('{Escape}')
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
+    expect(screen.getByText('Supino Máquina Unilateral')).toBeInTheDocument()
+
+    // Tapping the row tunes it: preset, rest, technique.
+    await u.click(screen.getByRole('button', { name: /^Supino Reto com Barra/ }))
+    expect(await screen.findByLabelText('Nome do exercício')).toHaveValue('Supino Reto com Barra')
     await u.click(screen.getByRole('button', { name: '4×10' }))
     await u.click(screen.getByRole('button', { name: 'Mais 15 segundos de descanso' }))
     await u.click(screen.getByRole('button', { name: 'Drop set' }))
     await u.click(screen.getByRole('button', { name: /^Guardar/ }))
-    expect(await screen.findByText('Supino Reto')).toBeInTheDocument()
-    expect(screen.getByText('4×10 · 1:45 + Drop set')).toBeInTheDocument()
+    expect(await screen.findByText('4×10 · 1:45 + Drop set')).toBeInTheDocument()
 
     // The draft is on this device as soon as it is edited.
     expect(loadDraft()?.name).toBe('Full body 3× semana')
 
     // Step 3: Wednesday is empty, so it is flagged; saving activates.
     await u.click(screen.getByRole('button', { name: 'Rever e ativar' }))
-    expect(await screen.findByText('1 dia · 1 exercício · ~10 min por sessão')).toBeInTheDocument()
+    expect(await screen.findByText('1 dia · 2 exercícios · ~15 min por sessão')).toBeInTheDocument()
     expect(screen.getByText('Dia vazio — fica como descanso?')).toBeInTheDocument()
     await u.click(screen.getByRole('button', { name: 'Ativar treino' }))
 
@@ -143,13 +168,22 @@ describe('BuilderScreen', () => {
             label: 'Peitoral',
             exercises: [
               {
-                name: 'Supino Reto',
+                name: 'Supino Reto com Barra',
                 muscle_group: 'chest',
                 sets: 4,
                 reps: '10',
                 rest_seconds: 105,
                 rest_max_seconds: null,
                 notes: 'Drop set',
+              },
+              {
+                name: 'Supino Máquina Unilateral',
+                muscle_group: 'chest',
+                sets: 3,
+                reps: '12',
+                rest_seconds: 90,
+                rest_max_seconds: null,
+                notes: null,
               },
             ],
           },

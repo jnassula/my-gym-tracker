@@ -441,7 +441,24 @@
       "empty": "Este día aún no tiene nada. Añade un grupo muscular para empezar.",
       "addGroup": "Añadir grupo muscular",
       "addGroupTitle": "¿Qué grupo muscular?",
-      "review": "Revisar y activar"
+      "review": "Revisar y activar",
+      "library": "Biblioteca"
+    },
+    "library": {
+      "title": "Biblioteca de ejercicios",
+      "search": "Buscar ejercicio…",
+      "filter": "Grupo muscular",
+      "all": "Todos",
+      "mine": "De mis entrenamientos",
+      "results": "Ejercicios",
+      "lastWeight": "última {{weight}}",
+      "fromBase": "biblioteca",
+      "add": "Añadir {{name}}",
+      "added": "{{name}} ya está en este día",
+      "custom": "Crear ejercicio personalizado: “{{name}}”",
+      "addCustom": "Crear {{name}}",
+      "empty": "Ningún ejercicio con ese nombre. Escribe el nombre completo para crearlo.",
+      "noWeightYet": "aún sin carga"
     },
     "exercise": {
       "addTitle": "Nuevo ejercicio",

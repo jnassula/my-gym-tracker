@@ -441,7 +441,24 @@
       "empty": "Nothing on this day yet. Add a muscle group to start.",
       "addGroup": "Add a muscle group",
       "addGroupTitle": "Which muscle group?",
-      "review": "Review and activate"
+      "review": "Review and activate",
+      "library": "Library"
+    },
+    "library": {
+      "title": "Exercise library",
+      "search": "Search exercises…",
+      "filter": "Muscle group",
+      "all": "All",
+      "mine": "From my workouts",
+      "results": "Exercises",
+      "lastWeight": "last {{weight}}",
+      "fromBase": "library",
+      "add": "Add {{name}}",
+      "added": "{{name}} is already on this day",
+      "custom": "Create a custom exercise: “{{name}}”",
+      "addCustom": "Create {{name}}",
+      "empty": "No exercise by that name. Type the full name to create it.",
+      "noWeightYet": "no weight yet"
     },
     "exercise": {
       "addTitle": "New exercise",

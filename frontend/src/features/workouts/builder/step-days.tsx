@@ -1,4 +1,4 @@
-import { CaretRightIcon, CopyIcon, DotsThreeIcon, PlusIcon, TrashIcon } from '@phosphor-icons/react'
+import { BooksIcon, CaretRightIcon, CopyIcon, DotsThreeIcon, PlusIcon, TrashIcon } from '@phosphor-icons/react'
 import { useState, type Dispatch } from 'react'
 import { useTranslation } from 'react-i18next'
 
@@ -17,8 +17,10 @@ import { useWorkoutLabels } from '../labels'
 import { MoveDialog } from '../move-dialog'
 import { MUSCLE_GROUPS, type MuscleGroup } from '../types'
 import { ConfirmDialog, type Confirmation } from './confirm-dialog'
-import { groupsOf, type BuilderAction, type BuilderDraft, type BuilderExercise } from './draft'
+import { groupsOf, newExercise, type BuilderAction, type BuilderDraft, type BuilderExercise } from './draft'
 import { ExerciseSheet } from './exercise-sheet'
+import { pickKey } from './library'
+import { LibrarySheet } from './library-sheet'
 
 type StepDaysProps = {
   draft: BuilderDraft
@@ -30,12 +32,15 @@ type StepDaysProps = {
 }
 
 type Editing = { group: MuscleGroup; exercise: BuilderExercise | null } | null
+/** The library, opened from a group card (its group first) or from the bottom (all). */
+type Browsing = { group: MuscleGroup | null } | null
 
 /** Step 2: one day at a time, its group cards and their exercises. */
 export function StepDays({ draft, dispatch, dayIndex, onDayChange, onReview }: StepDaysProps) {
   const { t } = useTranslation()
   const labels = useWorkoutLabels()
   const [editing, setEditing] = useState<Editing>(null)
+  const [browsing, setBrowsing] = useState<Browsing>(null)
   const [moving, setMoving] = useState<BuilderExercise | null>(null)
   const [addingGroup, setAddingGroup] = useState(false)
   const [confirmation, setConfirmation] = useState<Confirmation | null>(null)
@@ -44,6 +49,9 @@ export function StepDays({ draft, dispatch, dayIndex, onDayChange, onReview }: S
   const cards = groupsOf(day)
   const others = draft.days.filter((item) => item.key !== day.key)
   const missingGroups = MUSCLE_GROUPS.filter((group) => !day.groups.includes(group))
+  const inDay = new Set(
+    day.exercises.map((exercise) => pickKey({ name: exercise.name, muscle_group: exercise.muscle_group ?? 'other' })),
+  )
 
   const removeGroup = (group: MuscleGroup, count: number) => {
     const action = () => dispatch({ type: 'remove-group', day: day.key, group })
@@ -134,7 +142,7 @@ export function StepDays({ draft, dispatch, dayIndex, onDayChange, onReview }: S
                 size="sm"
                 className="h-9 text-primary"
                 aria-label={t('builder.days.addExerciseLabel', { group: labels.group(group) })}
-                onClick={() => setEditing({ group, exercise: null })}
+                onClick={() => setBrowsing({ group })}
               >
                 <PlusIcon />
                 {t('builder.days.addExercise')}
@@ -190,16 +198,22 @@ export function StepDays({ draft, dispatch, dayIndex, onDayChange, onReview }: S
 
         {cards.length === 0 && <p className="text-sm text-muted-foreground">{t('builder.days.empty')}</p>}
 
-        <Button
-          variant="outline"
-          size="touch"
-          className="border-dashed text-muted-foreground"
-          disabled={missingGroups.length === 0}
-          onClick={() => setAddingGroup(true)}
-        >
-          <PlusIcon />
-          {t('builder.days.addGroup')}
-        </Button>
+        <div className="grid grid-cols-2 gap-2">
+          <Button variant="outline-primary" size="touch" onClick={() => setBrowsing({ group: null })}>
+            <BooksIcon />
+            {t('builder.days.library')}
+          </Button>
+          <Button
+            variant="outline"
+            size="touch"
+            className="border-dashed text-muted-foreground"
+            disabled={missingGroups.length === 0}
+            onClick={() => setAddingGroup(true)}
+          >
+            <PlusIcon />
+            {t('builder.days.addGroup')}
+          </Button>
+        </div>
       </section>
 
       <Button size="hero" onClick={onReview}>
@@ -234,6 +248,16 @@ export function StepDays({ draft, dispatch, dayIndex, onDayChange, onReview }: S
           </ul>
         </SheetContent>
       </Sheet>
+
+      <LibrarySheet
+        open={browsing !== null}
+        group={browsing?.group ?? null}
+        inDay={inDay}
+        onOpenChange={(open) => !open && setBrowsing(null)}
+        onAdd={(pick) =>
+          dispatch({ type: 'add-exercise', day: day.key, exercise: newExercise(pick.name, pick.muscle_group) })
+        }
+      />
 
       <ExerciseSheet
         open={editing !== null}

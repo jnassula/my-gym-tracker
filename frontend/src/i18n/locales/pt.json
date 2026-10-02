@@ -441,7 +441,24 @@
       "empty": "Este dia ainda não tem nada. Adiciona um grupo muscular para começar.",
       "addGroup": "Adicionar grupo muscular",
       "addGroupTitle": "Que grupo muscular?",
-      "review": "Rever e ativar"
+      "review": "Rever e ativar",
+      "library": "Biblioteca"
+    },
+    "library": {
+      "title": "Biblioteca de exercícios",
+      "search": "Procurar exercício…",
+      "filter": "Grupo muscular",
+      "all": "Todos",
+      "mine": "Dos meus treinos",
+      "results": "Exercícios",
+      "lastWeight": "última {{weight}}",
+      "fromBase": "biblioteca",
+      "add": "Adicionar {{name}}",
+      "added": "{{name}} já está neste dia",
+      "custom": "Criar exercício personalizado: “{{name}}”",
+      "addCustom": "Criar {{name}}",
+      "empty": "Nenhum exercício com esse nome. Escreve o nome completo para o criar.",
+      "noWeightYet": "ainda sem carga"
     },
     "exercise": {
       "addTitle": "Novo exercício",

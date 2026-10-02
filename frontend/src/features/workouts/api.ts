@@ -2,6 +2,7 @@ import { queryOptions, useMutation, useQueryClient } from '@tanstack/react-query
 
 import { api } from '@/lib/api'
 
+import type { Library } from './builder/library'
 import type { ImportPreview, Plan, PlanCreate, PlanSummary } from './types'
 
 export const MAX_PDF_BYTES = 20 * 1024 * 1024
@@ -78,3 +79,11 @@ export async function openFile(fileId: string) {
     throw error
   }
 }
+
+/** Exercises to pick from in the plan builder: the user's own, then the base list. */
+export const libraryQuery = () =>
+  queryOptions({
+    queryKey: ['exercises', 'library'] as const,
+    queryFn: () => api<Library>('/api/exercises/library'),
+    staleTime: 5 * 60 * 1000,
+  })
