@@ -61,6 +61,24 @@ async def test_sends_the_text_and_returns_the_plan() -> None:
     assert "workout plan" in str(request.config.system_instruction)
     assert request.contents[-1].parts is not None
     assert request.contents[-1].parts[0].text == "Periodização de Treino 07 …"
+    assert getattr(request.config, "effort", None) == "none"
+
+
+async def test_sends_photos_as_images_after_a_note() -> None:
+    parser, llm = parser_for(PLAN_JSON)
+
+    await parser.parse_images([b"\xff\xd8\xffone", b"\xff\xd8\xfftwo"])
+
+    [request] = llm.requests
+    parts = request.contents[-1].parts
+    assert parts is not None
+    assert parts[0].text is not None
+    assert "2 photograph(s)" in parts[0].text
+    assert [p.inline_data.mime_type for p in parts[1:] if p.inline_data] == ["image/jpeg"] * 2
+    assert parts[2].inline_data is not None
+    assert parts[2].inline_data.data == b"\xff\xd8\xfftwo"
+    assert "photographs of printed gym sheets" in str(request.config.system_instruction)
+    assert getattr(request.config, "effort", None) == "low"
 
 
 async def test_every_run_starts_fresh_and_leaves_no_session_behind() -> None:
@@ -144,8 +162,9 @@ def test_the_agent_uses_the_configured_provider(monkeypatch: pytest.MonkeyPatch)
     parser = get_plan_parser.__wrapped__()
 
     assert isinstance(parser, AgentPlanParser)
-    agent = parser._runner.agent
+    agent = parser._text.agent
     assert isinstance(agent, LlmAgent)
+    assert parser._photos.agent is not agent  # photos get their own effort
     model = agent.model
     assert isinstance(model, OpenAILlm)
     assert model.model == "deepseek-flash"

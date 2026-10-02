@@ -7,6 +7,7 @@ or without ``LLM_API_KEY``. The scripted-model tests in ``test_agent.py`` run ev
 
 import asyncio
 import os
+import unicodedata
 from collections.abc import AsyncIterator
 from datetime import date
 from pathlib import Path
@@ -91,3 +92,65 @@ async def test_every_sample_reads_cleanly(parser: AgentPlanParser, path: Path) -
     assert not [e.name for e in exercises if e.muscle_group is None]
     # A couple of prescriptions have typos ("3xz10"); the rest must come with sets.
     assert len([e for e in exercises if W.NO_SETS in e.warnings]) <= 2
+
+
+# --- photos of printed sheets (samples/image.jpeg, image2.jpeg, Academia Maravilhosas.pdf) ----
+
+PHOTOS = sorted(SAMPLES.glob("image*.jpeg"))
+PHOTO_PDF = SAMPLES / "Academia Maravilhosas.pdf"
+
+
+@pytest.mark.skipif(len(PHOTOS) < 2, reason="no sample photos in samples/")
+async def test_the_llm_reads_photographed_gym_sheets(parser: AgentPlanParser) -> None:
+    """Two photos of printed sheets (Treino E and Treino A): one day each, crossed-out lines
+    left out, "20 PASSOS" kept as reps, "Validade" as the date."""
+    from app.workouts.parser import images  # noqa: PLC0415
+
+    prepared = [await asyncio.to_thread(images.prepare, p.read_bytes()) for p in PHOTOS]
+
+    plan = await parser.parse_images(prepared)
+
+    assert plan.valid_until == date(2026, 11, 2)
+    assert [(day.weekday, day.label) for day in plan.days] == [
+        (None, "Treino E"),
+        (None, "Treino A"),
+    ]
+    sheet_e, sheet_a = plan.days
+    names_e = [e.name.upper() for e in sheet_e.exercises]
+    assert names_e == [
+        "BANCO FLEXOR", "STIFF", "ROSCA FEM. EXTEN", "GOOD MORNING", "ABD PRANCHA", "ABD REMADOR",
+    ]  # fmt: skip  # MESA FLEXORA is crossed out
+    assert [(e.sets, e.reps, e.rest_seconds) for e in sheet_e.exercises[:4]] == [(4, "10", 60)] * 4
+    assert (sheet_e.exercises[4].reps or "").lower().startswith("1 min")
+    assert (sheet_e.exercises[5].sets, sheet_e.exercises[5].reps) == (3, "20")
+    # The print is blurred under the pink light: "SUMÔ" may lose its accent.
+    names_a = [
+        unicodedata.normalize("NFD", e.name.upper()).encode("ascii", "ignore").decode()
+        for e in sheet_a.exercises
+    ]
+    assert names_a == [
+        "LEG PRESS", "AGACHA BAR GUIA", "PASSADA", "BANCO ADUTOR", "AGACHA SUMO KETT",
+    ]  # fmt: skip  # BANCO EXTENSOR is crossed out
+    assert (sheet_a.exercises[1].reps or "").lower() == "20 passos"
+    assert [e.sets for e in sheet_a.exercises] == [4, 4, 4, 4, 4]
+
+
+@pytest.mark.skipif(not PHOTO_PDF.exists(), reason="no sample photo PDF in samples/")
+async def test_the_llm_reads_a_pdf_made_of_one_photo(parser: AgentPlanParser) -> None:
+    from app.workouts.parser import images  # noqa: PLC0415
+
+    pages = await asyncio.to_thread(images.pdf_pages, PHOTO_PDF.read_bytes(), max_pages=10)
+    assert len(pages) == 1
+
+    plan = await parser.parse_images(pages)
+
+    # The gym's name is printed small at the top; the model takes it or the sheet's title.
+    assert plan.title in ("Academia Maravilhosas", "Ficha de Treino")
+    assert plan.valid_until == date(2026, 11, 2)
+    [sheet] = plan.days
+    assert (sheet.weekday, sheet.label) == (None, "Treino D")
+    assert [e.name.upper() for e in sheet.exercises] == [
+        "REMADA ART NEUTRA", "FPNA", "CRUCIFIXO INV PECK DECK NEUTRO", "REMADA UNI",
+        "ABD INFRA ELEV PERNA",
+    ]  # fmt: skip  # Pulley Supinada and REMADA BAIXA TRIANGULO are crossed out
+    assert [(e.sets, e.reps) for e in sheet.exercises] == [(4, "10")] * 4 + [(3, "20")]

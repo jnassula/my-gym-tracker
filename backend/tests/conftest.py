@@ -144,13 +144,21 @@ class FakePlanParser:
 
     def __init__(self) -> None:
         self.texts: list[str] = []
+        self.images: list[list[bytes]] = []
         self.reply: dict[str, Any] = PLAN_REPLY
         self.error: Exception | None = None
 
     async def parse(self, text: str) -> "ParsedPlan":
+        self.texts.append(text)
+        return self._reply()
+
+    async def parse_images(self, images: list[bytes]) -> "ParsedPlan":
+        self.images.append(images)
+        return self._reply()
+
+    def _reply(self) -> "ParsedPlan":
         from app.workouts.parser.output import PlanOutput, to_parsed_plan  # noqa: PLC0415
 
-        self.texts.append(text)
         if self.error is not None:
             raise self.error
         return to_parsed_plan(PlanOutput.model_validate(self.reply))

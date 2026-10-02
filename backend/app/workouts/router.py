@@ -20,17 +20,24 @@ ParserDep = Annotated[PlanParser, Depends(get_plan_parser)]
 
 @router.post("/import")
 @limiter.limit("30/hour")
-async def import_pdf(
+async def import_files(
     request: Request,
     *,
     user: CurrentUser,
     session: SessionDep,
     storage: StorageDep,
     parser: ParserDep,
-    file: Annotated[UploadFile, File(description="Workout plan PDF, up to 20 MB")],
+    file: Annotated[UploadFile | None, File(description="Workout plan PDF, up to 20 MB")] = None,
+    files: Annotated[
+        list[UploadFile], File(description="Photos of printed sheets (JPEG, PNG, WebP) or a PDF")
+    ] = [],  # noqa: B006  # FastAPI reads the default; nothing mutates it
 ) -> ImportPreview:
-    """Upload a PDF and get the structure the LLM read from it, for review before saving."""
-    return await service.import_pdf(session, storage, parser, user.id, file)
+    """Upload a plan and get the structure the LLM read, for review before saving.
+
+    ``file`` is the single PDF older apps send; ``files`` takes a PDF or up to 10 photos.
+    """
+    uploads = ([file] if file is not None else []) + files
+    return await service.import_files(session, storage, parser, user.id, uploads)
 
 
 @router.post("", status_code=status.HTTP_201_CREATED)

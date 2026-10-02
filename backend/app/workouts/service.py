@@ -1,7 +1,9 @@
 """Business logic for the workouts domain. Routers only map HTTP to these functions.
 
-Import is two steps: ``import_pdf`` stores the upload and returns what the LLM understood;
-the client lets the user fix it and ``create_plan`` saves the confirmed structure.
+Import is two steps: ``import_files`` stores the upload and returns what the LLM understood;
+the client lets the user fix it and ``create_plan`` saves the confirmed structure. What comes
+in is either a PDF with text (the trainer's plan, read as text) or photographs of printed
+sheets, loose or as the pages of a PDF without text (read as images, one day each).
 """
 
 import asyncio
@@ -25,11 +27,13 @@ from app.files import service as files
 from app.files.models import FileKind, StoredFile
 from app.users.models import User
 from app.workouts.errors import (
+    ImageUnreadableError,
+    NoFilesError,
     PdfNoStructureError,
-    PdfNoTextError,
     PdfReaderUnavailableError,
     PdfUnreadableError,
     PlanNotFoundError,
+    TooManyFilesError,
 )
 from app.workouts.export import render_plan_pdf
 from app.workouts.models import WorkoutDay, WorkoutPlan
@@ -41,6 +45,7 @@ from app.workouts.parser import (
     UnreadablePdfError,
     extract_text,
 )
+from app.workouts.parser import images as photos
 from app.workouts.schemas import (
     DayPreview,
     ExercisePreview,
@@ -54,6 +59,8 @@ from app.workouts.schemas import (
 logger = logging.getLogger(__name__)
 
 MAX_PDF_BYTES = 20 * 1024 * 1024
+# Photos: one sheet each, so a plan is a handful; a PDF of photos counts its pages.
+MAX_IMAGES = 10
 _TITLE_PREFIX = re.compile(r"^periodiza[cç][aã]o\s+de\s+", re.IGNORECASE)
 
 
@@ -83,38 +90,87 @@ def _preview(parsed: ParsedPlan, file_id: uuid.UUID, filename: str) -> ImportPre
     )
 
 
-async def import_pdf(
-    session: AsyncSession,
-    storage: Storage,
-    parser: PlanParser,
-    user_id: uuid.UUID,
-    upload: UploadFile,
-) -> ImportPreview:
-    data = await files.read_upload(upload, max_bytes=MAX_PDF_BYTES)
-    files.require_pdf(data)
+async def _parse(parser: PlanParser, *, text: str | None, images: list[bytes]) -> ParsedPlan:
     try:
-        # pdfminer is CPU-bound: keep it off the event loop.
-        text = await asyncio.to_thread(extract_text, data)
-    except UnreadablePdfError as exc:
-        raise PdfUnreadableError from exc
-    if not text:
-        raise PdfNoTextError  # a scan: the LLM only reads text
-    try:
-        parsed = await parser.parse(text)
+        if text is not None:
+            return await parser.parse(text)
+        return await parser.parse_images(images)
     except NoWorkoutStructureError as exc:
         raise PdfNoStructureError from exc
     except ParserUnavailableError as exc:
         logger.warning("Workout-plan reader unavailable: %s", exc)
         raise PdfReaderUnavailableError from exc
-    # Only PDFs that parsed are kept.
+
+
+def _name_sheets(parsed: ParsedPlan) -> None:
+    """A photographed sheet that lost its "Treino: X" in the reading still gets a name."""
+    for index, day in enumerate(parsed.days):
+        if day.weekday is None and not day.label:
+            day.label = f"Treino {chr(ord('A') + index)}"
+
+
+async def _read_pdf(data: bytes) -> tuple[str | None, list[bytes]]:
+    """A PDF's text, or, when it has none (photos, a scan), its pages as photos."""
+    try:
+        # pdfminer is CPU-bound: keep it off the event loop.
+        text = await asyncio.to_thread(extract_text, data)
+    except UnreadablePdfError as exc:
+        raise PdfUnreadableError from exc
+    if text:
+        return text, []
+    try:
+        return None, await asyncio.to_thread(photos.pdf_pages, data, max_pages=MAX_IMAGES)
+    except photos.UnreadableImageError as exc:
+        raise PdfUnreadableError from exc
+
+
+async def import_files(
+    session: AsyncSession,
+    storage: Storage,
+    parser: PlanParser,
+    user_id: uuid.UUID,
+    uploads: list[UploadFile],
+) -> ImportPreview:
+    """One PDF with text, or photos of printed sheets (loose, or the pages of one PDF)."""
+    if not uploads:
+        raise NoFilesError
+    if len(uploads) > MAX_IMAGES:
+        raise TooManyFilesError
+    text: str | None = None
+    images: list[bytes] = []
+    source: tuple[bytes, str | None] | None = None  # the PDF to keep as the plan's file
+    for upload in uploads:
+        data = await files.read_upload(upload, max_bytes=MAX_PDF_BYTES)
+        if b"%PDF-" in data[:1024]:
+            if len(uploads) > 1:
+                raise TooManyFilesError  # a PDF comes alone; photos come loose
+            text, images = await _read_pdf(data)
+            source = (data, upload.filename)
+        elif photos.image_type(data):
+            try:
+                images.append(await asyncio.to_thread(photos.prepare, data))
+            except photos.UnreadableImageError as exc:
+                raise ImageUnreadableError from exc
+        else:
+            files.require_pdf(data)  # raises unsupported_file_type
+    if text is None and not images:
+        raise PdfUnreadableError
+    parsed = await _parse(parser, text=text, images=images)
+    if text is None:
+        _name_sheets(parsed)
+    if source is None:
+        # Loose photos are bound into one PDF: a plan keeps a single source file.
+        first = PurePath(uploads[0].filename or "ficha").stem or "ficha"
+        source = (await asyncio.to_thread(photos.bind_pdf, images), f"{first}.pdf")
+    # Only files that parsed are kept.
     stored = await files.store_file(
         session,
         storage,
         user_id=user_id,
         kind=FileKind.WORKOUT_PDF,
-        filename=upload.filename,
+        filename=source[1],
         content_type="application/pdf",
-        data=data,
+        data=source[0],
     )
     await session.commit()
     return _preview(parsed, stored.id, stored.filename)

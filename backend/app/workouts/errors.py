@@ -17,9 +17,19 @@ class PdfUnreadableError(_PdfError):
     detail = "The PDF could not be opened"
 
 
-class PdfNoTextError(_PdfError):
-    code = "pdf_no_text"
-    detail = "The PDF has no text layer (it looks like a scanned image)"
+class ImageUnreadableError(_PdfError):
+    code = "image_unreadable"
+    detail = "The photo could not be read (JPEG, PNG or WebP only)"
+
+
+class TooManyFilesError(_PdfError):
+    code = "too_many_files"
+    detail = "Too many files or pages in one import"
+
+
+class NoFilesError(_PdfError):
+    code = "no_files"
+    detail = "Send a PDF or at least one photo"
 
 
 class PdfNoStructureError(_PdfError):

@@ -17,6 +17,7 @@ dependencies = [
     "pwdlib[argon2]>=0.3.1",
     "pydantic-settings>=2.15.0",
     "pyjwt>=2.15.1",
+    "pypdfium2>=5.13.0",
     "python-multipart>=0.0.32",
     "pywebpush>=2.0",
     "slowapi>=0.1.10",
@@ -60,7 +61,7 @@ exclude = ["alembic/versions/"]
 
 [[tool.mypy.overrides]]
 # No type information shipped.
-module = ["pywebpush", "py_vapid"]
+module = ["pywebpush", "py_vapid", "pypdfium2"]
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]
