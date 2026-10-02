@@ -24,9 +24,11 @@ type Option = {
   body: string
   link?: Pick<LinkProps, 'to' | 'search'>
   onClick?: () => void
+  /** Called when a link is followed: the sheet closes, since the bar it lives in stays. */
+  onNavigate?: () => void
 }
 
-function OptionRow({ icon: Icon, title, body, link, onClick }: Option) {
+function OptionRow({ icon: Icon, title, body, link, onClick, onNavigate }: Option) {
   const inner = (
     <>
       <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-accent text-primary">
@@ -43,7 +45,7 @@ function OptionRow({ icon: Icon, title, body, link, onClick }: Option) {
   return (
     <li>
       {link ? (
-        <Link {...link} className={className}>
+        <Link {...link} className={className} onClick={onNavigate}>
           {inner}
         </Link>
       ) : (
@@ -70,6 +72,10 @@ export function NewPlanSheet({ open, onOpenChange, plans, draft }: NewPlanSheetP
   const labels = useWorkoutLabels()
   const [picking, setPicking] = useState(false)
   const only = plans.length === 1 ? plans[0] : null
+  const close = () => {
+    setPicking(false)
+    onOpenChange(false)
+  }
 
   return (
     <Sheet
@@ -97,6 +103,7 @@ export function NewPlanSheet({ open, onOpenChange, plans, draft }: NewPlanSheetP
                 title={plan.name}
                 body={labels.summary(plan.weekdays.length, plan.exercise_count)}
                 link={{ to: '/workouts/new', search: { duplicate: plan.id } }}
+                onNavigate={close}
               />
             ))}
           </ul>
@@ -108,6 +115,7 @@ export function NewPlanSheet({ open, onOpenChange, plans, draft }: NewPlanSheetP
                 title={t('builder.draft.resume')}
                 body={`${draft.name.trim() || t('builder.draft.unnamed')} · ${labels.summary(draft.days.length, exerciseCount(draft))}`}
                 link={{ to: '/workouts/new', search: {} }}
+                onNavigate={close}
               />
             )}
             <OptionRow
@@ -115,12 +123,14 @@ export function NewPlanSheet({ open, onOpenChange, plans, draft }: NewPlanSheetP
               title={t('builder.new.import.title')}
               body={t('builder.new.import.body')}
               link={{ to: '/workouts/import' }}
+              onNavigate={close}
             />
             <OptionRow
               icon={PlusIcon}
               title={t('builder.new.scratch.title')}
               body={t('builder.new.scratch.body')}
               link={{ to: '/workouts/new', search: { fresh: true } }}
+              onNavigate={close}
             />
             {plans.length > 0 && (
               <OptionRow
@@ -128,7 +138,7 @@ export function NewPlanSheet({ open, onOpenChange, plans, draft }: NewPlanSheetP
                 title={t('builder.new.duplicate.title')}
                 body={only ? t('builder.new.duplicate.body', { name: only.name }) : t('builder.new.duplicate.bodyMany')}
                 {...(only
-                  ? { link: { to: '/workouts/new', search: { duplicate: only.id } } }
+                  ? { link: { to: '/workouts/new', search: { duplicate: only.id } }, onNavigate: close }
                   : { onClick: () => setPicking(true) })}
               />
             )}

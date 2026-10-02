@@ -45,7 +45,9 @@ export function LibrarySheet(props: LibrarySheetProps) {
       <SheetContent
         side="bottom"
         showCloseButton={false}
-        className="mx-auto h-[92dvh] max-w-md gap-3 rounded-t-2xl px-5 pt-3 pb-[max(env(safe-area-inset-bottom),1rem)]"
+        // The base gives a bottom sheet h-auto, which would let a long list grow past the screen
+        // (and the search with it): a fixed height, and the list scrolls inside it.
+        className="mx-auto max-w-md gap-3 rounded-t-2xl px-5 pt-3 pb-[max(env(safe-area-inset-bottom),1rem)] data-[side=bottom]:h-[92dvh]"
       >
         {props.open && <LibraryBrowser {...props} />}
       </SheetContent>

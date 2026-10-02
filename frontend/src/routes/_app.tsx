@@ -16,8 +16,9 @@ export const Route = createFileRoute('/_app')({
 
 function AppLayout() {
   useRestPush()
+  // The bar is 4.25rem tall and its "+" button rises 1.25rem above it.
   return (
-    <div className="min-h-dvh pb-[calc(4.25rem+env(safe-area-inset-bottom))]">
+    <div className="min-h-dvh pb-[calc(5.5rem+env(safe-area-inset-bottom))]">
       <Outlet />
       <BottomTabs />
     </div>

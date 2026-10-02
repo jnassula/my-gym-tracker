@@ -1,4 +1,4 @@
-import { cleanup, screen } from '@testing-library/react'
+import { cleanup, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -43,5 +43,9 @@ describe('BottomTabs', () => {
     expect(sheet).toHaveTextContent('Importar PDF')
     expect(sheet).toHaveTextContent('Criar do zero')
     expect(String(fetchMock.mock.calls[0][0])).toBe('/api/workouts')
+
+    // Picking a way in closes the sheet: the bar stays, the page changes.
+    await u.click(screen.getByRole('link', { name: /Criar do zero/ }))
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
   })
 })
