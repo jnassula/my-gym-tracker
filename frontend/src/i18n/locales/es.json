@@ -504,6 +504,21 @@
       "noExercises": "Añade al menos un ejercicio para guardar."
     }
   },
+  "export": {
+    "button": "PDF",
+    "buttonLabel": "Exportar PDF",
+    "title": "Exportar PDF",
+    "pages_one": "{{count}} día · A4",
+    "pages_other": "{{count}} días · A4",
+    "preview": "Vista previa del PDF",
+    "student": "Atleta: {{name}}",
+    "rest": "Descanso",
+    "weights": "Incluir cargas actuales",
+    "weightsHint": "La última carga registrada en cada ejercicio",
+    "note": "El mismo formato que el plan de tu entrenador: compártelo con él o vuelve a importarlo sin pérdidas.",
+    "share": "Compartir",
+    "save": "Guardar en Archivos"
+  },
   "exercise": {
     "actions": "Acciones para {{name}}",
     "edit": "Editar",

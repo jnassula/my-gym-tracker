@@ -504,6 +504,21 @@
       "noExercises": "Adiciona pelo menos um exercício para guardar."
     }
   },
+  "export": {
+    "button": "PDF",
+    "buttonLabel": "Exportar PDF",
+    "title": "Exportar PDF",
+    "pages_one": "{{count}} dia · A4",
+    "pages_other": "{{count}} dias · A4",
+    "preview": "Pré-visualização do PDF",
+    "student": "Aluno: {{name}}",
+    "rest": "Descanso",
+    "weights": "Incluir cargas atuais",
+    "weightsHint": "A última carga registada em cada exercício",
+    "note": "Mesmo formato do plano do teu PT — partilha com o treinador ou volta a importá-lo sem perdas.",
+    "share": "Partilhar",
+    "save": "Guardar em Ficheiros"
+  },
   "exercise": {
     "actions": "Ações para {{name}}",
     "edit": "Editar",

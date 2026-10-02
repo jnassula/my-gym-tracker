@@ -504,6 +504,21 @@
       "noExercises": "Add at least one exercise to save."
     }
   },
+  "export": {
+    "button": "PDF",
+    "buttonLabel": "Export PDF",
+    "title": "Export PDF",
+    "pages_one": "{{count}} day · A4",
+    "pages_other": "{{count}} days · A4",
+    "preview": "PDF preview",
+    "student": "Athlete: {{name}}",
+    "rest": "Rest",
+    "weights": "Include current weights",
+    "weightsHint": "The last weight logged on each exercise",
+    "note": "The same format as your trainer's plan — share it with them or import it back without losses.",
+    "share": "Share",
+    "save": "Save to Files"
+  },
   "exercise": {
     "actions": "Actions for {{name}}",
     "edit": "Edit",

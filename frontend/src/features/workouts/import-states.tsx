@@ -1,5 +1,6 @@
-import { CheckCircleIcon, WarningCircleIcon } from '@phosphor-icons/react'
+import { CheckCircleIcon, DownloadSimpleIcon, WarningCircleIcon } from '@phosphor-icons/react'
 import { Link } from '@tanstack/react-router'
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
@@ -8,6 +9,7 @@ import { Card } from '@/components/ui/card'
 import { Spinner } from '@/components/ui/spinner'
 import { cn } from '@/lib/utils'
 
+import { ExportSheet } from './export-sheet'
 import { formatFileSize } from './format'
 import type { ImportErrorCode } from './import-errors'
 import type { Plan } from './types'
@@ -60,6 +62,7 @@ export function ImportErrorState({
 /** The plan is saved: what it holds and where to go. `title` replaces "… importado". */
 export function ImportSuccess({ plan, title }: { plan: Plan; title?: string }) {
   const { t } = useTranslation()
+  const [exporting, setExporting] = useState(false)
   const exercises = plan.days.flatMap((day) => day.exercises)
   const groups = new Set(
     exercises.map((e) => e.muscle_group).filter((g) => g !== null && g !== 'warmup' && g !== 'cardio'),
@@ -87,9 +90,14 @@ export function ImportSuccess({ plan, title }: { plan: Plan; title?: string }) {
       >
         {t('import.success.viewPlan')}
       </Link>
+      <Button variant="outline-primary" size="touch" onClick={() => setExporting(true)}>
+        <DownloadSimpleIcon />
+        {t('export.buttonLabel')}
+      </Button>
       <Link to="/workouts" className={cn(buttonVariants({ variant: 'outline', size: 'touch' }))}>
         {t('import.success.backToList')}
       </Link>
+      <ExportSheet open={exporting} plan={plan} onOpenChange={setExporting} />
     </div>
   )
 }

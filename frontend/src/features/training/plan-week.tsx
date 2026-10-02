@@ -1,16 +1,19 @@
-import { CaretRightIcon, CheckIcon } from '@phosphor-icons/react'
+import { CaretRightIcon, CheckIcon, DownloadSimpleIcon } from '@phosphor-icons/react'
 import { useQuery } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
 import { cn } from 'cn'
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { Page } from '@/components/app-shell/page'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
 import { Spinner } from '@/components/ui/spinner'
 import { errorKey } from '@/features/auth/errors'
 import { FormAlert } from '@/features/auth/form-parts'
 import { planQuery } from '@/features/workouts/api'
+import { ExportSheet } from '@/features/workouts/export-sheet'
 import { formatDate } from '@/features/workouts/format'
 import { useWorkoutLabels } from '@/features/workouts/labels'
 import { WEEKDAYS, type Day, type Weekday } from '@/features/workouts/types'
@@ -24,6 +27,7 @@ export function PlanWeekScreen({ planId }: { planId: string }) {
   const { t, i18n } = useTranslation()
   const plan = useQuery(planQuery(planId))
   const week = useQuery(weekQuery(planId))
+  const [exporting, setExporting] = useState(false)
 
   if (plan.isPending || week.isPending) {
     return (
@@ -48,7 +52,24 @@ export function PlanWeekScreen({ planId }: { planId: string }) {
   const doneDays = days.filter((day) => isDayDone(status.get(day.id))).length
 
   return (
-    <Page kicker={t('training.week.kicker')} title={plan.data.name} back="/workouts">
+    <Page
+      kicker={t('training.week.kicker')}
+      title={plan.data.name}
+      back="/workouts"
+      action={
+        <Button
+          variant="outline-primary"
+          size="touch"
+          className="h-11 px-3"
+          aria-label={t('export.buttonLabel')}
+          onClick={() => setExporting(true)}
+        >
+          <DownloadSimpleIcon />
+          {t('export.button')}
+        </Button>
+      }
+    >
+      <ExportSheet open={exporting} plan={plan.data} onOpenChange={setExporting} />
       <div className="grid gap-4">
         <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
           {plan.data.is_active && <Badge>{t('workouts.active')}</Badge>}
