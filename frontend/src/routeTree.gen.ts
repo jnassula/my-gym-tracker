@@ -34,6 +34,7 @@ import { Route as AppSettingsProfileRouteImport } from './routes/_app/settings/p
 import { Route as AppSettingsTimezoneRouteImport } from './routes/_app/settings/timezone'
 import { Route as AppWorkoutsIndexRouteImport } from './routes/_app/workouts/index'
 import { Route as AppWorkoutsImportRouteImport } from './routes/_app/workouts/import'
+import { Route as AppWorkoutsNewRouteImport } from './routes/_app/workouts/new'
 import { Route as AppProgressExercisesExerciseIdRouteImport } from './routes/_app/progress/exercises/$exerciseId'
 import { Route as AppProgressSessionsSessionIdRouteImport } from './routes/_app/progress/sessions/$sessionId'
 import { Route as AppSettingsSourcesIndexRouteImport } from './routes/_app/settings/sources/index'
@@ -166,6 +167,11 @@ const AppWorkoutsImportRoute = AppWorkoutsImportRouteImport.update({
   path: '/workouts/import',
   getParentRoute: () => AppRoute,
 } as any)
+const AppWorkoutsNewRoute = AppWorkoutsNewRouteImport.update({
+  id: '/workouts/new',
+  path: '/workouts/new',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppProgressExercisesExerciseIdRoute =
   AppProgressExercisesExerciseIdRouteImport.update({
     id: '/progress/exercises/$exerciseId',
@@ -226,6 +232,7 @@ export interface FileRoutesByFullPath {
   '/settings/profile': typeof AppSettingsProfileRoute
   '/settings/timezone': typeof AppSettingsTimezoneRoute
   '/workouts/import': typeof AppWorkoutsImportRoute
+  '/workouts/new': typeof AppWorkoutsNewRoute
   '/admin/': typeof AdminAdminIndexRoute
   '/progress/': typeof AppProgressIndexRoute
   '/settings/': typeof AppSettingsIndexRoute
@@ -257,6 +264,7 @@ export interface FileRoutesByTo {
   '/settings/profile': typeof AppSettingsProfileRoute
   '/settings/timezone': typeof AppSettingsTimezoneRoute
   '/workouts/import': typeof AppWorkoutsImportRoute
+  '/workouts/new': typeof AppWorkoutsNewRoute
   '/admin': typeof AdminAdminIndexRoute
   '/progress': typeof AppProgressIndexRoute
   '/settings': typeof AppSettingsIndexRoute
@@ -292,6 +300,7 @@ export interface FileRoutesById {
   '/_app/settings/profile': typeof AppSettingsProfileRoute
   '/_app/settings/timezone': typeof AppSettingsTimezoneRoute
   '/_app/workouts/import': typeof AppWorkoutsImportRoute
+  '/_app/workouts/new': typeof AppWorkoutsNewRoute
   '/_admin/admin/': typeof AdminAdminIndexRoute
   '/_app/progress/': typeof AppProgressIndexRoute
   '/_app/settings/': typeof AppSettingsIndexRoute
@@ -325,6 +334,7 @@ export interface FileRouteTypes {
     | '/settings/profile'
     | '/settings/timezone'
     | '/workouts/import'
+    | '/workouts/new'
     | '/admin/'
     | '/progress/'
     | '/settings/'
@@ -356,6 +366,7 @@ export interface FileRouteTypes {
     | '/settings/profile'
     | '/settings/timezone'
     | '/workouts/import'
+    | '/workouts/new'
     | '/admin'
     | '/progress'
     | '/settings'
@@ -390,6 +401,7 @@ export interface FileRouteTypes {
     | '/_app/settings/profile'
     | '/_app/settings/timezone'
     | '/_app/workouts/import'
+    | '/_app/workouts/new'
     | '/_admin/admin/'
     | '/_app/progress/'
     | '/_app/settings/'
@@ -587,6 +599,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppWorkoutsImportRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/workouts/new': {
+      id: '/_app/workouts/new'
+      path: '/workouts/new'
+      fullPath: '/workouts/new'
+      preLoaderRoute: typeof AppWorkoutsNewRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/progress/exercises/$exerciseId': {
       id: '/_app/progress/exercises/$exerciseId'
       path: '/progress/exercises/$exerciseId'
@@ -664,6 +683,7 @@ interface AppRouteChildren {
   AppSettingsProfileRoute: typeof AppSettingsProfileRoute
   AppSettingsTimezoneRoute: typeof AppSettingsTimezoneRoute
   AppWorkoutsImportRoute: typeof AppWorkoutsImportRoute
+  AppWorkoutsNewRoute: typeof AppWorkoutsNewRoute
   AppProgressIndexRoute: typeof AppProgressIndexRoute
   AppSettingsIndexRoute: typeof AppSettingsIndexRoute
   AppWorkoutsIndexRoute: typeof AppWorkoutsIndexRoute
@@ -689,6 +709,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppSettingsProfileRoute: AppSettingsProfileRoute,
   AppSettingsTimezoneRoute: AppSettingsTimezoneRoute,
   AppWorkoutsImportRoute: AppWorkoutsImportRoute,
+  AppWorkoutsNewRoute: AppWorkoutsNewRoute,
   AppProgressIndexRoute: AppProgressIndexRoute,
   AppSettingsIndexRoute: AppSettingsIndexRoute,
   AppWorkoutsIndexRoute: AppWorkoutsIndexRoute,

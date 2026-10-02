@@ -291,12 +291,15 @@
     "addPdf": "PDF",
     "addPdfLabel": "Import a PDF plan",
     "active": "Active",
-    "summary": "{{days}} days · {{exercises}} exercises",
+    "dayCount_one": "{{count}} day",
+    "dayCount_other": "{{count}} days",
     "validUntil": "Swap by {{date}}",
     "importCta": "Import PDF",
     "restDay": "Rest",
     "exerciseCount_one": "{{count}} exercise",
-    "exerciseCount_other": "{{count}} exercises"
+    "exerciseCount_other": "{{count}} exercises",
+    "imported": "Imported {{date}}",
+    "created": "Created {{date}}"
   },
   "import": {
     "title": "Import PDF",
@@ -358,6 +361,130 @@
       "active": "Set as your active plan.",
       "viewPlan": "View plan",
       "backToList": "See all workouts"
+    }
+  },
+  "builder": {
+    "new": {
+      "button": "New",
+      "buttonLabel": "New workout",
+      "title": "New workout",
+      "copyName": "{{name}} (copy)",
+      "import": {
+        "title": "Import a PDF",
+        "body": "From your personal trainer · read automatically"
+      },
+      "scratch": {
+        "title": "Build from scratch",
+        "body": "Pick days, muscle groups and exercises"
+      },
+      "duplicate": {
+        "title": "Duplicate an existing workout",
+        "body": "Start from {{name}} and adjust",
+        "bodyMany": "Start from one of your workouts and adjust",
+        "pick": "Duplicate which workout?"
+      }
+    },
+    "draft": {
+      "title": "Draft",
+      "unnamed": "Unnamed workout",
+      "resume": "Continue the draft",
+      "discard": "Discard draft",
+      "discardTitle": "Discard this draft?",
+      "discardBody": "The days and exercises you chose on this device go away. Saved workouts stay."
+    },
+    "step": "Step {{current}} of 3",
+    "more": "More options",
+    "name": {
+      "label": "Workout name",
+      "placeholder": "E.g. Full body 3× a week",
+      "days": "Training days",
+      "daysCount_one": "{{count}} day",
+      "daysCount_other": "{{count}} days",
+      "needDays": "Pick at least one training day.",
+      "removeDayTitle": "Take {{day}} out of the workout?",
+      "removeDayBody_one": "That day's exercise is lost.",
+      "removeDayBody_other": "That day's {{count}} exercises are lost.",
+      "removeDay": "Remove day",
+      "structure": "Structure",
+      "empty": "Start empty",
+      "emptyHint": "Add groups and exercises day by day",
+      "copy": "Copy the structure of “{{name}}”",
+      "copyAny": "Copy the structure of a workout",
+      "copyWhich": "Which workout",
+      "copyHint": "Same groups per day, no exercises",
+      "template": "Template",
+      "templateHint": "Classic splits, with each day's groups",
+      "validUntil": "Replace by",
+      "validUntilHint": "A reminder to review the plan · optional",
+      "continue": "Continue"
+    },
+    "templates": {
+      "fullbody": "Full body",
+      "ppl": "Push/Pull/Legs",
+      "upperlower": "Upper/Lower"
+    },
+    "days": {
+      "copyTo": "Copy day to…",
+      "copyToDay": "Copy to {{day}}",
+      "copyOverTitle": "Replace {{day}}?",
+      "copyOverBody_one": "The exercise there is replaced by this day's.",
+      "copyOverBody_other": "The {{count}} exercises there are replaced by this day's.",
+      "copyOver": "Replace",
+      "addExercise": "exercise",
+      "addExerciseLabel": "Add an exercise to {{group}}",
+      "groupActions": "Actions for {{group}}",
+      "removeGroup": "Remove group",
+      "removeGroupTitle": "Remove {{group}} from this day?",
+      "removeGroupBody_one": "The group's exercise goes with it.",
+      "removeGroupBody_other": "The group's {{count}} exercises go with it.",
+      "emptyGroup": "No exercises yet",
+      "empty": "Nothing on this day yet. Add a muscle group to start.",
+      "addGroup": "Add a muscle group",
+      "addGroupTitle": "Which muscle group?",
+      "review": "Review and activate"
+    },
+    "exercise": {
+      "addTitle": "New exercise",
+      "editTitle": "Set up exercise",
+      "name": "Exercise name",
+      "presets": "Scheme",
+      "progression": "Progression",
+      "sets": "Sets",
+      "fewerSets": "One set fewer",
+      "moreSets": "One more set",
+      "rest": "Rest",
+      "lessRest": "15 seconds less rest",
+      "moreRest": "15 seconds more rest",
+      "reps": "Reps",
+      "repsPerSet": "Reps per set",
+      "set": "S{{n}}",
+      "technique": "Technique",
+      "techniques": {
+        "drop_set": "Drop set",
+        "rest_pause": "Rest pause",
+        "cluster": "Cluster",
+        "isometric": "Isometric hold",
+        "partials": "Partials"
+      },
+      "withTechniques": "{{scheme}} + {{techniques}}",
+      "notes": "Notes",
+      "notesPlaceholder": "E.g. overhand grip, hold 2 s at the top",
+      "save": "Save"
+    },
+    "review": {
+      "title": "Review and activate",
+      "minutes": "~{{minutes}} min per session",
+      "exerciseCount_one": "{{count}} exercise",
+      "exerciseCount_other": "{{count}} exercises",
+      "emptyDay": "no exercises",
+      "emptyDayAlert": "Empty day — keep it as rest?",
+      "edit": "Edit",
+      "activate": "Activate workout",
+      "saveOnly": "Save without activating",
+      "saving": "Saving…",
+      "saved": "{{name}} created",
+      "nameMissing": "Give the workout a name to save it.",
+      "noExercises": "Add at least one exercise to save."
     }
   },
   "exercise": {

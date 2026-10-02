@@ -291,12 +291,15 @@
     "addPdf": "PDF",
     "addPdfLabel": "Importar plano em PDF",
     "active": "Ativo",
-    "summary": "{{days}} dias · {{exercises}} exercícios",
+    "dayCount_one": "{{count}} dia",
+    "dayCount_other": "{{count}} dias",
     "validUntil": "Trocar até {{date}}",
     "importCta": "Importar PDF",
     "restDay": "Descanso",
     "exerciseCount_one": "{{count}} exercício",
-    "exerciseCount_other": "{{count}} exercícios"
+    "exerciseCount_other": "{{count}} exercícios",
+    "imported": "Importado {{date}}",
+    "created": "Criado {{date}}"
   },
   "import": {
     "title": "Importar PDF",
@@ -358,6 +361,130 @@
       "active": "Definido como treino ativo.",
       "viewPlan": "Ver treino",
       "backToList": "Ver todos os treinos"
+    }
+  },
+  "builder": {
+    "new": {
+      "button": "Novo",
+      "buttonLabel": "Novo treino",
+      "title": "Novo treino",
+      "copyName": "{{name}} (cópia)",
+      "import": {
+        "title": "Importar PDF",
+        "body": "Do teu personal trainer · lido automaticamente"
+      },
+      "scratch": {
+        "title": "Criar do zero",
+        "body": "Escolhe dias, grupos musculares e exercícios"
+      },
+      "duplicate": {
+        "title": "Duplicar treino existente",
+        "body": "Começa a partir de {{name}} e ajusta",
+        "bodyMany": "Começa a partir de um treino teu e ajusta",
+        "pick": "Duplicar qual treino?"
+      }
+    },
+    "draft": {
+      "title": "Rascunho",
+      "unnamed": "Treino sem nome",
+      "resume": "Continuar o rascunho",
+      "discard": "Descartar rascunho",
+      "discardTitle": "Descartar este rascunho?",
+      "discardBody": "Os dias e exercícios que escolheste neste dispositivo desaparecem. Os treinos já guardados ficam."
+    },
+    "step": "Passo {{current}} de 3",
+    "more": "Mais opções",
+    "name": {
+      "label": "Nome do treino",
+      "placeholder": "Ex.: Full body 3× semana",
+      "days": "Dias de treino",
+      "daysCount_one": "{{count}} dia",
+      "daysCount_other": "{{count}} dias",
+      "needDays": "Escolhe pelo menos um dia de treino.",
+      "removeDayTitle": "Tirar {{day}} do treino?",
+      "removeDayBody_one": "Perde-se o exercício desse dia.",
+      "removeDayBody_other": "Perdem-se os {{count}} exercícios desse dia.",
+      "removeDay": "Tirar dia",
+      "structure": "Estrutura",
+      "empty": "Começar vazio",
+      "emptyHint": "Adicionas grupos e exercícios dia a dia",
+      "copy": "Copiar estrutura de “{{name}}”",
+      "copyAny": "Copiar estrutura de um treino",
+      "copyWhich": "Qual treino",
+      "copyHint": "Mesmos grupos por dia, sem exercícios",
+      "template": "Modelo",
+      "templateHint": "Divisões clássicas, com os grupos de cada dia",
+      "validUntil": "Trocar até",
+      "validUntilHint": "Lembrete para rever o plano · opcional",
+      "continue": "Continuar"
+    },
+    "templates": {
+      "fullbody": "Full body",
+      "ppl": "Push/Pull/Legs",
+      "upperlower": "Upper/Lower"
+    },
+    "days": {
+      "copyTo": "Copiar dia para…",
+      "copyToDay": "Copiar para {{day}}",
+      "copyOverTitle": "Substituir {{day}}?",
+      "copyOverBody_one": "O exercício que lá está é substituído pelos deste dia.",
+      "copyOverBody_other": "Os {{count}} exercícios que lá estão são substituídos pelos deste dia.",
+      "copyOver": "Substituir",
+      "addExercise": "exercício",
+      "addExerciseLabel": "Adicionar exercício em {{group}}",
+      "groupActions": "Ações para {{group}}",
+      "removeGroup": "Remover grupo",
+      "removeGroupTitle": "Remover {{group}} deste dia?",
+      "removeGroupBody_one": "O exercício do grupo vai com ele.",
+      "removeGroupBody_other": "Os {{count}} exercícios do grupo vão com ele.",
+      "emptyGroup": "Ainda sem exercícios",
+      "empty": "Este dia ainda não tem nada. Adiciona um grupo muscular para começar.",
+      "addGroup": "Adicionar grupo muscular",
+      "addGroupTitle": "Que grupo muscular?",
+      "review": "Rever e ativar"
+    },
+    "exercise": {
+      "addTitle": "Novo exercício",
+      "editTitle": "Configurar exercício",
+      "name": "Nome do exercício",
+      "presets": "Esquema",
+      "progression": "Progressão",
+      "sets": "Séries",
+      "fewerSets": "Menos uma série",
+      "moreSets": "Mais uma série",
+      "rest": "Descanso",
+      "lessRest": "Menos 15 segundos de descanso",
+      "moreRest": "Mais 15 segundos de descanso",
+      "reps": "Repetições",
+      "repsPerSet": "Repetições por série",
+      "set": "S{{n}}",
+      "technique": "Técnica",
+      "techniques": {
+        "drop_set": "Drop set",
+        "rest_pause": "Rest pause",
+        "cluster": "Cluster",
+        "isometric": "Isometria",
+        "partials": "Parciais"
+      },
+      "withTechniques": "{{scheme}} + {{techniques}}",
+      "notes": "Notas",
+      "notesPlaceholder": "Ex.: pegada pronada, segurar 2 s no pico",
+      "save": "Guardar"
+    },
+    "review": {
+      "title": "Rever e ativar",
+      "minutes": "~{{minutes}} min por sessão",
+      "exerciseCount_one": "{{count}} exercício",
+      "exerciseCount_other": "{{count}} exercícios",
+      "emptyDay": "sem exercícios",
+      "emptyDayAlert": "Dia vazio — fica como descanso?",
+      "edit": "Editar",
+      "activate": "Ativar treino",
+      "saveOnly": "Guardar sem ativar",
+      "saving": "A guardar…",
+      "saved": "{{name}} criado",
+      "nameMissing": "Dá um nome ao treino para o guardar.",
+      "noExercises": "Adiciona pelo menos um exercício para guardar."
     }
   },
   "exercise": {
