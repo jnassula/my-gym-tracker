@@ -192,7 +192,7 @@
     },
     "workouts": {
       "title": "Ainda não tens treinos",
-      "description": "Os planos que importares em PDF aparecem aqui."
+      "description": "Importa o plano do teu PT (PDF ou fotos da ficha), ou cria um do zero."
     },
     "progress": {
       "title": "Ainda sem progresso",
@@ -302,18 +302,14 @@
     "created": "Criado {{date}}"
   },
   "import": {
-    "title": "Importar PDF",
-    "dropHere": "Arrasta o PDF para aqui",
-    "limits": "PDF · máx. 20 MB",
-    "chooseFile": "Escolher ficheiro",
-    "hint": "O plano é lido por dia da semana → grupo muscular → exercício (séries × reps, descanso). Podes corrigir tudo antes de confirmar.",
+    "title": "Importar plano",
+    "dropHere": "Arrasta o PDF ou as fotos para aqui",
+    "limits": "PDF do teu PT, ou fotos da ficha impressa · máx. 10 fotos · 20 MB cada",
+    "chooseFile": "Escolher ficheiro ou fotos",
+    "hint": "Um PDF é lido por dia da semana → grupo muscular → exercício (séries × reps, descanso). Fotos da ficha da academia: uma por treino (A, B, C…), pela ordem. Podes corrigir tudo antes de confirmar.",
     "reading": "A ler o plano… pode demorar até um minuto.",
     "anotherFile": "Outro ficheiro",
     "errors": {
-      "pdf_no_text": {
-        "title": "Não conseguimos ler a estrutura",
-        "body": "O PDF parece ser uma imagem digitalizada. Tenta o PDF original do teu PT."
-      },
       "pdf_no_structure": {
         "title": "Não encontrámos dias de treino",
         "body": "O PDF abriu, mas não tem dias da semana com exercícios que consigamos reconhecer."
@@ -333,6 +329,14 @@
       "unsupported_file_type": {
         "title": "Só aceitamos PDF",
         "body": "{{name}} não é um ficheiro PDF."
+      },
+      "image_unreadable": {
+        "title": "Não conseguimos abrir a foto",
+        "body": "{{name}} não é uma imagem que consigamos ler. Usa JPEG, PNG ou WebP."
+      },
+      "too_many_files": {
+        "title": "Demasiados ficheiros",
+        "body": "Envia um PDF sozinho, ou até 10 fotos de uma vez."
       }
     },
     "review": {
@@ -361,7 +365,9 @@
       "active": "Definido como treino ativo.",
       "viewPlan": "Ver treino",
       "backToList": "Ver todos os treinos"
-    }
+    },
+    "photoCount_one": "{{count}} foto",
+    "photoCount_other": "{{count}} fotos"
   },
   "builder": {
     "new": {
@@ -369,8 +375,8 @@
       "title": "Novo treino",
       "copyName": "{{name}} (cópia)",
       "import": {
-        "title": "Importar PDF",
-        "body": "Do teu personal trainer · lido automaticamente"
+        "title": "Importar PDF ou fotos",
+        "body": "O PDF do teu PT, ou fotos da ficha impressa da academia"
       },
       "scratch": {
         "title": "Criar do zero",

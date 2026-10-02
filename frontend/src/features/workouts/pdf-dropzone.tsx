@@ -5,8 +5,10 @@ import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 
-/** Custom drop zone (the design flags it as not in shadcn): drag a PDF or pick one. */
-export function PdfDropzone({ onFile }: { onFile: (file: File) => void }) {
+import { ACCEPT } from './import-files'
+
+/** Custom drop zone (the design flags it as not in shadcn): drag a PDF or photos, or pick them. */
+export function PdfDropzone({ onFiles }: { onFiles: (files: File[]) => void }) {
   const { t } = useTranslation()
   const inputId = useId()
   const input = useRef<HTMLInputElement>(null)
@@ -15,8 +17,8 @@ export function PdfDropzone({ onFile }: { onFile: (file: File) => void }) {
   const onDrop = (event: DragEvent) => {
     event.preventDefault()
     setDragging(false)
-    const file = event.dataTransfer.files[0]
-    if (file) onFile(file)
+    const files = [...event.dataTransfer.files]
+    if (files.length > 0) onFiles(files)
   }
 
   return (
@@ -43,12 +45,13 @@ export function PdfDropzone({ onFile }: { onFile: (file: File) => void }) {
         ref={input}
         id={inputId}
         type="file"
-        accept="application/pdf,.pdf"
+        accept={ACCEPT}
+        multiple
         className="sr-only"
         onChange={(event) => {
-          const file = event.target.files?.[0]
-          if (file) onFile(file)
-          event.target.value = '' // picking the same file again still fires
+          const files = [...(event.target.files ?? [])]
+          if (files.length > 0) onFiles(files)
+          event.target.value = '' // picking the same files again still fires
         }}
       />
       <Button variant="outline-primary" size="touch" onClick={() => input.current?.click()}>

@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next'
 
 import { Page } from '@/components/app-shell/page'
 import { errorKey } from '@/features/auth/errors'
-import { discardUpload, importPdf, MAX_PDF_BYTES, useCreatePlan } from '@/features/workouts/api'
+import { discardUpload, importFiles, useCreatePlan } from '@/features/workouts/api'
 import {
   draftFromPreview,
   draftReducer,
@@ -15,6 +15,7 @@ import {
 } from '@/features/workouts/import-draft'
 import { ImportReview } from '@/features/workouts/import-review'
 import { isImportError, type ImportErrorCode } from '@/features/workouts/import-errors'
+import { checkFiles } from '@/features/workouts/import-files'
 import { ImportErrorState, ImportSuccess, ReadingState } from '@/features/workouts/import-states'
 import { PdfDropzone } from '@/features/workouts/pdf-dropzone'
 import type { Plan } from '@/features/workouts/types'
@@ -31,10 +32,6 @@ function draftState(draft: Draft | null, action: DraftAction | { type: 'load'; d
   return draft && draftReducer(draft, action)
 }
 
-function looksLikePdf(file: File) {
-  return file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')
-}
-
 function ImportPdf() {
   const { t } = useTranslation()
   const navigate = useNavigate()
@@ -44,19 +41,19 @@ function ImportPdf() {
   const createPlan = useCreatePlan()
 
   const upload = useMutation({
-    mutationFn: importPdf,
+    mutationFn: importFiles,
     onMutate: () => setFailure(null),
     onSuccess: (preview) => dispatch({ type: 'load', draft: draftFromPreview(preview) }),
-    onError: (error, file) => {
-      if (error instanceof ApiError && isImportError(error.code)) setFailure({ code: error.code, file })
+    onError: (error, files) => {
+      if (error instanceof ApiError && isImportError(error.code)) setFailure({ code: error.code, file: files[0] })
     },
   })
 
-  const onFile = (file: File) => {
+  const onFiles = (files: File[]) => {
     // Cheap checks first; the server validates the bytes anyway.
-    if (!looksLikePdf(file)) setFailure({ code: 'unsupported_file_type', file })
-    else if (file.size > MAX_PDF_BYTES) setFailure({ code: 'file_too_large', file })
-    else upload.mutate(file)
+    const problem = checkFiles(files)
+    if (problem) setFailure(problem)
+    else upload.mutate(files)
   }
 
   const reset = () => {
@@ -84,13 +81,13 @@ function ImportPdf() {
       />
     )
   } else if (upload.isPending) {
-    content = <ReadingState file={upload.variables} />
+    content = <ReadingState files={upload.variables} />
   } else if (failure) {
     content = <ImportErrorState code={failure.code} file={failure.file} onRetry={reset} />
   } else {
     content = (
       <div className="grid gap-4">
-        <PdfDropzone onFile={onFile} />
+        <PdfDropzone onFiles={onFiles} />
         {upload.isError && (
           <p role="alert" className="text-sm text-destructive">
             {t(errorKey(upload.error))}

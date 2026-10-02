@@ -192,7 +192,7 @@
     },
     "workouts": {
       "title": "No workouts yet",
-      "description": "The plans you import from PDF show up here."
+      "description": "Import your trainer's plan (a PDF or photos of the sheet), or build one from scratch."
     },
     "progress": {
       "title": "No progress yet",
@@ -302,18 +302,14 @@
     "created": "Created {{date}}"
   },
   "import": {
-    "title": "Import PDF",
-    "dropHere": "Drop your PDF here",
-    "limits": "PDF · max. 20 MB",
-    "chooseFile": "Choose file",
-    "hint": "The plan is read by weekday → muscle group → exercise (sets × reps, rest). You can fix anything before confirming.",
+    "title": "Import a plan",
+    "dropHere": "Drop the PDF or the photos here",
+    "limits": "Your trainer's PDF, or photos of the printed sheet · up to 10 photos · 20 MB each",
+    "chooseFile": "Choose a file or photos",
+    "hint": "A PDF is read by weekday → muscle group → exercise (sets × reps, rest). Photos of the gym's sheet: one per workout (A, B, C…), in order. You can fix everything before confirming.",
     "reading": "Reading the plan… this can take up to a minute.",
     "anotherFile": "Another file",
     "errors": {
-      "pdf_no_text": {
-        "title": "We couldn't read the structure",
-        "body": "The PDF looks like a scanned image. Try the original PDF from your trainer."
-      },
       "pdf_no_structure": {
         "title": "No workout days found",
         "body": "The PDF opened, but it has no weekdays with exercises we recognise."
@@ -333,6 +329,14 @@
       "unsupported_file_type": {
         "title": "Only PDF files",
         "body": "{{name}} is not a PDF file."
+      },
+      "image_unreadable": {
+        "title": "We couldn't open the photo",
+        "body": "{{name}} isn't an image we can read. Use JPEG, PNG or WebP."
+      },
+      "too_many_files": {
+        "title": "Too many files",
+        "body": "Send one PDF on its own, or up to 10 photos at once."
       }
     },
     "review": {
@@ -361,7 +365,9 @@
       "active": "Set as your active plan.",
       "viewPlan": "View plan",
       "backToList": "See all workouts"
-    }
+    },
+    "photoCount_one": "{{count}} photo",
+    "photoCount_other": "{{count}} photos"
   },
   "builder": {
     "new": {
@@ -369,8 +375,8 @@
       "title": "New workout",
       "copyName": "{{name}} (copy)",
       "import": {
-        "title": "Import a PDF",
-        "body": "From your personal trainer · read automatically"
+        "title": "Import a PDF or photos",
+        "body": "Your trainer's PDF, or photos of the gym's printed sheet"
       },
       "scratch": {
         "title": "Build from scratch",

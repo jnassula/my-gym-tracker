@@ -192,7 +192,7 @@
     },
     "workouts": {
       "title": "Aún no tienes entrenos",
-      "description": "Los planes que importes en PDF aparecerán aquí."
+      "description": "Importa el plan de tu entrenador (PDF o fotos de la ficha), o crea uno desde cero."
     },
     "progress": {
       "title": "Aún sin progreso",
@@ -302,18 +302,14 @@
     "created": "Creado {{date}}"
   },
   "import": {
-    "title": "Importar PDF",
-    "dropHere": "Arrastra el PDF aquí",
-    "limits": "PDF · máx. 20 MB",
-    "chooseFile": "Elegir archivo",
-    "hint": "El plan se lee por día de la semana → grupo muscular → ejercicio (series × reps, descanso). Puedes corregirlo todo antes de confirmar.",
+    "title": "Importar plan",
+    "dropHere": "Arrastra el PDF o las fotos aquí",
+    "limits": "El PDF de tu entrenador, o fotos de la ficha impresa · máx. 10 fotos · 20 MB cada una",
+    "chooseFile": "Elegir archivo o fotos",
+    "hint": "Un PDF se lee por día de la semana → grupo muscular → ejercicio (series × reps, descanso). Fotos de la ficha del gimnasio: una por entrenamiento (A, B, C…), en orden. Puedes corregirlo todo antes de confirmar.",
     "reading": "Leyendo el plan… puede tardar hasta un minuto.",
     "anotherFile": "Otro archivo",
     "errors": {
-      "pdf_no_text": {
-        "title": "No hemos podido leer la estructura",
-        "body": "El PDF parece una imagen escaneada. Prueba con el PDF original de tu entrenador."
-      },
       "pdf_no_structure": {
         "title": "No hemos encontrado días de entreno",
         "body": "El PDF se abrió, pero no tiene días de la semana con ejercicios que reconozcamos."
@@ -333,6 +329,14 @@
       "unsupported_file_type": {
         "title": "Solo aceptamos PDF",
         "body": "{{name}} no es un archivo PDF."
+      },
+      "image_unreadable": {
+        "title": "No pudimos abrir la foto",
+        "body": "{{name}} no es una imagen que podamos leer. Usa JPEG, PNG o WebP."
+      },
+      "too_many_files": {
+        "title": "Demasiados archivos",
+        "body": "Envía un PDF solo, o hasta 10 fotos a la vez."
       }
     },
     "review": {
@@ -361,7 +365,9 @@
       "active": "Establecido como plan activo.",
       "viewPlan": "Ver plan",
       "backToList": "Ver todos los entrenos"
-    }
+    },
+    "photoCount_one": "{{count}} foto",
+    "photoCount_other": "{{count}} fotos"
   },
   "builder": {
     "new": {
@@ -369,8 +375,8 @@
       "title": "Nuevo entrenamiento",
       "copyName": "{{name}} (copia)",
       "import": {
-        "title": "Importar PDF",
-        "body": "De tu entrenador personal · leído automáticamente"
+        "title": "Importar PDF o fotos",
+        "body": "El PDF de tu entrenador, o fotos de la ficha impresa del gimnasio"
       },
       "scratch": {
         "title": "Crear desde cero",

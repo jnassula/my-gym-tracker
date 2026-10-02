@@ -5,8 +5,6 @@ import { api } from '@/lib/api'
 import type { Library } from './builder/library'
 import type { ImportPreview, Plan, PlanCreate, PlanSummary } from './types'
 
-export const MAX_PDF_BYTES = 20 * 1024 * 1024
-
 export const workoutKeys = {
   all: ['workouts'] as const,
   detail: (id: string) => ['workouts', id] as const,
@@ -18,9 +16,10 @@ export const plansQuery = () =>
 export const planQuery = (id: string) =>
   queryOptions({ queryKey: workoutKeys.detail(id), queryFn: () => api<Plan>(`/api/workouts/${id}`) })
 
-export function importPdf(file: File) {
+/** One PDF, or photos of printed sheets (one training day each, in order). */
+export function importFiles(files: File[]) {
   const form = new FormData()
-  form.append('file', file)
+  for (const file of files) form.append('files', file)
   return api<ImportPreview>('/api/workouts/import', { method: 'POST', body: form })
 }
 

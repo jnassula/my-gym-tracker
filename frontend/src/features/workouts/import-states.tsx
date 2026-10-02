@@ -23,13 +23,17 @@ function FileLine({ file }: { file: File }) {
   )
 }
 
-export function ReadingState({ file }: { file: File }) {
+export function ReadingState({ files }: { files: File[] }) {
   const { t } = useTranslation()
   return (
     <Card className="items-center gap-3 px-4 py-8 text-center" role="status">
       <Spinner className="size-6 text-primary" />
       <p className="font-medium">{t('import.reading')}</p>
-      <FileLine file={file} />
+      {files.length === 1 ? (
+        <FileLine file={files[0]} />
+      ) : (
+        <p className="text-sm text-muted-foreground">{t('import.photoCount', { count: files.length })}</p>
+      )}
     </Card>
   )
 }

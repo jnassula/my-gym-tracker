@@ -75,7 +75,7 @@ export function ImportReview({ draft, dispatch, saving, errorKey, onConfirm, onC
                   index === current && 'bg-accent text-foreground ring-1 ring-primary',
                 )}
               >
-                {labels.weekdayShort(item.weekday)}
+                {item.weekday === null ? item.label || labels.weekdayShort(null) : labels.weekdayShort(item.weekday)}
                 {item.reviewed && (
                   <CheckIcon className="size-3.5 text-primary" aria-label={t('import.review.reviewed')} />
                 )}
@@ -91,7 +91,11 @@ export function ImportReview({ draft, dispatch, saving, errorKey, onConfirm, onC
             {t('import.review.kicker', { current: current + 1, total: draft.days.length })}
           </p>
           <h2 id={`${nameId}-day`} className="text-lg">
-            {day.label ? `${labels.weekdayLong(day.weekday)} — ${day.label}` : labels.weekdayLong(day.weekday)}
+            {day.weekday === null
+              ? day.label || labels.weekdayLong(null)
+              : day.label
+                ? `${labels.weekdayLong(day.weekday)} — ${day.label}`
+                : labels.weekdayLong(day.weekday)}
           </h2>
         </header>
 
