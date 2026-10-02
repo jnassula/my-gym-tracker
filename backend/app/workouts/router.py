@@ -1,7 +1,8 @@
 import uuid
 from typing import Annotated
+from urllib.parse import quote
 
-from fastapi import APIRouter, Depends, File, Request, UploadFile, status
+from fastapi import APIRouter, Depends, File, Request, Response, UploadFile, status
 
 from app.auth.dependencies import CurrentUser
 from app.core.db import SessionDep
@@ -45,6 +46,19 @@ async def list_plans(user: CurrentUser, session: SessionDep) -> list[PlanSummary
 @router.get("/{plan_id}")
 async def get_plan(plan_id: uuid.UUID, user: CurrentUser, session: SessionDep) -> PlanRead:
     return PlanRead.model_validate(await service.get_plan(session, user.id, plan_id))
+
+
+@router.get("/{plan_id}/export.pdf")
+async def export_plan(
+    plan_id: uuid.UUID, user: CurrentUser, session: SessionDep, weights: bool = False
+) -> Response:
+    """The plan as an A4 PDF in the trainer's format; ``weights`` adds the last logged weights."""
+    data, filename = await service.export_pdf(session, user, plan_id, include_weights=weights)
+    return Response(
+        content=data,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f"attachment; filename*=UTF-8''{quote(filename)}"},
+    )
 
 
 @router.patch("/{plan_id}")

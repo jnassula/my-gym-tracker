@@ -9,6 +9,7 @@ import logging
 import re
 import uuid
 from pathlib import PurePath
+from zoneinfo import ZoneInfo
 
 from fastapi import UploadFile
 from sqlalchemy import func, select, update
@@ -17,9 +18,12 @@ from sqlalchemy.orm import selectinload
 
 from app.core.db import utcnow
 from app.core.storage import Storage
+from app.exercises import service as exercises
+from app.exercises.key import exercise_key
 from app.exercises.models import Exercise
 from app.files import service as files
 from app.files.models import FileKind, StoredFile
+from app.users.models import User
 from app.workouts.errors import (
     PdfNoStructureError,
     PdfNoTextError,
@@ -27,6 +31,7 @@ from app.workouts.errors import (
     PdfUnreadableError,
     PlanNotFoundError,
 )
+from app.workouts.export import render_plan_pdf
 from app.workouts.models import WorkoutDay, WorkoutPlan
 from app.workouts.parser import (
     NoWorkoutStructureError,
@@ -239,3 +244,39 @@ async def delete_plan(
     if source_file_id is not None:
         await files.delete_file(session, storage, user_id, source_file_id)
     await session.commit()
+
+
+_UNSAFE = re.compile(r"[^\w\- ]+", re.UNICODE)
+
+
+def export_filename(name: str) -> str:
+    """ "Treino 01 / fase A" → "Treino 01  fase A.pdf": a name every OS accepts."""
+    stem = _UNSAFE.sub("", name).strip() or "treino"
+    return f"{stem[:80]}.pdf"
+
+
+async def export_pdf(
+    session: AsyncSession, user: User, plan_id: uuid.UUID, *, include_weights: bool
+) -> tuple[bytes, str]:
+    """The plan as a PDF in the trainer's format, with the last weight logged on each
+    exercise when asked. Dated in the user's time zone."""
+    plan = await get_plan(session, user.id, plan_id)
+    weights = None
+    if include_weights:
+        by_key = await exercises.last_weights(session, user)
+        weights = {
+            exercise.id: weight
+            for day in plan.days
+            for exercise in day.exercises
+            if (weight := by_key.get(exercise_key(exercise.name, exercise.muscle_group)))
+        }
+    today = utcnow().astimezone(ZoneInfo(user.timezone)).date()
+    data = await asyncio.to_thread(
+        render_plan_pdf,
+        plan,
+        student=user.name,
+        language=user.language,
+        today=today,
+        weights=weights,
+    )
+    return data, export_filename(plan.name)

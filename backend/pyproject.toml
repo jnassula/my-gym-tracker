@@ -9,6 +9,7 @@ dependencies = [
     "asyncpg>=0.31.0",
     "email-validator>=2.3.0",
     "fastapi>=0.141.1",
+    "fpdf2>=2.8.9",
     "google-adk[openai]>=2.10.0",
     "minio>=7.2.20",
     "pdfplumber>=0.11.10",
