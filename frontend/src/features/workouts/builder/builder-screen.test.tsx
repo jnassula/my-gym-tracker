@@ -128,7 +128,12 @@ describe('BuilderScreen', () => {
     expect(within(library).getByText('Peitoral · última 60 kg')).toBeInTheDocument()
     expect(within(library).queryByText('Supino Inclinado com Halteres')).not.toBeInTheDocument()
     await u.click(within(library).getByRole('button', { name: 'Adicionar Supino Reto com Barra' }))
-    expect(await within(library).findByLabelText('Supino Reto com Barra já está neste dia')).toBeInTheDocument()
+    // A second tap takes it off again; a third puts it back.
+    const chosen = await within(library).findByRole('button', { name: 'Tirar Supino Reto com Barra deste dia' })
+    expect(chosen).toHaveAttribute('aria-pressed', 'true')
+    await u.click(chosen)
+    expect(loadDraft()?.days[0].exercises).toEqual([])
+    await u.click(await within(library).findByRole('button', { name: 'Adicionar Supino Reto com Barra' }))
     // A name nobody has becomes a custom exercise in the group.
     await u.clear(within(library).getByLabelText('Procurar exercício…'))
     await u.type(within(library).getByLabelText('Procurar exercício…'), 'Supino Máquina Unilateral')

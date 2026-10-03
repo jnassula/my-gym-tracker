@@ -1,10 +1,9 @@
 import { CheckIcon, MagnifyingGlassIcon, PlusIcon } from '@phosphor-icons/react'
 import { useQuery } from '@tanstack/react-query'
-import { useId, useState } from 'react'
+import { useId, useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
 import { InputGroup, InputGroupAddon, InputGroupInput } from '@/components/ui/input-group'
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet'
 import { Spinner } from '@/components/ui/spinner'
@@ -36,6 +35,8 @@ type LibrarySheetProps = {
   inDay: ReadonlySet<string>
   onOpenChange: (open: boolean) => void
   onAdd: (pick: Pick) => void
+  /** Tapping an exercise that is already on the day takes it off again. */
+  onRemove: (pick: Pick) => void
 }
 
 /** "Biblioteca de exercícios": search without accents, filter by group, add with one tap. */
@@ -55,7 +56,7 @@ export function LibrarySheet(props: LibrarySheetProps) {
   )
 }
 
-function LibraryBrowser({ group, inDay, onAdd }: LibrarySheetProps) {
+function LibraryBrowser({ group, inDay, onAdd, onRemove }: LibrarySheetProps) {
   const { t, i18n } = useTranslation()
   const labels = useWorkoutLabels()
   const { user } = useRequiredSession()
@@ -134,23 +135,24 @@ function LibraryBrowser({ group, inDay, onAdd }: LibrarySheetProps) {
                 unit={user.unit as Unit}
                 locale={i18n.language}
                 added={inDay.has(pickKey(entry))}
-                onAdd={() => onAdd({ name: entry.name, muscle_group: entry.muscle_group })}
+                onToggle={(added) =>
+                  (added ? onRemove : onAdd)({ name: entry.name, muscle_group: entry.muscle_group })
+                }
               />
             ))}
             {custom && (
-              <li className="flex min-h-14 items-center gap-2 rounded-xl bg-card py-1 pr-1 pl-3 ring-1 ring-dashed ring-border">
-                <span className="min-w-0 flex-1 text-sm">
-                  {t('builder.library.custom', { name: custom.name })}
-                  <span className="block text-xs text-muted-foreground">{labels.group(custom.muscle_group)}</span>
-                </span>
-                <Button
-                  variant="ghost"
-                  size="icon-touch"
-                  aria-label={t('builder.library.addCustom', { name: custom.name })}
-                  onClick={() => onAdd(custom)}
+              <li>
+                <ToggleRow
+                  added={inDay.has(pickKey(custom))}
+                  label={t(inDay.has(pickKey(custom)) ? 'builder.library.remove' : 'builder.library.addCustom', {
+                    name: custom.name,
+                  })}
+                  className="ring-1 ring-dashed ring-border"
+                  onToggle={(added) => (added ? onRemove : onAdd)(custom)}
                 >
-                  <PlusIcon className="size-5" />
-                </Button>
+                  <span className="block text-sm">{t('builder.library.custom', { name: custom.name })}</span>
+                  <span className="block text-xs text-muted-foreground">{labels.group(custom.muscle_group)}</span>
+                </ToggleRow>
               </li>
             )}
             {hits.length === 0 && !custom && (
@@ -163,18 +165,55 @@ function LibraryBrowser({ group, inDay, onAdd }: LibrarySheetProps) {
   )
 }
 
+/** One row, one button: a tap adds the exercise to the day, another takes it off. */
+function ToggleRow({
+  added,
+  label,
+  className,
+  badge,
+  onToggle,
+  children,
+}: {
+  added: boolean
+  label: string
+  className?: string
+  badge?: ReactNode
+  onToggle: (added: boolean) => void
+  children: ReactNode
+}) {
+  return (
+    <button
+      type="button"
+      aria-pressed={added}
+      aria-label={label}
+      onClick={() => onToggle(added)}
+      className={cn(
+        'flex min-h-14 w-full items-center gap-2 rounded-xl bg-card py-1 pr-3 pl-3 text-left',
+        added && 'bg-accent ring-1 ring-primary',
+        className,
+      )}
+    >
+      <span className="min-w-0 flex-1">{children}</span>
+      {badge}
+      <span className="flex size-9 shrink-0 items-center justify-center text-primary">
+        {added ? <CheckIcon weight="bold" className="size-5" /> : <PlusIcon className="size-5" />}
+      </span>
+    </button>
+  )
+}
+
 function LibraryRow({
   entry,
   unit,
   locale,
   added,
-  onAdd,
+  onToggle,
 }: {
   entry: LibraryEntry
   unit: Unit
   locale: string
   added: boolean
-  onAdd: () => void
+  onToggle: (added: boolean) => void
 }) {
   const { t } = useTranslation()
   const labels = useWorkoutLabels()
@@ -185,33 +224,24 @@ function LibraryRow({
         ? t('builder.library.noWeightYet')
         : t('builder.library.fromBase')
   return (
-    <li className="flex min-h-14 items-center gap-2 rounded-xl bg-card py-1 pr-1 pl-3">
-      <span className="min-w-0 flex-1">
+    <li>
+      <ToggleRow
+        added={added}
+        label={t(added ? 'builder.library.remove' : 'builder.library.add', { name: entry.name })}
+        onToggle={onToggle}
+        badge={
+          entry.plan_name && (
+            <Badge variant="secondary" className="max-w-28 justify-start">
+              <span className="truncate">{entry.plan_name}</span>
+            </Badge>
+          )
+        }
+      >
         <span className="block truncate text-sm font-medium">{entry.name}</span>
         <span className="block text-xs text-muted-foreground">
           {labels.group(entry.muscle_group)} · {detail}
         </span>
-      </span>
-      {entry.plan_name && (
-        <Badge variant="secondary" className="max-w-28 justify-start">
-          <span className="truncate">{entry.plan_name}</span>
-        </Badge>
-      )}
-      {added ? (
-        <span className="flex size-11 items-center justify-center text-primary">
-          <CheckIcon weight="bold" className="size-5" aria-label={t('builder.library.added', { name: entry.name })} />
-        </span>
-      ) : (
-        <Button
-          variant="ghost"
-          size="icon-touch"
-          className="text-primary"
-          aria-label={t('builder.library.add', { name: entry.name })}
-          onClick={onAdd}
-        >
-          <PlusIcon className="size-5" />
-        </Button>
-      )}
+      </ToggleRow>
     </li>
   )
 }

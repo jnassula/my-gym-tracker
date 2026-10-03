@@ -459,11 +459,11 @@
       "lastWeight": "última {{weight}}",
       "fromBase": "biblioteca",
       "add": "Adicionar {{name}}",
-      "added": "{{name}} já está neste dia",
       "custom": "Criar exercício personalizado: “{{name}}”",
       "addCustom": "Criar {{name}}",
       "empty": "Nenhum exercício com esse nome. Escreve o nome completo para o criar.",
-      "noWeightYet": "ainda sem carga"
+      "noWeightYet": "ainda sem carga",
+      "remove": "Tirar {{name}} deste dia"
     },
     "exercise": {
       "addTitle": "Novo exercício",

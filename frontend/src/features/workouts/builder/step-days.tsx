@@ -257,6 +257,13 @@ export function StepDays({ draft, dispatch, dayIndex, onDayChange, onReview }: S
         onAdd={(pick) =>
           dispatch({ type: 'add-exercise', day: day.key, exercise: newExercise(pick.name, pick.muscle_group) })
         }
+        onRemove={(pick) => {
+          // Every copy of it on this day goes, however it got there.
+          for (const exercise of day.exercises) {
+            const key = pickKey({ name: exercise.name, muscle_group: exercise.muscle_group ?? 'other' })
+            if (key === pickKey(pick)) dispatch({ type: 'delete-exercise', day: day.key, exercise: exercise.key })
+          }
+        }}
       />
 
       <ExerciseSheet
