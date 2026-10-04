@@ -1,0 +1,11 @@
+# What the image scan in CI (anchore/scan-action, .github/workflows/ci.yml) leaves out.
+# The scan stops a release on a known vulnerability, high or critical, that has a fix. One that
+# has no fix for what we run (fixed only in a version we can't move to yet) goes here, with why
+# and until when:
+#
+# ignore:
+#   - vulnerability: CVE-0000-00000
+#     package:
+#       name: python
+#     # fixed in 3.15 only; we run 3.13 until the dependencies support it (checked 2026-10-04)
+ignore: []

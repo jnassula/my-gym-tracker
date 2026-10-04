@@ -1,7 +1,10 @@
-# Every push and pull request: lint, types and tests of both apps, then the production images
-# are built and the whole production stack is started and checked (deploy/smoke-test.sh).
-# On main the images are published to GHCR and deployed (deploy.yml). Each build carries the
-# version worked out from the commits since the last release (deploy/version.sh).
+# Every push and pull request: lint, types, tests and known vulnerabilities of both apps, then
+# the production images are built, scanned and the whole production stack is started and checked
+# (deploy/smoke-test.sh). On main the images are published to GHCR, with where they were built
+# attested, and deployed (deploy.yml). Each build carries the version worked out from the commits
+# since the last release (deploy/version.sh).
+#
+# Only `publish` can write to the registry, and only on main: every other job reads.
 name: CI/CD
 
 on:
@@ -53,6 +56,12 @@ jobs:
           cache-dependency-glob: backend/uv.lock
       - name: Install (Python from .python-version)
         run: uv sync --locked
+      - name: Known vulnerabilities in what production installs
+        run: |
+          uv export --locked --no-dev --no-emit-project --format requirements-txt \
+            --output-file "$RUNNER_TEMP/requirements.txt" --quiet
+          uvx pip-audit==2.10.1 --requirement "$RUNNER_TEMP/requirements.txt" \
+            --require-hashes --disable-pip
       - name: Lint
         run: uv run ruff check --output-format=github .
       - name: Format
@@ -80,6 +89,8 @@ jobs:
           cache-dependency-path: frontend/package-lock.json
       - name: Install
         run: npm ci --no-fund --no-audit
+      - name: Known vulnerabilities in what the app ships
+        run: npm audit --omit=dev --audit-level=high
       - name: Lint
         run: npm run lint
       - name: Types
@@ -91,17 +102,39 @@ jobs:
       - name: Route tree is up to date
         run: git diff --exit-code -- src/routeTree.gen.ts
 
+  lint:
+    name: Scripts, workflows and Dockerfiles
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Shell scripts
+        run: shellcheck deploy/*.sh
+      # The two linters run from their images, pinned by digest (bumped by hand).
+      - name: Workflows
+        run: >-
+          docker run --rm --volume "$PWD:/repo" --workdir /repo
+          rhysd/actionlint@sha256:887a259a5a534f3c4f36cb02dca341673c6089431057242cdc931e9f133147e9
+      - name: Dockerfiles
+        run: |
+          for file in backend/Dockerfile frontend/Dockerfile; do
+            docker run --rm --interactive \
+              hadolint/hadolint@sha256:3c206a451cec6d486367e758645269fd7d696c5ccb6ff59d8b03b0e45268a199 \
+              hadolint - < "$file"
+          done
+
   images:
     name: Production images
-    needs: [backend, frontend]
+    needs: [backend, frontend, lint]
     runs-on: ubuntu-24.04
     timeout-minutes: 30
-    permissions:
-      contents: read
-      packages: write
     env:
       IMAGE_TAG: ${{ github.sha }}
-      PUBLISH: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+    outputs:
+      version: ${{ steps.build.outputs.version }}
+      os_updates: ${{ steps.build.outputs.os_updates }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -110,9 +143,14 @@ jobs:
           fetch-depth: 0
           fetch-tags: true
       - name: Work out the version
+        id: build
         run: |
           sh deploy/version-test.sh
-          echo "APP_VERSION=$(sh deploy/version.sh)" >> "$GITHUB_ENV"
+          version=$(sh deploy/version.sh)
+          # The day: the images install the distribution's fixes published up to it.
+          day=$(date -u +%F)
+          { echo "APP_VERSION=$version"; echo "OS_UPDATES=$day"; } >> "$GITHUB_ENV"
+          { echo "version=$version"; echo "os_updates=$day"; } >> "$GITHUB_OUTPUT"
       - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
       - name: Build the backend image
         uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
@@ -124,6 +162,7 @@ jobs:
           build-args: |
             APP_RELEASE=${{ env.IMAGE_TAG }}
             APP_VERSION=${{ env.APP_VERSION }}
+            OS_UPDATES=${{ env.OS_UPDATES }}
           labels: |
             org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
             org.opencontainers.image.revision=${{ github.sha }}
@@ -137,13 +176,32 @@ jobs:
           target: prod
           load: true
           tags: ${{ env.IMAGE_REPOSITORY }}/frontend:${{ env.IMAGE_TAG }}
-          build-args: APP_VERSION=${{ env.APP_VERSION }}
+          build-args: |
+            APP_VERSION=${{ env.APP_VERSION }}
+            OS_UPDATES=${{ env.OS_UPDATES }}
           labels: |
             org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
             org.opencontainers.image.revision=${{ github.sha }}
             org.opencontainers.image.version=${{ env.APP_VERSION }}
           cache-from: type=gha,scope=frontend
           cache-to: type=gha,mode=max,scope=frontend
+      # A known vulnerability that has a fix, high or critical, stops the release: in the
+      # system's packages (rebuilt with the day's fixes), Python's or the app's dependencies.
+      # One with no fix for what we run is listed in .grype.yaml with its reason.
+      - name: Scan the backend image
+        uses: anchore/scan-action@27805bf3b4e84b4a5c980df22ed233c00390a439 # v7.4.2
+        with:
+          image: ${{ env.IMAGE_REPOSITORY }}/backend:${{ env.IMAGE_TAG }}
+          severity-cutoff: high
+          only-fixed: true
+          output-format: table
+      - name: Scan the frontend image
+        uses: anchore/scan-action@27805bf3b4e84b4a5c980df22ed233c00390a439 # v7.4.2
+        with:
+          image: ${{ env.IMAGE_REPOSITORY }}/frontend:${{ env.IMAGE_TAG }}
+          severity-cutoff: high
+          only-fixed: true
+          output-format: table
       - name: Start the production stack
         working-directory: deploy
         run: |
@@ -181,21 +239,86 @@ jobs:
         if: failure()
         working-directory: deploy
         run: docker compose logs --tail 100
-      - name: Log in to GHCR
-        if: env.PUBLISH == 'true'
-        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+
+  publish:
+    name: Publish the images
+    needs: images
+    # Only main's commits reach the registry: the one job that can write to it.
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      packages: write
+      id-token: write # the attestations are signed with this run's identity
+      attestations: write
+    env:
+      IMAGE_TAG: ${{ github.sha }}
+      APP_VERSION: ${{ needs.images.outputs.version }}
+      OS_UPDATES: ${{ needs.images.outputs.os_updates }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+      - uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      - name: Publish the images
-        if: env.PUBLISH == 'true'
-        run: |
-          for image in backend frontend; do
-            docker tag "$IMAGE_REPOSITORY/$image:$IMAGE_TAG" "$IMAGE_REPOSITORY/$image:main"
-            docker push "$IMAGE_REPOSITORY/$image:$IMAGE_TAG"
-            docker push "$IMAGE_REPOSITORY/$image:main"
-          done
+      # The same build as the images job, taken from the cache it filled (the layers it tested
+      # and scanned), and pushed.
+      - name: Push the backend image
+        id: backend
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: backend
+          target: prod
+          push: true
+          tags: |
+            ${{ env.IMAGE_REPOSITORY }}/backend:${{ env.IMAGE_TAG }}
+            ${{ env.IMAGE_REPOSITORY }}/backend:main
+          build-args: |
+            APP_RELEASE=${{ env.IMAGE_TAG }}
+            APP_VERSION=${{ env.APP_VERSION }}
+            OS_UPDATES=${{ env.OS_UPDATES }}
+          labels: |
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.version=${{ env.APP_VERSION }}
+          cache-from: type=gha,scope=backend
+      - name: Push the frontend image
+        id: frontend
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: frontend
+          target: prod
+          push: true
+          tags: |
+            ${{ env.IMAGE_REPOSITORY }}/frontend:${{ env.IMAGE_TAG }}
+            ${{ env.IMAGE_REPOSITORY }}/frontend:main
+          build-args: |
+            APP_VERSION=${{ env.APP_VERSION }}
+            OS_UPDATES=${{ env.OS_UPDATES }}
+          labels: |
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.version=${{ env.APP_VERSION }}
+          cache-from: type=gha,scope=frontend
+      # Which commit and which run each image came from, signed and kept with the image:
+      # `gh attestation verify oci://ghcr.io/<repo>/backend:<sha> --repo <repo>` checks it.
+      - name: Attest the backend image
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-name: ${{ env.IMAGE_REPOSITORY }}/backend
+          subject-digest: ${{ steps.backend.outputs.digest }}
+          push-to-registry: true
+      - name: Attest the frontend image
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-name: ${{ env.IMAGE_REPOSITORY }}/frontend
+          subject-digest: ${{ steps.frontend.outputs.digest }}
+          push-to-registry: true
 
   dependency-review:
     name: Dependency review
@@ -213,7 +336,7 @@ jobs:
 
   deploy:
     name: Deploy
-    needs: images
+    needs: publish
     # Only main, and only once the server is configured (deploy/README.md).
     if: github.event_name == 'push' && github.ref == 'refs/heads/main' && vars.DEPLOY_HOST != ''
     permissions:
