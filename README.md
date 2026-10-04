@@ -130,6 +130,19 @@ Uma sessão é um dia do plano treinado numa data (a data local do utilizador): 
 | `PATCH`/`DELETE /api/logs/sets/{id}` | corrigir ou apagar uma série (as seguintes são renumeradas) |
 | `POST /api/logs/sessions/{id}/finish` | termina a sessão e devolve o resumo |
 
+## Como fazer (animações dos exercícios)
+
+No ecrã de um exercício, **Como fazer** abre uma animação do movimento. As animações vêm do conjunto gratuito do [ExerciseDB](https://oss.exercisedb.dev) (AscendAPI): 1 500 exercícios catalogados, dos quais 1 324 têm GIF (180 px). **Os termos desse conjunto só permitem uso pessoal e não comercial, com crédito à AscendAPI** (a app mostra-o por baixo de cada animação); para uma app paga é preciso o plano pago deles ou outra fonte.
+
+- **Cópia** (`python -m app.demos.sync`, à mão, uma vez por servidor): o catálogo vai para a base de dados e os GIFs para o bucket (`demos/<id>.gif`, 123 MB). A app nunca chama o ExerciseDB: serve a sua própria cópia. Pode ser interrompida e repetida (continua de onde parou); `--limit 40` copia só alguns para experimentar e `--again` copia tudo outra vez.
+- **Ligação**: quando um plano é gravado (importado ou criado), uma tarefa em segundo plano pergunta ao LLM (o mesmo DeepSeek da importação, a pensar um pouco: `effort` "low") que animação do catálogo mostra cada exercício novo. A resposta fica guardada pelo nome do exercício e o grupo muscular, por isso cada exercício só é perguntado uma vez, seja de quem for o plano, e um exercício sem animação fica sem botão. Sem `LLM_API_KEY` nada é ligado. Para o LLM só vão nomes de exercícios.
+- A escolha é automática e pode falhar a variação: a folha diz o que a animação mostra ("A animação mostra: barbell bench press"). Para refazer uma ligação errada, apaga a linha em `exercise_demo_links`: o exercício volta a ser perguntado no minuto seguinte.
+
+| Endpoint | |
+| --- | --- |
+| `GET /api/demos/exercises/{exercise_id}` | a animação desse exercício (`{id, name}`) ou `null` |
+| `GET /api/demos/{id}.gif` | o GIF (precisa de sessão; fica em cache no browser) |
+
 ## Progresso
 
 - **Visão geral:** semanas seguidas (toca para o calendário), volume da semana (toca para a comparação semanal), PRs deste mês, séries por grupo muscular esta semana e cada exercício com a evolução das últimas 8 sessões.
@@ -371,7 +384,7 @@ Revê sempre o ficheiro gerado em `backend/alembic/versions/`. O teste `test_mig
 backend/
   app/
     core/           config, sessão de BD, formato de erros, healthcheck, email, rate limit
-    auth/ users/ workouts/ exercises/ logs/ files/ progress/ notifications/ health/ body/
+    auth/ users/ workouts/ exercises/ logs/ files/ progress/ notifications/ health/ body/ demos/
                     um domínio por pasta: router.py, schemas.py, models.py, service.py
     models.py       regista todos os modelos (Alembic e testes)
     main.py         app FastAPI; os routers dos domínios ficam em /api
@@ -380,7 +393,7 @@ backend/
 frontend/
   src/
     routes/         rotas (TanStack Router, file-based); _auth = só visitantes, _app = autenticado
-    features/       código por funcionalidade (auth, workouts, training, progress, settings, notifications, health, body)
+    features/       código por funcionalidade (auth, workouts, training, demos, progress, settings, notifications, health, body)
     sw/             service worker (cache da PWA e Web Push)
     components/ui/  componentes shadcn (gerados pela CLI; ajustes do design notados em CLAUDE.md)
     components/     componentes partilhados (shell da app, logótipo)

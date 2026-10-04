@@ -115,6 +115,14 @@ docker compose up -d backend
 
 Para abrir o backoffice (`/admin`, os números de crescimento), cria a tua conta na app e torna-a administradora: `docker compose exec backend python -m app.admin.grant tu@example.com` (`--list` mostra quem é, `--revoke` tira).
 
+Para as animações dos exercícios ("Como fazer"), copia-as uma vez para o servidor (cerca de 25 minutos, 123 MB no armazenamento; pode ser interrompido e repetido, continua de onde parou):
+
+```bash
+docker compose exec backend python -m app.demos.sync
+```
+
+É a única altura em que o servidor fala com o ExerciseDB (`oss.exercisedb.dev` e `static.exercisedb.dev`); daí em diante a app serve a sua cópia. Cerca de 180 dos 1 500 exercícios não têm GIF na origem e aparecem como "skipped … HTTP 404": é normal. Sem este passo a app funciona na mesma, só sem o botão "Como fazer". Os termos do conjunto gratuito do ExerciseDB só permitem uso pessoal e não comercial, com crédito à AscendAPI.
+
 ## Operação
 
 No servidor, dentro de `/opt/mygymtracker`, o `docker compose` já sabe que versão está em produção (o `IMAGE_TAG` que o `deploy.sh` grava no `.env`):
@@ -134,7 +142,8 @@ docker compose restart backend
 O serviço `backup` guarda em `/opt/mygymtracker/backups`, todos os dias às `BACKUP_HOUR_UTC` (3h por omissão), durante `BACKUP_KEEP_DAYS` dias (14):
 
 - `db-<data>.dump`: a base de dados (`pg_dump`, formato custom). O `deploy.sh` tira um destes antes de cada versão nova.
-- `files-<data>.tar.gz`: os PDFs importados (a pasta de dados do RustFS).
+- `files-<data>.tar.gz`: os PDFs importados e as fotos de perfil (a pasta de dados do RustFS, sem as animações).
+- `demos.tar`: as animações dos exercícios. São iguais para toda a gente e só mudam quando corre o `app.demos.sync`, por isso ficam num arquivo único, reescrito só quando mudam, em vez de 130 MB a mais em cada dia.
 
 ```bash
 docker compose run --rm --no-deps backup now      # um backup completo agora
@@ -151,7 +160,7 @@ Para a app enquanto repõe, e perde-se o que foi escrito depois do backup:
 sh restore.sh backups/db-20260929T030000Z.dump backups/files-20260929T030000Z.tar.gz
 ```
 
-O arquivo dos ficheiros é opcional (só a base de dados: `sh restore.sh backups/db-….dump`). Num servidor novo: prepara-o como acima, faz um deploy, copia os backups para `backups/` e corre o `restore.sh`.
+O arquivo dos ficheiros é opcional (só a base de dados: `sh restore.sh backups/db-….dump`). Com ele, o `restore.sh` repõe também o `demos.tar` que estiver na mesma pasta; se não houver nenhum, corre depois `docker compose exec backend python -m app.demos.sync --again` para copiar as animações outra vez. Num servidor novo: prepara-o como acima, faz um deploy, copia os backups para `backups/` e corre o `restore.sh`.
 
 ### Mudar segredos
 
