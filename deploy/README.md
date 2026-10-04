@@ -11,8 +11,8 @@ Internet ──443──▶ Caddy (TLS, Let's Encrypt) ──▶ nginx (PWA, pro
 
 O caminho de um commit até produção:
 
-1. **Push** para qualquer ramo ou pull request: o workflow **CI/CD** corre ruff, mypy, pytest, oxlint, tsc, Vitest e o build. Depois constrói as duas imagens de produção, arranca a stack completa num runner (Caddy em `localhost`) e verifica o health, os headers, um registo, o redirect para HTTPS e um backup (`smoke-test.sh`).
-2. **Push para o `main`**: as imagens são publicadas no GHCR (`ghcr.io/jnassula/my-gym-tracker/{backend,frontend}:<sha>`), e o workflow **Deploy** copia esta pasta para o servidor por SSH e corre `deploy.sh <sha>` lá.
+1. **Push** para qualquer ramo ou pull request: o workflow **CI/CD** corre ruff, mypy, pytest, oxlint, tsc, Vitest e o build, procura vulnerabilidades conhecidas nas dependências (`pip-audit`, `npm audit`) e passa os scripts, os workflows e os Dockerfiles pelos seus linters (shellcheck, actionlint, hadolint). Depois constrói as duas imagens de produção, examina-as (Grype), arranca a stack completa num runner (Caddy em `localhost`) e verifica o health, os headers, um registo, o redirect para HTTPS e um backup (`smoke-test.sh`).
+2. **Push para o `main`**: o job `publish`, o único que pode escrever no registo, publica as imagens no GHCR (`ghcr.io/jnassula/my-gym-tracker/{backend,frontend}:<sha>`) com um atestado de onde foram construídas, e o workflow **Deploy** copia esta pasta para o servidor por SSH e corre `deploy.sh <sha>` lá.
 3. **`deploy.sh`** valida o `.env`, descarrega as imagens, faz um dump da base de dados (a versão nova pode migrá-la), reinicia o que mudou e espera que tudo fique saudável. Se a versão nova não arrancar, repõe a anterior sozinho. No fim, o workflow confirma que `https://<domínio>/health` responde com o commit novo e cria a tag da versão (ver **Versões**).
 
 Enquanto a variável `DEPLOY_HOST` não existir no GitHub, o passo de deploy é saltado e o resto do CI corre normalmente.
@@ -90,7 +90,16 @@ Em **Settings → Secrets and variables → Actions → Variables**, cria as var
 
 Recomendado, em **Settings → Code security**: Dependabot alerts e security updates, secret scanning com push protection e private vulnerability reporting (é o canal do [SECURITY.md](../SECURITY.md)). Em **Settings → Rules**, uma regra para o `main` que exige os checks do CI/CD protege a produção de um push partido.
 
-As imagens ficam em **Packages** no perfil do GitHub. O servidor descarrega-as com o token do próprio job, por isso podem ficar privadas.
+As imagens ficam em **Packages** no perfil do GitHub. O servidor descarrega-as com o token do próprio job, por isso podem ficar privadas. Esse token só lê: quem cria a tag e a release é outro job, que nunca fala com o servidor.
+
+### O que o CI/CD recusa
+
+- **Uma vulnerabilidade conhecida, alta ou crítica, que já tem correção**, nas dependências (`pip-audit`, `npm audit`) ou dentro das imagens (Grype). As imagens instalam as correções da distribuição do próprio dia, por isso o que sobra é quase sempre nosso para resolver: atualizar a dependência ou a imagem base. Uma que só esteja corrigida numa versão para a qual ainda não podemos ir entra no [`.grype.yaml`](../.grype.yaml), com o motivo.
+- **Pôr em produção um commit que não é do `main`**: o Deploy manual verifica-o antes de falar com o servidor. A regra «Deployment branches: só `main`» do ambiente `production` é o que o garante de facto (um ramo pode alterar o próprio workflow), por isso não a dispenses.
+
+Cada imagem publicada leva um atestado de proveniência (que commit, que workflow). Para o conferir: `gh attestation verify oci://ghcr.io/jnassula/my-gym-tracker/backend:<sha> --repo jnassula/my-gym-tracker`.
+
+O Dependabot só propõe uma versão uma semana depois de publicada (`cooldown`): uma versão comprometida costuma ser descoberta e retirada em dias. As atualizações de segurança não esperam.
 
 ## O primeiro deploy
 
