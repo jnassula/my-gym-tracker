@@ -115,13 +115,17 @@ docker compose up -d backend
 
 Para abrir o backoffice (`/admin`, os números de crescimento), cria a tua conta na app e torna-a administradora: `docker compose exec backend python -m app.admin.grant tu@example.com` (`--list` mostra quem é, `--revoke` tira).
 
-Para as animações dos exercícios ("Como fazer"), copia-as uma vez para o servidor (cerca de 25 minutos, 123 MB no armazenamento; pode ser interrompido e repetido, continua de onde parou):
+As animações dos exercícios ("Como fazer") chegam sozinhas: no primeiro arranque o backend vai buscá-las ao ExerciseDB (`oss.exercisedb.dev` e `static.exercisedb.dev`), cerca de meia hora e 123 MB no armazenamento, e quando acaba liga os exercícios dos planos às suas animações. Um deploy a meio não estraga nada (continua de onde parou) e, depois de as ter, o servidor não volta a falar com o ExerciseDB. Para ver em que ponto está:
 
 ```bash
-docker compose exec backend python -m app.demos.sync
+docker compose logs backend | grep Demonstrations
 ```
 
-É a única altura em que o servidor fala com o ExerciseDB (`oss.exercisedb.dev` e `static.exercisedb.dev`); daí em diante a app serve a sua cópia. Cerca de 180 dos 1 500 exercícios não têm GIF na origem e aparecem como "skipped … HTTP 404": é normal. Sem este passo a app funciona na mesma, só sem o botão "Como fazer". Os termos do conjunto gratuito do ExerciseDB só permitem uso pessoal e não comercial, com crédito à AscendAPI.
+- `copying the animations…`, `animations: 650/1500`, `copied 1324; 1324 of 1500 animations are here`: a cópia (cerca de 180 dos 1 500 exercícios não têm GIF na origem; é normal).
+- `94 of 104 … exercises linked`: as ligações, feitas pelo LLM (precisa da `LLM_API_KEY`; sem ela o log diz `no LLM_API_KEY`).
+- `the source didn't answer`: o servidor não chega ao ExerciseDB (firewall, DNS). Tenta outra vez de hora a hora.
+
+`DEMOS_AUTO_COPY=false` no `.env` desliga a cópia automática; `docker compose exec backend python -m app.demos.sync` faz a cópia à mão. Os termos do conjunto gratuito do ExerciseDB só permitem uso pessoal e não comercial, com crédito à AscendAPI.
 
 ## Operação
 
