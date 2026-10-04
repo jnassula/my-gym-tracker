@@ -5,7 +5,6 @@ refresh token (httpOnly cookie) stored hashed. Every refresh rotates the token; 
 an already-rotated token revokes its whole family (theft detection).
 """
 
-import asyncio
 import uuid
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
@@ -15,7 +14,7 @@ from sqlalchemy import delete, select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.auth import security
+from app.auth import passwords, security
 from app.auth.emails import password_reset_email, welcome_email
 from app.auth.errors import (
     AccountDisabledError,
@@ -47,23 +46,10 @@ class IssuedSession:
 
 
 login_throttle = LoginThrottle()
-# argon2 takes tens of milliseconds and 64 MiB each time: in a thread, a few at once, so a burst
-# of sign-ins neither stalls every other request nor takes the memory.
-_hashing = asyncio.Semaphore(4)
 
 
 def _now() -> datetime:
     return datetime.now(UTC)
-
-
-async def _hash(password: str) -> str:
-    async with _hashing:
-        return await asyncio.to_thread(security.hash_password, password)
-
-
-async def _verify(password: str, password_hash: str | None) -> tuple[bool, str | None]:
-    async with _hashing:
-        return await asyncio.to_thread(security.verify_and_update, password, password_hash)
 
 
 async def _issue_session(
@@ -124,7 +110,7 @@ async def _find_refresh_token(
 
 
 async def _set_password(user: User, password: str) -> None:
-    user.password_hash = await _hash(password)
+    user.password_hash = await passwords.hash_password(password)
     user.password_changed_at = _now()
 
 
@@ -138,7 +124,7 @@ async def register(
         raise EmailTakenError
     user = User(
         email=data.email,
-        password_hash=await _hash(data.password),
+        password_hash=await passwords.hash_password(data.password),
         name=data.name,
         language=data.language,
         timezone=data.timezone,
@@ -167,7 +153,9 @@ async def login(
         raise LoginThrottledError(wait)
     user = await get_user_by_email(session, email)
     # Always run a hash verification so unknown emails are not faster to reject.
-    password_ok, stronger_hash = await _verify(password, user.password_hash if user else None)
+    password_ok, stronger_hash = await passwords.verify(
+        password, user.password_hash if user else None
+    )
     if user is None or not password_ok:
         login_throttle.failed(email, _now())
         raise InvalidCredentialsError
@@ -303,7 +291,7 @@ async def change_password(
     The session cookie of the calling device stays valid. Access tokens issued before the
     change are revoked, so a fresh one is returned for this device.
     """
-    if not (await _verify(current_password, user.password_hash))[0]:
+    if not (await passwords.verify(current_password, user.password_hash))[0]:
         raise InvalidCurrentPasswordError
     await _set_password(user, new_password)
     current = await _find_refresh_token(session, raw_refresh_token)

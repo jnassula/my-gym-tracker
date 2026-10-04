@@ -3,6 +3,7 @@ from typing import Annotated
 from fastapi import APIRouter, BackgroundTasks, Cookie, Depends, Request, Response, status
 
 from app.auth import service
+from app.auth.cookies import REFRESH_COOKIE, clear_refresh_cookie, set_refresh_cookie
 from app.auth.dependencies import CurrentUser, require_same_origin
 from app.auth.schemas import (
     AccessTokenResponse,
@@ -15,7 +16,6 @@ from app.auth.schemas import (
     ResetTokenInfo,
     ResetTokenRequest,
 )
-from app.core.config import get_settings
 from app.core.db import SessionDep
 from app.core.email import Mailer, get_mailer
 from app.core.rate_limit import limiter
@@ -23,26 +23,12 @@ from app.users.schemas import UserRead
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
-REFRESH_COOKIE = "mgt_refresh"
-# Only the auth endpoints ever receive the refresh token.
-REFRESH_COOKIE_PATH = "/api/auth"
-
 RefreshCookie = Annotated[str | None, Cookie(alias=REFRESH_COOKIE)]
 MailerDep = Annotated[Mailer, Depends(get_mailer)]
 
 
 def _start_session(response: Response, issued: service.IssuedSession) -> AuthResponse:
-    settings = get_settings()
-    response.set_cookie(
-        REFRESH_COOKIE,
-        issued.refresh_token,
-        # No max-age = session cookie, dropped when the browser closes ("remember me" off).
-        max_age=settings.refresh_token_ttl_days * 86_400 if issued.persistent else None,
-        path=REFRESH_COOKIE_PATH,
-        httponly=True,
-        secure=settings.cookie_secure,
-        samesite="lax",
-    )
+    set_refresh_cookie(response, issued.refresh_token, persistent=issued.persistent)
     return AuthResponse(
         access_token=issued.access_token,
         expires_in=issued.expires_in,
@@ -92,14 +78,7 @@ async def logout(
     request: Request, response: Response, session: SessionDep, refresh_token: RefreshCookie = None
 ) -> None:
     await service.logout(session, refresh_token)
-    settings = get_settings()
-    response.delete_cookie(
-        REFRESH_COOKIE,
-        path=REFRESH_COOKIE_PATH,
-        httponly=True,
-        secure=settings.cookie_secure,
-        samesite="lax",
-    )
+    clear_refresh_cookie(response)
 
 
 @router.post("/forgot-password", status_code=status.HTTP_202_ACCEPTED)
