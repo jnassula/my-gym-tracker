@@ -8,10 +8,13 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 
 import '@/i18n'
+import { startTheme } from '@/lib/theme/palette'
 import { registerServiceWorker } from '@/pwa'
 import { queryClient, router } from '@/router'
 
 import './index.css'
+
+startTheme()
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
