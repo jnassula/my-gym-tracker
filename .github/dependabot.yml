@@ -1,6 +1,8 @@
 # Weekly dependency updates as pull requests; CI/CD tests each one. Minor and patch updates
 # come grouped per app (one PR), majors one by one. Security updates come as soon as an
 # advisory is published (turn on "Dependabot security updates" in the repository settings).
+# A version is proposed a week after it was published (cooldown): a release that turns out to
+# be compromised is usually found and withdrawn within days. Security updates don't wait.
 version: 2
 updates:
   - package-ecosystem: uv
@@ -10,6 +12,8 @@ updates:
       day: monday
       time: "06:00"
       timezone: Europe/Lisbon
+    cooldown:
+      default-days: 7
     groups:
       backend:
         update-types: [minor, patch]
@@ -23,6 +27,8 @@ updates:
       day: monday
       time: "06:00"
       timezone: Europe/Lisbon
+    cooldown:
+      default-days: 7
     groups:
       frontend:
         update-types: [minor, patch]
@@ -36,6 +42,8 @@ updates:
       day: monday
       time: "06:00"
       timezone: Europe/Lisbon
+    cooldown:
+      default-days: 7
     ignore:
       # A new Python goes with backend/.python-version (CI reads it), by hand.
       - dependency-name: python
@@ -53,6 +61,8 @@ updates:
       day: monday
       time: "06:00"
       timezone: Europe/Lisbon
+    cooldown:
+      default-days: 7
     ignore:
       # A Postgres major needs a dump and restore of the data volume, never a tag bump.
       - dependency-name: postgres
@@ -67,6 +77,8 @@ updates:
       day: monday
       time: "06:00"
       timezone: Europe/Lisbon
+    cooldown:
+      default-days: 7
     groups:
       actions:
         patterns: ["*"]
