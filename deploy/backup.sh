@@ -2,6 +2,9 @@
 # Backups of the production data into /backups (./backups next to compose.yml):
 #   db-<time>.dump        Postgres, pg_dump custom format (restore with pg_restore)
 #   files-<time>.tar.gz   the object storage's data directory (RustFS: the imported PDFs)
+#   demos.tar             the exercise animations, which are the same for everyone and only
+#                         change when `python -m app.demos.sync` runs: one archive, written
+#                         again when they changed, instead of 150 MB more in every day's
 # Kept BACKUP_KEEP_DAYS days. It runs as the backup service and takes both every day at
 # BACKUP_HOUR_UTC; `backup.sh now` takes both once, `backup.sh db` only the database (what
 # deploy.sh does before every release).
@@ -26,7 +29,18 @@ backup_db() {
 
 backup_files() {
     name=files-$(date -u +%Y%m%dT%H%M%SZ).tar.gz
-    tar -C /storage -czf "/backups/$name.tmp" . && publish "$name"
+    tar -C /storage --exclude='./*/demos' -czf "/backups/$name.tmp" . && publish "$name"
+}
+
+# <bucket>/demos, when there is one and something in it is newer than its archive.
+backup_demos() {
+    cd /storage
+    set -- ./*/demos
+    [ -d "$1" ] || return 0
+    if [ -f /backups/demos.tar ] && [ -z "$(find "$@" -newer /backups/demos.tar | head -n 1)" ]; then
+        return 0
+    fi
+    tar -cf /backups/demos.tar.tmp "$@" && publish demos.tar # GIFs: nothing to compress
 }
 
 prune() {
@@ -41,7 +55,7 @@ db)
     exit
     ;;
 now)
-    backup_db && backup_files && prune
+    backup_db && backup_files && backup_demos && prune
     exit
     ;;
 esac
@@ -55,6 +69,7 @@ while :; do
     wait $!
     backup_db || echo "backup: the database dump failed" >&2
     backup_files || echo "backup: the files archive failed" >&2
+    backup_demos || echo "backup: the animations archive failed" >&2
     prune
     sleep 60 # past the hour, so the next wait is a whole day
 done

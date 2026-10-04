@@ -1,5 +1,6 @@
 #!/bin/sh
-# Restores a backup taken by backup.sh: the database and, given its archive, the stored files.
+# Restores a backup taken by backup.sh: the database and, given its archive, the stored files
+# (with the exercise animations, when demos.tar sits next to that archive).
 # The app is stopped meanwhile, and whatever was written after the backup is lost.
 #   sh restore.sh backups/db-<time>.dump [backups/files-<time>.tar.gz]
 set -eu
@@ -32,6 +33,14 @@ if [ -n "$files" ]; then
     docker compose stop storage
     docker compose run --rm --no-deps -T --entrypoint sh storage \
         -c 'rm -rf /data/..?* /data/.[!.]* /data/* && tar -xzf - -C /data' <"$files"
+    demos=$(dirname "$files")/demos.tar
+    if [ -f "$demos" ]; then
+        echo "==> Restoring the exercise animations from $demos"
+        docker compose run --rm --no-deps -T --entrypoint sh storage \
+            -c 'tar -xf - -C /data' <"$demos"
+    else
+        echo "    No demos.tar next to it: run 'python -m app.demos.sync --again' afterwards"
+    fi
 fi
 
 echo "==> Starting the app"
