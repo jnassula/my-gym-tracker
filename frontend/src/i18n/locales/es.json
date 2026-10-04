@@ -219,6 +219,7 @@
     "network": "No se puede conectar con el servidor. Revisa tu conexión e inténtalo de nuevo.",
     "unknown": "Algo ha salido mal. Inténtalo de nuevo.",
     "file_too_large": "El archivo es demasiado grande.",
+    "payload_too_large": "La solicitud es demasiado grande.",
     "unsupported_file_type": "Tipo de archivo no admitido.",
     "pdf_no_text": "El PDF no tiene texto.",
     "pdf_no_structure": "No hemos encontrado días de entreno en el PDF.",

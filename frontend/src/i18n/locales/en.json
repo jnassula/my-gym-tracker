@@ -219,6 +219,7 @@
     "network": "Can't reach the server. Check your connection and try again.",
     "unknown": "Something went wrong. Please try again.",
     "file_too_large": "The file is too large.",
+    "payload_too_large": "The request is too large.",
     "unsupported_file_type": "Unsupported file type.",
     "pdf_no_text": "The PDF has no text.",
     "pdf_no_structure": "No workout days found in the PDF.",

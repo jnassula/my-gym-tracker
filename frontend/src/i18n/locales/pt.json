@@ -219,6 +219,7 @@
     "network": "Sem ligação ao servidor. Verifica a internet e tenta novamente.",
     "unknown": "Algo correu mal. Tenta novamente.",
     "file_too_large": "O ficheiro é demasiado grande.",
+    "payload_too_large": "O pedido é demasiado grande.",
     "unsupported_file_type": "Tipo de ficheiro não suportado.",
     "pdf_no_text": "O PDF não tem texto.",
     "pdf_no_structure": "Não encontrámos dias de treino no PDF.",
