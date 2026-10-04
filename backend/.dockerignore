@@ -4,3 +4,8 @@
 .pytest_cache
 .mypy_cache
 .ruff_cache
+.env.*
+# Not part of the app: the dev container gets them through its bind mount.
+tests
+Dockerfile
+.dockerignore

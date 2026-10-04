@@ -13,12 +13,29 @@ x-logging: &logging
     max-size: 10m
     max-file: "5"
 
+x-hardened: &hardened
+  # A process can't gain privileges it didn't start with (setuid binaries, file capabilities),
+  # and starts with none of root's Linux capabilities but the ones its service lists.
+  security_opt:
+    - no-new-privileges:true
+  cap_drop:
+    - ALL
+
 x-db-url: &db-url postgresql+asyncpg://${POSTGRES_USER:?set in .env}:${POSTGRES_PASSWORD:?set in .env}@db:5432/${POSTGRES_DB:?set in .env}
 
 services:
   caddy:
-    image: caddy:2.11-alpine
+    # Third-party images by digest: a tag can be moved to other content. Dependabot updates both.
+    image: caddy:2.11-alpine@sha256:881bbc60f9986d5ab8e7cfd6cf7e4ef3c9c0439fef2429d035d065577882f028
     restart: unless-stopped
+    <<: *hardened
+    cap_add:
+      - NET_BIND_SERVICE # ports 80 and 443
+    read_only: true # it writes its certificates and configuration to its two volumes
+    tmpfs:
+      - /tmp
+    mem_limit: 256m
+    pids_limit: 256
     ports:
       - "${HTTP_PORT:-80}:80"
       - "${HTTPS_PORT:-443}:443"
@@ -40,6 +57,16 @@ services:
   frontend:
     image: ${IMAGE_REPOSITORY:-ghcr.io/jnassula/my-gym-tracker}/frontend:${IMAGE_TAG:?set by deploy.sh}
     restart: unless-stopped
+    <<: *hardened
+    read_only: true
+    tmpfs:
+      # nginx runs unprivileged and writes here: its pid file, and each upload while it is
+      # received (up to 21 MB), which is why it has a size.
+      - /tmp:size=256m
+    mem_limit: 512m
+    pids_limit: 128
+    # Caddy on one side, the backend on the other.
+    networks: [default, app]
     depends_on:
       backend:
         condition: service_healthy
@@ -53,7 +80,16 @@ services:
   backend:
     image: ${IMAGE_REPOSITORY:-ghcr.io/jnassula/my-gym-tracker}/backend:${IMAGE_TAG:?set by deploy.sh}
     restart: unless-stopped
+    <<: *hardened
+    read_only: true
+    tmpfs:
+      - /tmp:size=512m # uploads being received, and what the PDF and image libraries spill
+    # Reading a hostile PDF or photo can take a lot of memory: past this the backend is
+    # restarted, instead of the whole server running out.
+    mem_limit: ${BACKEND_MEMORY:-1536m}
+    pids_limit: 512
     environment:
+      HOME: /tmp # the only place a library can write its cache
       ENVIRONMENT: production
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
       DATABASE_URL: *db-url
@@ -84,7 +120,9 @@ services:
       # reads the header from the right and takes the first address that isn't one of them, the
       # real client (for rate limits), whatever a client wrote in the header itself.
       FORWARDED_ALLOW_IPS: "${FORWARDED_ALLOW_IPS:-127.0.0.1,::1,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16,fc00::/7}"
-    networks: [default, data]
+    # Not on the default network: Caddy, and whatever else joins it, only reaches the app
+    # through nginx.
+    networks: [app, data]
     depends_on:
       db:
         condition: service_healthy
@@ -103,8 +141,11 @@ services:
     logging: *logging
 
   db:
-    image: postgres:17-alpine
+    image: postgres:17-alpine@sha256:b0f9560a2de083e2cc7382e75f808c7381a32852a7ec49117deedb300e552b24
     restart: unless-stopped
+    <<: *hardened
+    # The image's entrypoint starts as root, takes the data folder and steps down to postgres.
+    cap_add: [CHOWN, DAC_OVERRIDE, FOWNER, SETGID, SETUID]
     environment:
       POSTGRES_USER: ${POSTGRES_USER:?set in .env}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set in .env}
@@ -121,8 +162,9 @@ services:
 
   storage:
     # S3-compatible object storage for the imported PDFs (the backend creates the bucket).
-    image: rustfs/rustfs:1.0.0
+    image: rustfs/rustfs:1.0.0@sha256:8cc9801755448b71a786705ce76692c77e14936cccd87cf2fc31842e58f4d1ff
     restart: unless-stopped
+    <<: *hardened
     environment:
       RUSTFS_ACCESS_KEY: ${S3_ACCESS_KEY:?set in .env}
       RUSTFS_SECRET_KEY: ${S3_SECRET_KEY:?set in .env}
@@ -139,8 +181,14 @@ services:
 
   backup:
     # Same image as the database, for a matching pg_dump. See backup.sh.
-    image: postgres:17-alpine
+    image: postgres:17-alpine@sha256:b0f9560a2de083e2cc7382e75f808c7381a32852a7ec49117deedb300e552b24
     restart: unless-stopped
+    <<: *hardened
+    # backup.sh runs as root: it reads the storage's files (another user's) and hands each
+    # backup to the owner of ./backups.
+    cap_add: [CHOWN, DAC_OVERRIDE, FOWNER]
+    mem_limit: 512m
+    pids_limit: 128
     entrypoint: ["sh", "/usr/local/bin/backup.sh"]
     environment:
       PGHOST: db
@@ -160,6 +208,8 @@ services:
     logging: *logging
 
 networks:
+  app:
+    # nginx and the backend. Not internal: the backend calls the LLM, the push services and SMTP.
   data:
     # Postgres, the object storage and the backups: reachable from the backend only.
     internal: true

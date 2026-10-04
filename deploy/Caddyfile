@@ -12,6 +12,10 @@
 		Strict-Transport-Security "max-age=31536000"
 		-Server
 	}
+	# What nginx takes for an upload (frontend/nginx/default.conf): more is refused here.
+	request_body {
+		max_size 21MB
+	}
 	reverse_proxy frontend:80
 }
 
