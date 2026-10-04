@@ -54,6 +54,7 @@ O backend corre `alembic upgrade head` ao arrancar e recarrega com as alteraçõ
 - **Mudar ou recuperar a palavra-passe** revoga os access tokens emitidos antes (`password_changed_at`) e termina as outras sessões. O link de recuperação expira em 30 minutos, só serve uma vez e leva o token no fragmento (`#token=…`), que nunca chega aos logs do servidor.
 - **Rate limit**: um teto por cliente sobre toda a API (300 pedidos por minuto, contados por conta com sessão iniciada e por IP sem ela), verificado antes de o corpo ser lido, e limites mais apertados nos endpoints de auth e nos que custam (importar, exportar, sincronizar, notificações). Devolve `429 {"code": "rate_limited"}` com `Retry-After`. Os contadores ficam em memória, o que chega para uma instância. O IP vem do `X-Forwarded-For`, em que o uvicorn só acredita vindo dos proxies de `FORWARDED_ALLOW_IPS` (por omissão, as redes privadas do Docker).
 - **Tamanho dos pedidos**: 256 KB por omissão, mais onde o endpoint recebe um ficheiro ou um lote (`BODY_LIMITS` em `app/main.py`); acima disso, `413 {"code": "payload_too_large"}` antes da autenticação.
+- **Confirmação de email**: a conta só abre com o link enviado para o endereço (válido 24 horas, uma vez). Entrar antes disso dá `403 email_not_verified`, só depois da palavra-passe certa. As contas que ninguém confirmou são apagadas ao fim de 7 dias.
 - **Duração da sessão**: por mais que seja renovada, uma sessão acaba `SESSION_MAX_DAYS` (90) dias depois do início; os tokens expirados são apagados de hora a hora.
 - **Tentativas falhadas**: dez palavras-passe erradas para o mesmo email em 15 minutos fecham esse email durante esse tempo, venham de onde vierem (`429 rate_limited`), exista a conta ou não.
 - **Refresh e logout** só respondem a pedidos das páginas da própria app (`Sec-Fetch-Site`, ou `Origin` igual a `FRONTEND_URL`): outro site, mesmo num subdomínio vizinho, recebe `403`.
@@ -61,7 +62,10 @@ O backend corre `alembic upgrade head` ao arrancar e recarrega com as alteraçõ
 
 | Endpoint | |
 | --- | --- |
-| `POST /api/auth/register` | cria a conta, inicia a sessão e envia o email de boas-vindas |
+| `POST /api/auth/signup` | cria a conta e envia o link de confirmação; responde sempre 202, exista o email ou não (quem já tem conta recebe um aviso por email) |
+| `POST /api/auth/verify-email` | `{token}` do link: confirma o email, inicia a sessão e envia as boas-vindas; só serve uma vez |
+| `POST /api/auth/verify-email/resend` | `{email}`: reenvia o link a uma conta por confirmar; responde sempre 202 |
+| `POST /api/auth/register` | obsoleto (apps instaladas antes da confirmação de email): cria a conta já confirmada e inicia a sessão; sai na release seguinte |
 | `POST /api/auth/login` | `{email, password, remember}` |
 | `POST /api/auth/refresh` | usa o cookie; roda o refresh token |
 | `POST /api/auth/logout` | revoga a sessão e apaga o cookie |
