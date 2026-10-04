@@ -2,6 +2,7 @@ import { QueryClient } from '@tanstack/react-query'
 import { createRouter } from '@tanstack/react-router'
 
 import { Spinner } from '@/components/ui/spinner'
+import { releaseDemos } from '@/features/demos/api'
 import { releaseAvatars } from '@/features/settings/api'
 import { sessionStore } from '@/lib/auth'
 
@@ -25,6 +26,7 @@ export const router = createRouter({
 sessionStore.subscribe(() => {
   if (!sessionStore.get()) {
     releaseAvatars(queryClient)
+    releaseDemos(queryClient)
     queryClient.clear()
     void router.invalidate()
   }

@@ -291,7 +291,8 @@
     "user_not_found": "Esta cuenta ya no existe.",
     "admin_account_protected": "Las cuentas de administración no se pueden desactivar ni eliminar aquí.",
     "measurement_not_found": "Ese pesaje ya no existe.",
-    "measurement_date_invalid": "La fecha del pesaje no puede ser posterior a hoy."
+    "measurement_date_invalid": "La fecha del pesaje no puede ser posterior a hoy.",
+    "demo_not_found": "Esta animación no está disponible."
   },
   "weekdays": {
     "short": {
@@ -709,6 +710,15 @@
       "remainder": "Faltan {{weight}} por lado: no sale exacto con estos discos.",
       "close": "Cerrar"
     }
+  },
+  "demos": {
+    "open": "Cómo se hace",
+    "title": "Cómo se hace",
+    "alt": "Animación del ejercicio {{name}}",
+    "shows": "La animación muestra: {{name}}",
+    "automatic": "Se eligió automáticamente por el nombre del ejercicio y puede mostrar una variación distinta de la de tu plan.",
+    "credit": "Animaciones: ExerciseDB, de AscendAPI",
+    "close": "Cerrar"
   },
   "progress": {
     "streak": "semanas seguidas",

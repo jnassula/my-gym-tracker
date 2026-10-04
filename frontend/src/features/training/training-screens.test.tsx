@@ -83,11 +83,12 @@ function dayLog(current: TrainingSession | null): DayLog {
 type Handler = (body: unknown) => Response
 const fetchMock = vi.fn<typeof fetch>()
 
-/** Answers `"METHOD /path"` requests from a table; anything else fails the test. */
+/** Answers `"METHOD /path"` requests from a table; anything else fails the test. An exercise
+ * has no animation unless the table says so. */
 function serve(routes: Record<string, Handler>) {
   fetchMock.mockImplementation(async (input, init) => {
     const key = `${init?.method ?? 'GET'} ${String(input)}`
-    const handler = routes[key]
+    const handler = routes[key] ?? (key.startsWith('GET /api/demos/exercises/') ? () => json(null) : undefined)
     if (!handler) throw new Error(`Unexpected request: ${key}`)
     return handler(init?.body ? JSON.parse(String(init.body)) : undefined)
   })

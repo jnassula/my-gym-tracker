@@ -291,7 +291,8 @@
     "user_not_found": "Esta conta já não existe.",
     "admin_account_protected": "As contas de administração não podem ser inativadas nem apagadas aqui.",
     "measurement_not_found": "Essa pesagem já não existe.",
-    "measurement_date_invalid": "A data da pesagem tem de ser até hoje."
+    "measurement_date_invalid": "A data da pesagem tem de ser até hoje.",
+    "demo_not_found": "Esta animação não está disponível."
   },
   "weekdays": {
     "short": {
@@ -709,6 +710,15 @@
       "remainder": "Faltam {{weight}} por lado: não dá certo com estas anilhas.",
       "close": "Fechar"
     }
+  },
+  "demos": {
+    "open": "Como fazer",
+    "title": "Como fazer",
+    "alt": "Animação do exercício {{name}}",
+    "shows": "A animação mostra: {{name}}",
+    "automatic": "Foi escolhida automaticamente pelo nome do exercício e pode mostrar uma variação diferente da do seu plano.",
+    "credit": "Animações: ExerciseDB, da AscendAPI",
+    "close": "Fechar"
   },
   "progress": {
     "streak": "semanas seguidas",

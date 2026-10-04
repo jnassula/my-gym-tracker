@@ -291,7 +291,8 @@
     "user_not_found": "This account no longer exists.",
     "admin_account_protected": "Administrators' accounts can't be deactivated or deleted here.",
     "measurement_not_found": "That weighing no longer exists.",
-    "measurement_date_invalid": "A weighing's date can't be after today."
+    "measurement_date_invalid": "A weighing's date can't be after today.",
+    "demo_not_found": "This animation isn't available."
   },
   "weekdays": {
     "short": {
@@ -709,6 +710,15 @@
       "remainder": "{{weight}} per side short: these plates can't make it exactly.",
       "close": "Close"
     }
+  },
+  "demos": {
+    "open": "How to do it",
+    "title": "How to do it",
+    "alt": "Animation of the exercise {{name}}",
+    "shows": "The animation shows: {{name}}",
+    "automatic": "It was chosen automatically from the exercise's name and may show a different variation from your plan's.",
+    "credit": "Animations: ExerciseDB, by AscendAPI",
+    "close": "Close"
   },
   "progress": {
     "streak": "week streak",

@@ -13,6 +13,7 @@ import { Spinner } from '@/components/ui/spinner'
 import { Toggle } from '@/components/ui/toggle'
 import { errorKey } from '@/features/auth/errors'
 import { FormAlert } from '@/features/auth/form-parts'
+import { DemoButton } from '@/features/demos/demo-button'
 import { notificationsQuery } from '@/features/notifications/api'
 import { Sparkline } from '@/features/progress/sparkline'
 import { formatRest } from '@/features/workouts/format'
@@ -152,17 +153,21 @@ function ExerciseLogger({ day, exercise, log }: { day: Day; exercise: Exercise; 
 
   return (
     <div className="grid gap-5 pb-24">
-      <ul className="flex flex-wrap gap-2 text-xs">
-        {scheme && <li className="rounded-lg bg-card px-2.5 py-1.5">{scheme}</li>}
-        {rest && <li className="rounded-lg bg-card px-2.5 py-1.5">{t('training.exercise.rest', { time: rest })}</li>}
-        <li className="rounded-lg bg-card px-2.5 py-1.5">
-          {lastTop === null
-            ? t('training.exercise.lastNone')
-            : t('training.exercise.last', {
-                weight: lastTop === 0 ? t('training.noLoad') : formatWeight(lastTop, unit, locale),
-              })}
-        </li>
-      </ul>
+      {/* The facts, then (when the exercise has an animation) "Como fazer" on the same row. */}
+      <div className="flex flex-wrap items-center gap-2 text-xs">
+        <ul className="contents">
+          {scheme && <li className="rounded-lg bg-card px-2.5 py-1.5">{scheme}</li>}
+          {rest && <li className="rounded-lg bg-card px-2.5 py-1.5">{t('training.exercise.rest', { time: rest })}</li>}
+          <li className="rounded-lg bg-card px-2.5 py-1.5">
+            {lastTop === null
+              ? t('training.exercise.lastNone')
+              : t('training.exercise.last', {
+                  weight: lastTop === 0 ? t('training.noLoad') : formatWeight(lastTop, unit, locale),
+                })}
+          </li>
+        </ul>
+        <DemoButton exerciseId={exercise.id} name={exercise.name} />
+      </div>
 
       <section className="grid justify-items-center gap-1">
         <label htmlFor={inputId} className="text-[0.6875rem] tracking-widest text-muted-foreground uppercase">
