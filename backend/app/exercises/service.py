@@ -23,7 +23,12 @@ async def last_weights(session: AsyncSession, user: User) -> dict[ExerciseKey, D
         .join(Exercise, ExerciseLog.exercise_id == Exercise.id)
         .where(ExerciseLog.user_id == user.id)
         .ext(distinct_on(func.lower(Exercise.name), Exercise.muscle_group))
-        .order_by(func.lower(Exercise.name), Exercise.muscle_group, ExerciseLog.performed_at.desc())
+        .order_by(
+            func.lower(Exercise.name),
+            Exercise.muscle_group,
+            ExerciseLog.performed_at.desc(),
+            ExerciseLog.set_number.desc(),  # two sets at one instant: the later one
+        )
     )
     return {exercise_key(name, group): weight for name, group, weight in rows.all()}
 
