@@ -3,6 +3,9 @@
 # that is live for the first time, tags it (vX.Y.Z, with a GitHub release).
 # CI/CD calls it for every push to main. By hand (Actions → Deploy → Run workflow) it puts an
 # earlier commit back: a rollback. Setup in deploy/README.md.
+#
+# Two jobs, so that the one that talks to the server (and hands it a token to pull the images)
+# can only read: tagging the release is the other's, which never touches the server.
 name: Deploy
 
 on:
@@ -16,7 +19,7 @@ on:
     inputs:
       ref:
         description: >-
-          Commit (SHA) or branch to put live. Its images must be in GHCR: CI/CD publishes
+          Commit (SHA) of main to put live. Its images must be in GHCR: CI/CD publishes
           every commit on main. An earlier commit rolls back.
         type: string
         required: true
@@ -36,21 +39,32 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     permissions:
-      contents: write # tags the version that went live
-      packages: read
+      contents: read
+      packages: read # the server pulls the images with this job's token
     environment:
       name: production
       url: https://${{ vars.APP_DOMAIN }}
     env:
       DEPLOY_PATH: ${{ vars.DEPLOY_PATH || '/opt/mygymtracker' }}
+    outputs:
+      sha: ${{ steps.release.outputs.sha }}
+      version: ${{ steps.live.outputs.version }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ inputs.ref }}
           persist-credentials: false
+          fetch-depth: 0 # main's history, to tell whether the commit is part of it
       - name: Resolve the release
         id: release
-        run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+        run: |
+          # The scripts this job copies to the server and runs there come from this commit:
+          # only one that went through main (its review and its CI) may be it.
+          if ! git merge-base --is-ancestor HEAD origin/main; then
+            echo "::error::$(git rev-parse HEAD) is not a commit of main: nothing was deployed"
+            exit 1
+          fi
+          echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
       - name: Set up SSH
         env:
           SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
@@ -90,9 +104,9 @@ jobs:
           REGISTRY_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           RELEASE: ${{ steps.release.outputs.sha }}
         run: |
-          # This job's token lets the server pull the images (they may be private); it expires
-          # with the job, and the server logs out right after. The variables are expanded
-          # here, on the runner, on purpose (SC2029).
+          # This job's token lets the server pull the images (they may be private) and nothing
+          # else: it can only read. It expires with the job, and the server logs out right
+          # after. The variables are expanded here, on the runner, on purpose (SC2029).
           # shellcheck disable=SC2029
           printf '%s' "$REGISTRY_TOKEN" |
             ssh production "docker login ghcr.io --username '$REGISTRY_USER' --password-stdin" >/dev/null
@@ -102,25 +116,38 @@ jobs:
           ssh production "docker logout ghcr.io" >/dev/null
           exit "$status"
       - name: Check the live site
+        id: live
         env:
-          APP_DOMAIN: ${{ vars.APP_DOMAIN }}
-          RELEASE: ${{ steps.release.outputs.sha }}
-        run: sh deploy/smoke-test.sh "https://$APP_DOMAIN" "$RELEASE"
-      - name: Tag the version that is live
-        env:
-          GH_TOKEN: ${{ github.token }}
           APP_DOMAIN: ${{ vars.APP_DOMAIN }}
           RELEASE: ${{ steps.release.outputs.sha }}
         run: |
+          sh deploy/smoke-test.sh "https://$APP_DOMAIN" "$RELEASE"
           # The version is baked into the image (deploy/version.sh, at build time): what the
-          # live site reports is the one to record. Only now, so a deploy that failed doesn't
-          # use a number up. A rollback, or the same release again, finds its tag already there.
+          # live site reports is the one to record.
           version=$(curl --fail --silent --show-error --retry 3 "https://$APP_DOMAIN/health" | jq --raw-output .version)
-          if ! printf '%s' "$version" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$'; then
-            echo "::warning::/health reports the version '$version': nothing to tag"
-          elif gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/v$version" > /dev/null 2>&1; then
-            echo "v$version is tagged already"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+  release:
+    name: Tag the version
+    needs: deploy
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: write # the tag and its release
+    steps:
+      - name: Tag the version that is live
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ needs.deploy.outputs.version }}
+          RELEASE: ${{ needs.deploy.outputs.sha }}
+        run: |
+          # Only now, so a deploy that failed doesn't use a number up. A rollback, or the same
+          # release again, finds its tag already there.
+          if ! printf '%s' "$VERSION" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "::warning::/health reports the version '$VERSION': nothing to tag"
+          elif gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/v$VERSION" > /dev/null 2>&1; then
+            echo "v$VERSION is tagged already"
           else
-            gh release create "v$version" --repo "$GITHUB_REPOSITORY" --target "$RELEASE" \
-              --title "v$version" --generate-notes
+            gh release create "v$VERSION" --repo "$GITHUB_REPOSITORY" --target "$RELEASE" \
+              --title "v$VERSION" --generate-notes
           fi
