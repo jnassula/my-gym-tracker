@@ -52,7 +52,8 @@ O backend corre `alembic upgrade head` ao arrancar e recarrega com as alteraçõ
 - **Access token** (JWT, 15 min): vai no corpo das respostas de login/registo/refresh. O frontend guarda-o só em memória e envia-o como `Authorization: Bearer`.
 - **Refresh token** (opaco, 7 dias): vai num cookie `httpOnly`, `SameSite=Lax`, com `Path=/api/auth`. Na base de dados só fica o hash. Cada refresh roda o token; se um token já rodado voltar a aparecer, toda a família é revogada (deteção de roubo). "Lembrar-me" desligado = cookie de sessão.
 - **Mudar ou recuperar a palavra-passe** revoga os access tokens emitidos antes (`password_changed_at`) e termina as outras sessões. O link de recuperação expira em 30 minutos, só serve uma vez e leva o token no fragmento (`#token=…`), que nunca chega aos logs do servidor.
-- **Rate limit** por IP nos endpoints de auth: devolve `429 {"code": "rate_limited"}` com `Retry-After`. Os contadores ficam em memória, o que chega para uma instância. Atrás de um proxy, define `FORWARDED_ALLOW_IPS` com o IP do proxy.
+- **Rate limit**: um teto por cliente sobre toda a API (300 pedidos por minuto, contados por conta com sessão iniciada e por IP sem ela), verificado antes de o corpo ser lido, e limites mais apertados nos endpoints de auth e nos que custam (importar, exportar, sincronizar, notificações). Devolve `429 {"code": "rate_limited"}` com `Retry-After`. Os contadores ficam em memória, o que chega para uma instância. O IP vem do `X-Forwarded-For`, em que o uvicorn só acredita vindo dos proxies de `FORWARDED_ALLOW_IPS` (por omissão, as redes privadas do Docker).
+- **Tamanho dos pedidos**: 256 KB por omissão, mais onde o endpoint recebe um ficheiro ou um lote (`BODY_LIMITS` em `app/main.py`); acima disso, `413 {"code": "payload_too_large"}` antes da autenticação.
 - Os routers protegidos usam a dependência `CurrentUser` (`app/auth/dependencies.py`).
 
 | Endpoint | |
