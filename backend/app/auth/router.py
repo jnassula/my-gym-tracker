@@ -3,7 +3,7 @@ from typing import Annotated
 from fastapi import APIRouter, BackgroundTasks, Cookie, Depends, Request, Response, status
 
 from app.auth import service
-from app.auth.dependencies import CurrentUser
+from app.auth.dependencies import CurrentUser, require_same_origin
 from app.auth.schemas import (
     AccessTokenResponse,
     AuthResponse,
@@ -74,7 +74,7 @@ async def login(
     return _start_session(response, issued)
 
 
-@router.post("/refresh")
+@router.post("/refresh", dependencies=[Depends(require_same_origin)])
 @limiter.limit("30/minute")
 async def refresh(
     request: Request, response: Response, session: SessionDep, refresh_token: RefreshCookie = None
@@ -82,7 +82,11 @@ async def refresh(
     return _start_session(response, await service.refresh(session, refresh_token))
 
 
-@router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
+@router.post(
+    "/logout",
+    status_code=status.HTTP_204_NO_CONTENT,
+    dependencies=[Depends(require_same_origin)],
+)
 @limiter.limit("30/minute")
 async def logout(
     request: Request, response: Response, session: SessionDep, refresh_token: RefreshCookie = None

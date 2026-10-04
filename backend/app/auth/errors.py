@@ -1,4 +1,22 @@
+from http import HTTPStatus
+
 from app.core.errors import AppError, ConflictError, ForbiddenError, UnauthorizedError
+
+
+class LoginThrottledError(AppError):
+    """Too many failed sign-ins for one account (the same answer as the per-address limit)."""
+
+    status_code = HTTPStatus.TOO_MANY_REQUESTS
+    code = "rate_limited"
+    detail = "Too many attempts. Try again later."
+
+    def __init__(self, retry_after: int) -> None:
+        super().__init__()
+        self.headers = {"Retry-After": str(retry_after)}
+
+
+class CrossSiteRequestError(ForbiddenError):
+    detail = "This request must come from the app itself"
 
 
 class NotAuthenticatedError(UnauthorizedError):

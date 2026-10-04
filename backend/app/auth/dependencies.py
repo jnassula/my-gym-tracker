@@ -7,7 +7,8 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from slowapi.util import get_remote_address
 
 from app.auth import security, service
-from app.auth.errors import NotAuthenticatedError
+from app.auth.errors import CrossSiteRequestError, NotAuthenticatedError
+from app.core.config import get_settings
 from app.core.db import SessionDep
 from app.core.errors import UnauthorizedError
 from app.users.models import User
@@ -26,6 +27,21 @@ async def get_current_user(
 
 
 CurrentUser = Annotated[User, Depends(get_current_user)]
+
+
+def require_same_origin(request: Request) -> None:
+    """For the endpoints that act on the refresh cookie alone: the browser says where a request
+    was made from, and only the app's own pages may make these. ``SameSite=Lax`` already keeps
+    other sites out; this also keeps out a sibling subdomain, which the cookie doesn't.
+    A client that sends neither header (not a browser) has no cookie to be tricked into sending."""
+    site = request.headers.get("sec-fetch-site")
+    if site is not None:
+        if site not in ("same-origin", "none"):
+            raise CrossSiteRequestError
+        return
+    origin = request.headers.get("origin")
+    if origin is not None and origin.rstrip("/") != get_settings().frontend_url.rstrip("/"):
+        raise CrossSiteRequestError
 
 
 def client_key(request: Request) -> str:
