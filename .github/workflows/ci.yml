@@ -226,11 +226,12 @@ jobs:
           CURL_OPTS: --insecure # Caddy's local CA for localhost
         run: |
           sh smoke-test.sh https://localhost "$IMAGE_TAG" "$APP_VERSION"
-          # A real write through Caddy, nginx and the backend into Postgres.
+          # A real write through Caddy, nginx and the backend into Postgres: a sign-up (the
+          # account then waits for its confirmation email, which goes nowhere here).
           curl --fail --silent --show-error --insecure --output /dev/null \
             --header 'content-type: application/json' \
             --data '{"email":"smoke@example.com","password":"Smoke-test-2026","name":"Smoke"}' \
-            https://localhost/api/auth/register
+            https://localhost/api/auth/signup
           # Plain HTTP is redirected to HTTPS.
           test "$(curl --silent --output /dev/null --write-out '%{http_code}' http://localhost/)" = 308
           # Backups work: the database dump and the stored files.
