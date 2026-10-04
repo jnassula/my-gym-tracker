@@ -1,6 +1,13 @@
 """The message on the wire (``build_mime``) and the branded layout (pure)."""
 
-from app.core.email import EmailMessage, InlineImage, build_mime
+import smtplib
+import ssl
+from typing import Any, Self
+
+import pytest
+
+from app.core.config import get_settings
+from app.core.email import EmailMessage, InlineImage, SmtpMailer, build_mime
 from app.core.email_layout import (
     ACCENT,
     LOGO_CID,
@@ -102,3 +109,37 @@ def test_a_button_writes_the_address_out_only_when_asked() -> None:
 
     assert "Copia o endereço:" in with_fallback
     assert ">https://x.pt/a</a>" in with_fallback
+
+
+class FakeSmtp:
+    """Stands in for ``smtplib.SMTP``: records how the connection was secured."""
+
+    contexts: list[ssl.SSLContext | None]
+
+    def __init__(self, *_: Any, **__: Any) -> None:
+        pass
+
+    def __enter__(self) -> Self:
+        return self
+
+    def __exit__(self, *_: object) -> None:
+        pass
+
+    def starttls(self, *, context: ssl.SSLContext | None = None) -> None:
+        self.contexts.append(context)
+
+    def send_message(self, _: Any) -> None:
+        pass
+
+
+def test_starttls_checks_the_servers_certificate(monkeypatch: pytest.MonkeyPatch) -> None:
+    FakeSmtp.contexts = []
+    monkeypatch.setattr(smtplib, "SMTP", FakeSmtp)
+    settings = get_settings().model_copy(update={"smtp_starttls": True})
+
+    SmtpMailer(settings)._send_sync(EmailMessage(to="ana@example.pt", subject="Olá", text="Olá"))
+
+    [context] = FakeSmtp.contexts
+    assert context is not None
+    assert context.verify_mode is ssl.CERT_REQUIRED
+    assert context.check_hostname

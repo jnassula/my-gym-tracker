@@ -82,6 +82,8 @@ class Settings(BaseSettings):
             problems.append("CORS_ORIGINS must name each origin (requests carry credentials)")
         if not self.s3_access_key or not self.s3_secret_key.get_secret_value():
             problems.append("S3_ACCESS_KEY and S3_SECRET_KEY must be set")
+        if self.smtp_username and self.smtp_password and not self.smtp_starttls:
+            problems.append("SMTP_STARTTLS must be true (the SMTP password goes over it)")
         if problems:
             raise ValueError("Unsafe production settings: " + "; ".join(problems))
         return self

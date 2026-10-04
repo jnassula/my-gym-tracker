@@ -41,6 +41,15 @@ def test_production_refuses_development_defaults(field: str, value: object, mess
         Settings(**{**SAFE_PRODUCTION, field: value})
 
 
+def test_production_sends_the_smtp_password_over_starttls_only() -> None:
+    credentials = {"smtp_username": "gym", "smtp_password": "a-real-smtp-password"}
+
+    Settings(**{**SAFE_PRODUCTION, **credentials, "smtp_starttls": True})
+    Settings(**{**SAFE_PRODUCTION, "smtp_starttls": False})  # a relay that asks for no login
+    with pytest.raises(ValidationError, match="SMTP_STARTTLS"):
+        Settings(**{**SAFE_PRODUCTION, **credentials, "smtp_starttls": False})
+
+
 def test_development_keeps_the_example_values() -> None:
     settings = Settings(
         **{

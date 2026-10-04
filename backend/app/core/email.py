@@ -10,6 +10,7 @@ content (``app/core/email_layout.py``) and ``images`` are the pictures it shows 
 import asyncio
 import logging
 import smtplib
+import ssl
 from dataclasses import dataclass
 from email.message import EmailMessage as MimeMessage
 from typing import Protocol
@@ -86,7 +87,9 @@ class SmtpMailer:
             settings.smtp_host, settings.smtp_port, timeout=SMTP_TIMEOUT_SECONDS
         ) as smtp:
             if settings.smtp_starttls:
-                smtp.starttls()
+                # Without a context, starttls() encrypts but checks no certificate: whoever
+                # sits in between could read the reset links and the SMTP password.
+                smtp.starttls(context=ssl.create_default_context())
             if settings.smtp_username and settings.smtp_password:
                 smtp.login(settings.smtp_username, settings.smtp_password.get_secret_value())
             smtp.send_message(mime)
