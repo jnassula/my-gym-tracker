@@ -6,14 +6,24 @@
 #   sh deploy.sh <image-tag>     the deploy workflow runs it with the commit's SHA;
 #                                by hand, with an older SHA, it rolls back.
 set -eu
+umask 077 # whatever this writes (a copy of .env among it) is this user's alone
 
 tag=${1:?usage: sh deploy.sh <image-tag>}
+# It goes into .env and into image names: nothing but what a tag is made of.
+case $tag in
+'' | [!A-Za-z0-9_]* | *[!A-Za-z0-9_.-]*)
+    echo "Not an image tag: $tag" >&2
+    exit 1
+    ;;
+esac
 cd "$(dirname "$0")"
 
 if [ ! -f .env ]; then
     echo "No .env here: copy .env.example to .env and fill it in (see README.md)." >&2
     exit 1
 fi
+# The secrets are for this user only, whatever mode the file was created with.
+chmod 600 .env
 previous=$(sed -n 's/^IMAGE_TAG=//p' .env | tail -n 1)
 # Created by this user, not by Docker as root: the backups (and their restore) stay its own.
 mkdir -p backups caddy/sites caddy/global
