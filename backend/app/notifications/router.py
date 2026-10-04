@@ -1,9 +1,10 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Depends, Query, Request, status
 
-from app.auth.dependencies import CurrentUser
+from app.auth.dependencies import CurrentUser, client_key
 from app.core.db import SessionDep
+from app.core.rate_limit import limiter
 from app.notifications import service
 from app.notifications.schemas import (
     NotificationSettingsRead,
@@ -34,7 +35,10 @@ async def update_settings(
 
 
 @router.post("/subscriptions", status_code=status.HTTP_204_NO_CONTENT)
-async def subscribe(body: SubscriptionCreate, user: CurrentUser, session: SessionDep) -> None:
+@limiter.limit("20/hour", key_func=client_key)
+async def subscribe(
+    request: Request, body: SubscriptionCreate, user: CurrentUser, session: SessionDep
+) -> None:
     """Turn notifications on for this device (a ``PushSubscription`` from the browser)."""
     await service.subscribe(session, user, body)
 
@@ -47,14 +51,22 @@ async def unsubscribe(
 
 
 @router.post("/test")
-async def send_test(user: CurrentUser, session: SessionDep, sender: SenderDep) -> TestResult:
+@limiter.limit("5/minute", key_func=client_key)
+async def send_test(
+    request: Request, user: CurrentUser, session: SessionDep, sender: SenderDep
+) -> TestResult:
     """Send a test notification to every device of the user."""
     return TestResult(sent=await service.send_test(session, sender, user))
 
 
 @router.post("/rest", status_code=status.HTTP_204_NO_CONTENT)
+@limiter.limit("60/minute", key_func=client_key)
 async def schedule_rest_end(
-    body: RestSchedule, user: CurrentUser, session: SessionDep, sender: SenderDep
+    request: Request,
+    body: RestSchedule,
+    user: CurrentUser,
+    session: SessionDep,
+    sender: SenderDep,
 ) -> None:
     """The app went to the background mid-rest: notify when it ends ("Fim do descanso")."""
     await service.schedule_rest_end(session, sender, user, body.ends_at)

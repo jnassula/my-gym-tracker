@@ -9,6 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from slowapi.errors import RateLimitExceeded
 
 from app.admin.router import router as admin_router
+from app.auth.dependencies import client_key
 from app.auth.router import router as auth_router
 from app.body.router import router as body_router
 from app.core import healthcheck
@@ -16,7 +17,7 @@ from app.core.body_limit import BodyLimitMiddleware
 from app.core.config import get_settings
 from app.core.db import SessionLocal, engine
 from app.core.errors import ErrorResponse, register_exception_handlers
-from app.core.rate_limit import limiter, rate_limit_exceeded_handler
+from app.core.rate_limit import GlobalRateLimit, limiter, rate_limit_exceeded_handler
 from app.core.storage import ensure_bucket
 from app.exercises.router import router as exercises_router
 from app.files.router import router as files_router
@@ -46,6 +47,10 @@ DOMAIN_ROUTERS = (
     body_router,
     admin_router,
 )
+
+API_PREFIX = "/api/"
+# Per client (the account, or the address when signed out), over every endpoint together.
+GLOBAL_LIMIT = "300/minute"
 
 # What a request body may weigh: small JSON, except where a route takes a file or a batch.
 # Uploads get room for the multipart framing around the file their service accepts.
@@ -88,7 +93,10 @@ def create_app() -> FastAPI:
     app.state.limiter = limiter
     app.add_exception_handler(RateLimitExceeded, rate_limit_exceeded_handler)
 
+    # The last one added runs first: a client over its limit is turned away before its body
+    # is counted.
     app.add_middleware(BodyLimitMiddleware, default=DEFAULT_BODY_BYTES, limits=BODY_LIMITS)
+    app.add_middleware(GlobalRateLimit, limit=GLOBAL_LIMIT, prefix=API_PREFIX, key=client_key)
     if settings.cors_origins:
         app.add_middleware(
             CORSMiddleware,
@@ -99,7 +107,7 @@ def create_app() -> FastAPI:
         )
 
     app.include_router(healthcheck.router)
-    api = APIRouter(prefix="/api")
+    api = APIRouter(prefix=API_PREFIX.rstrip("/"))
     for router in DOMAIN_ROUTERS:
         api.include_router(router)
     app.include_router(api)

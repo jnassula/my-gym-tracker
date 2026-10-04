@@ -4,7 +4,7 @@ from urllib.parse import quote
 
 from fastapi import APIRouter, Depends, File, Request, Response, UploadFile, status
 
-from app.auth.dependencies import CurrentUser
+from app.auth.dependencies import CurrentUser, client_key
 from app.core.db import SessionDep
 from app.core.rate_limit import limiter
 from app.core.storage import Storage, get_storage
@@ -41,7 +41,10 @@ async def import_files(
 
 
 @router.post("", status_code=status.HTTP_201_CREATED)
-async def create_plan(body: PlanCreate, user: CurrentUser, session: SessionDep) -> PlanRead:
+@limiter.limit("30/hour", key_func=client_key)
+async def create_plan(
+    request: Request, body: PlanCreate, user: CurrentUser, session: SessionDep
+) -> PlanRead:
     return PlanRead.model_validate(await service.create_plan(session, user.id, body))
 
 
@@ -56,8 +59,13 @@ async def get_plan(plan_id: uuid.UUID, user: CurrentUser, session: SessionDep) -
 
 
 @router.get("/{plan_id}/export.pdf")
+@limiter.limit("20/minute", key_func=client_key)
 async def export_plan(
-    plan_id: uuid.UUID, user: CurrentUser, session: SessionDep, weights: bool = False
+    request: Request,
+    plan_id: uuid.UUID,
+    user: CurrentUser,
+    session: SessionDep,
+    weights: bool = False,
 ) -> Response:
     """The plan as an A4 PDF in the trainer's format; ``weights`` adds the last logged weights."""
     data, filename = await service.export_pdf(session, user, plan_id, include_weights=weights)

@@ -1,7 +1,8 @@
-from fastapi import APIRouter, status
+from fastapi import APIRouter, Request, status
 
 from app.auth.dependencies import CurrentUser
 from app.core.db import SessionDep
+from app.core.rate_limit import limiter
 from app.health import service
 from app.health.dependencies import BatchDep, HealthTokenUser
 from app.health.models import HealthProvider
@@ -44,7 +45,10 @@ async def update_settings(
 
 
 @router.post("/sync")
-async def sync(batch: BatchDep, token: HealthTokenUser, session: SessionDep) -> SyncResult:
+@limiter.limit("60/minute")
+async def sync(
+    request: Request, batch: BatchDep, token: HealthTokenUser, session: SessionDep
+) -> SyncResult:
     """A bridge posts heart rate, active calories and weighings in its own shape (authenticated
     by its source's token, not a session). Of the watch's samples, only those inside a session
     are kept."""
