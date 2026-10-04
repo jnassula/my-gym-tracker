@@ -72,8 +72,9 @@ services:
       # Web Push. Empty key: notifications are off (the rest of the app works).
       VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY:-}
       VAPID_SUBJECT: ${VAPID_SUBJECT:-mailto:admin@mygymtracker.local}
-      # Trust X-Forwarded-For from the Vite proxy so rate limits see the real client IP.
-      FORWARDED_ALLOW_IPS: "*"
+      # Believe X-Forwarded-For from the Vite proxy (a private address) so rate limits see the
+      # real client: uvicorn takes the first address from the right that isn't a proxy's.
+      FORWARDED_ALLOW_IPS: "${FORWARDED_ALLOW_IPS:-127.0.0.1,::1,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16,fc00::/7}"
     volumes:
       - ./backend:/app
       # Personal sample PDFs (not committed) for the opt-in live LLM tests.

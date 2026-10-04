@@ -78,9 +78,10 @@ services:
       LLM_MODEL: ${LLM_MODEL:-deepseek-flash}
       VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY:-}
       VAPID_SUBJECT: ${VAPID_SUBJECT:?set in .env}
-      # Only nginx reaches the backend (no published port), and Caddy replaces any
-      # X-Forwarded-For the client sends: the first address is the real client, for rate limits.
-      FORWARDED_ALLOW_IPS: "*"
+      # Whose X-Forwarded-For is believed: the proxies on Docker's private networks. uvicorn
+      # reads the header from the right and takes the first address that isn't one of them, the
+      # real client (for rate limits), whatever a client wrote in the header itself.
+      FORWARDED_ALLOW_IPS: "${FORWARDED_ALLOW_IPS:-127.0.0.1,::1,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16,fc00::/7}"
     networks: [default, data]
     depends_on:
       db:
