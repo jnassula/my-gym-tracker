@@ -177,6 +177,8 @@ Em **Progresso → Peso corporal** (também em Dispositivos conectados → Balan
 | `DELETE /api/workouts/{id}` | esconde o plano e apaga o PDF; o histórico fica |
 | `PUT /api/users/me/avatar` | a foto (multipart `file`: JPEG, PNG ou WebP, até 1 MB e 16 megapíxeis); fica guardada como JPEG quadrado até 512 px e substitui a anterior |
 | `DELETE /api/users/me/avatar` | remove a foto |
+| `GET /api/users/me/export` | um documento JSON com tudo o que a app guarda da conta (perfil, planos, treinos, pesagens, dados de saúde, lista de ficheiros) |
+| `DELETE /api/users/me` | `{password}`: elimina a conta com tudo o que tem; envia um email de despedida ao endereço |
 | `GET /api/files/{id}/content` | o PDF original, ou a foto (`avatar_file_id` do utilizador), só para o dono |
 
 ## Notificações (Web Push)
