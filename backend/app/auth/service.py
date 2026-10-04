@@ -10,19 +10,26 @@ from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 
 from fastapi import BackgroundTasks
-from sqlalchemy import delete, select, update
+from sqlalchemy import delete, exists, null, select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth import passwords, security
-from app.auth.emails import password_reset_email, welcome_email
+from app.auth.emails import (
+    account_exists_email,
+    confirm_email,
+    password_reset_email,
+    welcome_email,
+)
 from app.auth.errors import (
     AccountDisabledError,
+    EmailNotVerifiedError,
     EmailTakenError,
     InvalidCredentialsError,
     InvalidCurrentPasswordError,
     InvalidRefreshTokenError,
     InvalidResetTokenError,
+    InvalidVerifyTokenError,
     LoginThrottledError,
     RefreshTokenReusedError,
     TokenRevokedError,
@@ -31,7 +38,8 @@ from app.auth.models import RefreshToken
 from app.auth.schemas import RegisterRequest
 from app.auth.throttle import LoginThrottle
 from app.core.config import get_settings
-from app.core.email import Mailer
+from app.core.email import EmailMessage, Mailer
+from app.files.models import StoredFile
 from app.users.models import User
 from app.users.service import get_user, get_user_by_email
 
@@ -46,6 +54,9 @@ class IssuedSession:
 
 
 login_throttle = LoginThrottle()
+# An account nobody confirmed is deleted after this long: nobody holds an address that isn't
+# theirs, and a mistyped one doesn't stay.
+UNCONFIRMED_FOR = timedelta(days=7)
 
 
 def _now() -> datetime:
@@ -117,9 +128,100 @@ async def _set_password(user: User, password: str) -> None:
 # --- public API ------------------------------------------------------------------------------
 
 
+def _site() -> str:
+    return get_settings().frontend_url.rstrip("/")
+
+
+def _welcome(user: User) -> EmailMessage:
+    return welcome_email(
+        to=user.email, name=user.name, language=user.language, link=f"{_site()}/workouts/import"
+    )
+
+
+def _confirmation(user: User) -> EmailMessage:
+    # Fragment, not query string: it never reaches server logs or Referer headers.
+    link = f"{_site()}/verify-email#token={security.create_verify_token(user.id)}"
+    return confirm_email(
+        to=user.email,
+        name=user.name,
+        language=user.language,
+        link=link,
+        hours=int(security.VERIFY_TTL.total_seconds() // 3600),
+    )
+
+
+async def signup(
+    session: AsyncSession, data: RegisterRequest, *, mailer: Mailer, background: BackgroundTasks
+) -> None:
+    """Creates the account, which opens once the link sent to its address is used. Says the
+    same, and takes as long, whether or not the address already has an account: its owner is
+    told by email instead, so signing up tells nobody which addresses are here."""
+    existing = await get_user_by_email(session, data.email)
+    # Hashed either way: an address that has an account must not answer faster.
+    password_hash = await passwords.hash_password(data.password)
+    if existing is None:
+        user = User(
+            email=data.email,
+            password_hash=password_hash,
+            name=data.name,
+            language=data.language,
+            timezone=data.timezone,
+            email_verified_at=null(),  # not the column's default: this one is not confirmed
+        )
+        session.add(user)
+        try:
+            await session.commit()
+        except IntegrityError:  # lost a race with a concurrent sign-up: that one sent the email
+            await session.rollback()
+            return
+        background.add_task(mailer.send, _confirmation(user))
+    elif existing.deactivated_at is not None:
+        return
+    elif existing.email_verified_at is None:
+        # Asked again before confirming (the email got lost): the link again. The password of
+        # the first sign-up stays, or anyone could set it.
+        background.add_task(mailer.send, _confirmation(existing))
+    else:
+        message = account_exists_email(
+            to=existing.email,
+            name=existing.name,
+            language=existing.language,
+            link=f"{_site()}/login",
+        )
+        background.add_task(mailer.send, message)
+
+
+async def resend_verification(
+    session: AsyncSession, email: str, *, mailer: Mailer, background: BackgroundTasks
+) -> None:
+    """The confirmation link again, if the address has an account waiting for it. Callers must
+    not reveal which case it was."""
+    user = await get_user_by_email(session, email)
+    if user is None or user.deactivated_at is not None or user.email_verified_at is not None:
+        return
+    background.add_task(mailer.send, _confirmation(user))
+
+
+async def verify_email(
+    session: AsyncSession, token: str, *, mailer: Mailer, background: BackgroundTasks
+) -> IssuedSession:
+    """The link in the confirmation email was opened: the account is its address's owner's.
+    It signs them in, and works once (a confirmed account is no longer waiting for a link)."""
+    user = await get_user(session, security.decode_verify_token(token))
+    if user is None or user.deactivated_at is not None or user.email_verified_at is not None:
+        raise InvalidVerifyTokenError
+    user.email_verified_at = _now()
+    issued = await _issue_session(session, user, persistent=True)
+    await session.commit()
+    background.add_task(mailer.send, _welcome(user))
+    return issued
+
+
 async def register(
     session: AsyncSession, data: RegisterRequest, *, mailer: Mailer, background: BackgroundTasks
 ) -> IssuedSession:
+    """What apps installed before email confirmation still call: the account is usable at once,
+    as it was then. Remove with the endpoint, a release after ``signup``."""
     if await get_user_by_email(session, data.email):
         raise EmailTakenError
     user = User(
@@ -128,6 +230,7 @@ async def register(
         name=data.name,
         language=data.language,
         timezone=data.timezone,
+        email_verified_at=_now(),
     )
     session.add(user)
     try:
@@ -136,13 +239,7 @@ async def register(
         raise EmailTakenError from exc
     issued = await _issue_session(session, user, persistent=True)
     await session.commit()
-    message = welcome_email(
-        to=user.email,
-        name=user.name,
-        language=user.language,
-        link=f"{get_settings().frontend_url.rstrip('/')}/workouts/import",
-    )
-    background.add_task(mailer.send, message)
+    background.add_task(mailer.send, _welcome(user))
     return issued
 
 
@@ -164,9 +261,12 @@ async def login(
         # Hashed with older parameters: stored again with today's. The password didn't change,
         # so nobody is signed out (password_changed_at stays).
         user.password_hash = stronger_hash
-    # Only after the right password: strangers don't learn which accounts are deactivated.
+    # Only after the right password: strangers don't learn which accounts are deactivated,
+    # or still waiting for their confirmation.
     if user.deactivated_at is not None:
         raise AccountDisabledError
+    if user.email_verified_at is None:
+        raise EmailNotVerifiedError
     # Housekeeping: expired tokens are useless, even for reuse detection.
     await session.execute(
         delete(RefreshToken).where(
@@ -217,6 +317,19 @@ async def forget_expired_sessions(session: AsyncSession) -> None:
     """Expired refresh tokens are no use to anyone, not even to detect reuse. A sign-in clears
     its own account's; this clears everyone's (``janitor`` runs it every hour)."""
     await session.execute(delete(RefreshToken).where(RefreshToken.expires_at < _now()))
+    await session.commit()
+
+
+async def forget_unconfirmed_accounts(session: AsyncSession) -> None:
+    """Accounts whose address nobody confirmed in ``UNCONFIRMED_FOR``. They never had a session,
+    so they hold nothing; the check on files is only there to never leave an object behind."""
+    await session.execute(
+        delete(User).where(
+            User.email_verified_at.is_(None),
+            User.created_at < _now() - UNCONFIRMED_FOR,
+            ~exists().where(StoredFile.user_id == User.id),
+        )
+    )
     await session.commit()
 
 
@@ -272,6 +385,8 @@ async def check_reset_token(session: AsyncSession, token: str) -> str:
 async def reset_password(session: AsyncSession, token: str, new_password: str) -> IssuedSession:
     user = await _user_for_reset_token(session, token)
     await _set_password(user, new_password)
+    # The link came to the address: that confirms it, for an account that hadn't yet.
+    user.email_verified_at = user.email_verified_at or _now()
     await revoke_all_sessions(session, user.id)
     issued = await _issue_session(session, user, persistent=False)
     await session.commit()

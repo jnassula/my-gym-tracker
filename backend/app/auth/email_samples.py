@@ -3,13 +3,20 @@
     python -m app.auth.email_samples you@example.com [pt|en|es]
 
 Goes through the configured SMTP server: Mailpit in development (http://localhost:8026).
-The links are examples: the recovery one carries no valid token.
+The links are examples: none carries a valid token.
 """
 
 import asyncio
 import sys
 
-from app.auth.emails import password_reset_email, welcome_email
+from app.auth.emails import (
+    account_deleted_email,
+    account_exists_email,
+    confirm_email,
+    password_reset_email,
+    welcome_email,
+)
+from app.auth.security import VERIFY_TTL
 from app.core.config import get_settings
 from app.core.email import EmailMessage, SmtpMailer
 from app.users.models import Language
@@ -19,7 +26,16 @@ def samples(to: str, language: Language) -> list[EmailMessage]:
     settings = get_settings()
     site = settings.frontend_url.rstrip("/")
     return [
+        confirm_email(
+            to=to,
+            name="Jonata",
+            language=language,
+            link=f"{site}/verify-email#token=sample",
+            hours=int(VERIFY_TTL.total_seconds() // 3600),
+        ),
         welcome_email(to=to, name="Jonata", language=language, link=f"{site}/workouts/import"),
+        account_exists_email(to=to, name="Jonata", language=language, link=f"{site}/login"),
+        account_deleted_email(to=to, name="Jonata", language=language),
         password_reset_email(
             to=to,
             name="Jonata",

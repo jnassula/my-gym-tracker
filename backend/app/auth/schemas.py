@@ -40,6 +40,14 @@ class ForgotPasswordRequest(BaseModel):
     email: Email
 
 
+class VerifyEmailRequest(BaseModel):
+    token: Token
+
+
+class ResendVerificationRequest(BaseModel):
+    email: Email
+
+
 class ResetTokenRequest(BaseModel):
     token: Token
 

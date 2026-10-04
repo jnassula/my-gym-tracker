@@ -2,7 +2,7 @@ import uuid
 from datetime import date, datetime
 from enum import StrEnum
 
-from sqlalchemy import CheckConstraint, ForeignKey, SmallInteger, String, false, true
+from sqlalchemy import CheckConstraint, ForeignKey, SmallInteger, String, false, func, true
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.db import Base, CreatedAt, UUIDPrimaryKey, enum_check, str_enum
@@ -65,6 +65,11 @@ class User(UUIDPrimaryKey, CreatedAt, Base):
     is_admin: Mapped[bool] = mapped_column(default=False, server_default=false())
     # Set by an administrator (backoffice): the account can't sign in, its data stays.
     deactivated_at: Mapped[datetime | None]
+    # When the address was shown to be its owner's (the link in the confirmation email, or a
+    # password reset). Null: signed up, not confirmed yet, can't sign in. The server default is
+    # for a release from before the column, which may still run after a rollback: what it
+    # creates counts as confirmed, as every account did. New code writes the null itself.
+    email_verified_at: Mapped[datetime | None] = mapped_column(server_default=func.now())
     # The profile photo, a `files` row of kind "avatar". `files` points back at the user, so
     # the constraint is added on its own (use_alter): neither table has to come first.
     avatar_file_id: Mapped[uuid.UUID | None] = mapped_column(

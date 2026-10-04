@@ -210,6 +210,176 @@ _RESET = {
 
 
 @dataclass(frozen=True)
+class _Confirm:
+    subject: str
+    preheader: str
+    kicker: str
+    title: str
+    intro: str
+    unit: str
+    expires: str
+    then: str
+    action: str
+    fallback: str
+    open_link: str
+    not_you: str
+    footer: str
+
+
+_CONFIRM = {
+    Language.PT: _Confirm(
+        subject="Confirma o teu email",
+        preheader="Um toque e a tua conta fica pronta.",
+        kicker="Confirmar email",
+        title="Falta um passo, {name}.",
+        intro="Confirma que este email é teu para começares a usar o myGymTracker.",
+        unit="h",
+        expires="O link expira em {hours} horas",
+        then="Depois de confirmares, entras logo na app.",
+        action="Confirmar email",
+        fallback="Se o botão não abrir, copia este endereço para o navegador:",
+        open_link="Abre este link para confirmar:",
+        not_you="Não criaste esta conta? Ignora este email: sem confirmação, ela é apagada.",
+        footer="Recebeste este email porque alguém criou uma conta com este endereço.",
+    ),
+    Language.EN: _Confirm(
+        subject="Confirm your email",
+        preheader="One tap and your account is ready.",
+        kicker="Confirm your email",
+        title="One step left, {name}.",
+        intro="Confirm this email is yours to start using myGymTracker.",
+        unit="h",
+        expires="The link expires in {hours} hours",
+        then="Once you confirm, you go straight into the app.",
+        action="Confirm email",
+        fallback="If the button doesn't open, copy this address into your browser:",
+        open_link="Open this link to confirm:",
+        not_you="Didn't create this account? Ignore this email: unconfirmed, it is deleted.",
+        footer="You received this email because someone created an account with this address.",
+    ),
+    Language.ES: _Confirm(
+        subject="Confirma tu correo",
+        preheader="Un toque y tu cuenta estará lista.",
+        kicker="Confirmar correo",
+        title="Falta un paso, {name}.",
+        intro="Confirma que este correo es tuyo para empezar a usar myGymTracker.",
+        unit="h",
+        expires="El enlace caduca en {hours} horas",
+        then="Al confirmar, entras directamente en la app.",
+        action="Confirmar correo",
+        fallback="Si el botón no se abre, copia esta dirección en el navegador:",
+        open_link="Abre este enlace para confirmar:",
+        not_you="¿No creaste esta cuenta? Ignora este correo: sin confirmar, se elimina.",
+        footer="Has recibido este correo porque alguien creó una cuenta con esta dirección.",
+    ),
+}
+
+
+def confirm_email(*, to: str, name: str, language: Language, link: str, hours: int) -> EmailMessage:
+    """Sent at sign-up (and again on request): the account only opens once its link is used."""
+    copy = _CONFIRM[language]
+    title = copy.title.format(name=name)
+    expires = copy.expires.format(hours=hours)
+    text = (
+        f"{title}\n\n{copy.intro}\n{copy.open_link}\n\n{link}\n\n"
+        f"{expires}. {copy.then}\n\n{copy.not_you}\n"
+    )
+    return branded_email(
+        to=to,
+        subject=_subject(copy.subject),
+        text=text,
+        language=language.value,
+        preheader=copy.preheader,
+        kicker=copy.kicker,
+        title=title,
+        blocks=[
+            paragraph(copy.intro),
+            countdown(hours, copy.unit, expires, copy.then),
+            button(copy.action, link, fallback=copy.fallback),
+            note(copy.not_you),
+        ],
+        footer=copy.footer,
+    )
+
+
+@dataclass(frozen=True)
+class _Exists:
+    subject: str
+    preheader: str
+    kicker: str
+    title: str
+    body: str
+    forgot: str
+    action: str
+    not_you: str
+    footer: str
+
+
+_EXISTS = {
+    Language.PT: _Exists(
+        subject="Já tens conta",
+        preheader="Alguém tentou criar uma conta com este email.",
+        kicker="Conta existente",
+        title="Já cá estás, {name}.",
+        body="Alguém tentou criar uma conta myGymTracker com este email, mas ele já tem uma.",
+        forgot="Se foste tu, entra com a tua palavra-passe; se a esqueceste, pede uma nova no "
+        "ecrã de entrada.",
+        action="Entrar",
+        not_you="Não foste tu? Não precisas de fazer nada: a tua conta não mudou.",
+        footer="Recebeste este email porque alguém usou este endereço para criar uma conta.",
+    ),
+    Language.EN: _Exists(
+        subject="You already have an account",
+        preheader="Someone tried to create an account with this email.",
+        kicker="Existing account",
+        title="You're already here, {name}.",
+        body="Someone tried to create a myGymTracker account with this email, but it already "
+        "has one.",
+        forgot="If it was you, sign in with your password; if you forgot it, ask for a new one "
+        "on the sign-in screen.",
+        action="Sign in",
+        not_you="Wasn't you? There is nothing to do: your account didn't change.",
+        footer="You received this email because someone used this address to create an account.",
+    ),
+    Language.ES: _Exists(
+        subject="Ya tienes cuenta",
+        preheader="Alguien intentó crear una cuenta con este correo.",
+        kicker="Cuenta existente",
+        title="Ya estás aquí, {name}.",
+        body="Alguien intentó crear una cuenta de myGymTracker con este correo, pero ya tiene una.",
+        forgot="Si fuiste tú, entra con tu contraseña; si la olvidaste, pide una nueva en la "
+        "pantalla de entrada.",
+        action="Entrar",
+        not_you="¿No fuiste tú? No tienes que hacer nada: tu cuenta no ha cambiado.",
+        footer="Has recibido este correo porque alguien usó esta dirección para crear una cuenta.",
+    ),
+}
+
+
+def account_exists_email(*, to: str, name: str, language: Language, link: str) -> EmailMessage:
+    """Sent instead of an error when someone signs up with an address that has an account: the
+    sign-up screen says the same thing either way, so it tells nobody which addresses do."""
+    copy = _EXISTS[language]
+    title = copy.title.format(name=name)
+    return branded_email(
+        to=to,
+        subject=_subject(copy.subject),
+        text=f"{title}\n\n{copy.body}\n{copy.forgot}\n\n{link}\n\n{copy.not_you}\n",
+        language=language.value,
+        preheader=copy.preheader,
+        kicker=copy.kicker,
+        title=title,
+        blocks=[
+            paragraph(copy.body),
+            paragraph(copy.forgot, muted=True),
+            button(copy.action, link),
+            note(copy.not_you),
+        ],
+        footer=copy.footer,
+    )
+
+
+@dataclass(frozen=True)
 class _Deleted:
     subject: str
     preheader: str

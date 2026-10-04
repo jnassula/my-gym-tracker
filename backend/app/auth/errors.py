@@ -15,6 +15,18 @@ class LoginThrottledError(AppError):
         self.headers = {"Retry-After": str(retry_after)}
 
 
+class EmailNotVerifiedError(ForbiddenError):
+    """Only said after the right password, like ``account_disabled``."""
+
+    code = "email_not_verified"
+    detail = "Confirm your email first: the link is in your inbox"
+
+
+class InvalidVerifyTokenError(AppError):
+    code = "invalid_verify_token"
+    detail = "The confirmation link is invalid, expired or already used"
+
+
 class CrossSiteRequestError(ForbiddenError):
     detail = "This request must come from the app itself"
 

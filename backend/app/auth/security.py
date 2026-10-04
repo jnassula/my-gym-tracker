@@ -11,10 +11,17 @@ import jwt
 from pwdlib import PasswordHash
 from pwdlib.hashers.argon2 import Argon2Hasher
 
-from app.auth.errors import InvalidResetTokenError, InvalidTokenError, TokenExpiredError
+from app.auth.errors import (
+    InvalidResetTokenError,
+    InvalidTokenError,
+    InvalidVerifyTokenError,
+    TokenExpiredError,
+)
 from app.core.config import get_settings
 
 JWT_ALGORITHM = "HS256"
+# How long the link in the confirmation email works.
+VERIFY_TTL = timedelta(hours=24)
 
 _password_hash = PasswordHash((Argon2Hasher(),))
 # Verified against when the email is unknown, so login takes the same time either way.
@@ -57,7 +64,7 @@ def _encode(claims: dict[str, object]) -> str:
     return jwt.encode(claims, _secret(), algorithm=JWT_ALGORITHM)
 
 
-def _decode(token: str, token_type: Literal["access", "reset"]) -> dict[str, object]:
+def _decode(token: str, token_type: Literal["access", "reset", "verify"]) -> dict[str, object]:
     claims = jwt.decode(
         token, _secret(), algorithms=[JWT_ALGORITHM], options={"require": ["sub", "exp", "iat"]}
     )
@@ -143,3 +150,20 @@ def decode_reset_token(token: str) -> ResetClaims:
         return ResetClaims(user_id=uuid.UUID(str(claims["sub"])), fingerprint=str(claims["fp"]))
     except (jwt.InvalidTokenError, KeyError, ValueError) as exc:
         raise InvalidResetTokenError from exc
+
+
+# --- email confirmation tokens ----------------------------------------------------------------
+
+
+def create_verify_token(user_id: uuid.UUID, now: datetime | None = None) -> str:
+    """What the confirmation link carries. It works once: the account it confirms is then no
+    longer waiting for one (``auth.service.verify_email``)."""
+    now = now or datetime.now(UTC)
+    return _encode({"sub": str(user_id), "typ": "verify", "iat": now, "exp": now + VERIFY_TTL})
+
+
+def decode_verify_token(token: str) -> uuid.UUID:
+    try:
+        return uuid.UUID(str(_decode(token, "verify")["sub"]))
+    except (jwt.InvalidTokenError, ValueError) as exc:
+        raise InvalidVerifyTokenError from exc

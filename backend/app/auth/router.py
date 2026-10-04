@@ -12,9 +12,11 @@ from app.auth.schemas import (
     ForgotPasswordRequest,
     LoginRequest,
     RegisterRequest,
+    ResendVerificationRequest,
     ResetPasswordRequest,
     ResetTokenInfo,
     ResetTokenRequest,
+    VerifyEmailRequest,
 )
 from app.core.db import SessionDep
 from app.core.email import Mailer, get_mailer
@@ -36,7 +38,52 @@ def _start_session(response: Response, issued: service.IssuedSession) -> AuthRes
     )
 
 
-@router.post("/register", status_code=status.HTTP_201_CREATED)
+@router.post("/signup", status_code=status.HTTP_202_ACCEPTED)
+@limiter.limit("10 per 15 minutes")
+async def signup(
+    request: Request,
+    body: RegisterRequest,
+    session: SessionDep,
+    mailer: MailerDep,
+    background: BackgroundTasks,
+) -> None:
+    """Always 202, whether or not the email has an account (no user enumeration): the account
+    opens with the link sent to the address (``verify-email``)."""
+    await service.signup(session, body, mailer=mailer, background=background)
+
+
+@router.post("/verify-email")
+@limiter.limit("10/minute")
+async def verify_email(
+    request: Request,
+    response: Response,
+    body: VerifyEmailRequest,
+    session: SessionDep,
+    *,
+    mailer: MailerDep,
+    background: BackgroundTasks,
+) -> AuthResponse:
+    """The confirmation link was opened: the account is confirmed and signed in."""
+    issued = await service.verify_email(session, body.token, mailer=mailer, background=background)
+    return _start_session(response, issued)
+
+
+@router.post("/verify-email/resend", status_code=status.HTTP_202_ACCEPTED)
+@limiter.limit("5 per 15 minutes")
+async def resend_verification(
+    request: Request,
+    body: ResendVerificationRequest,
+    session: SessionDep,
+    mailer: MailerDep,
+    background: BackgroundTasks,
+) -> None:
+    """Always 202: the link goes out again if the address has an account waiting for it."""
+    await service.resend_verification(session, body.email, mailer=mailer, background=background)
+
+
+# What apps installed before email confirmation call: the account works at once, and the answer
+# still says whether the address is taken. Remove it a release after this one.
+@router.post("/register", status_code=status.HTTP_201_CREATED, deprecated=True)
 @limiter.limit("5/minute")
 async def register(
     request: Request,
