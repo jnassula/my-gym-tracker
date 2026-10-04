@@ -41,7 +41,7 @@ services:
 
   mailpit:
     # Development SMTP server: catches every email, web UI on MAILPIT_UI_PORT.
-    image: axllent/mailpit:v1.27
+    image: axllent/mailpit:v1.30
     ports:
       - "127.0.0.1:${MAILPIT_UI_PORT:-8026}:8025"
 
