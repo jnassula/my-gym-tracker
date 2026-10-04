@@ -10,6 +10,8 @@ services:
         APP_RELEASE: ${IMAGE_TAG:?set in .env}
         # CI passes what deploy/version.sh prints; a local build may too.
         APP_VERSION: ${APP_VERSION:-dev}
+        # The day, to install the distribution's fixes again: OS_UPDATES=$(date +%F).
+        OS_UPDATES: ${OS_UPDATES:-none}
 
   frontend:
     build:
@@ -17,3 +19,4 @@ services:
       target: prod
       args:
         APP_VERSION: ${APP_VERSION:-dev}
+        OS_UPDATES: ${OS_UPDATES:-none}

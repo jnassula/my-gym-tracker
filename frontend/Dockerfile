@@ -25,6 +25,11 @@ RUN npm run build
 FROM nginx:1.29-alpine@sha256:5616878291a2eed594aee8db4dade5878cf7edcb475e59193904b198d9b830de AS prod
 # deploy.sh prunes old releases by this label, and nothing else on the server.
 LABEL mygymtracker.image=frontend
+# The distribution's security fixes published since the base image was built. CI passes the
+# day as OS_UPDATES, so this layer is built again every day instead of staying cached.
+ARG OS_UPDATES=none
+# hadolint ignore=DL3017
+RUN echo "OS updates: ${OS_UPDATES}" && apk upgrade --no-cache
 COPY nginx/nginx.conf /etc/nginx/nginx.conf
 COPY nginx/default.conf /etc/nginx/conf.d/default.conf
 COPY nginx/security-headers.conf /etc/nginx/snippets/security-headers.conf

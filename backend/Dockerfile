@@ -2,6 +2,12 @@
 # updates both.
 FROM python:3.13-slim@sha256:3dd7cc108ec1493442514f5c2a871af6af0ec31d768ff6e378a93340c3b3db5f AS base
 
+# The distribution's security fixes published since the base image was built. CI passes the
+# day as OS_UPDATES, so this layer is built again every day instead of staying cached.
+ARG OS_UPDATES=none
+RUN echo "OS updates: ${OS_UPDATES}" && apt-get update && apt-get upgrade -y \
+    && rm -rf /var/lib/apt/lists/*
+
 COPY --from=ghcr.io/astral-sh/uv:0.11@sha256:77280f2f771df71f90786c314fe1bbc1e023feac652969bbf139c280babf2eb7 /uv /uvx /bin/
 
 # The venv lives outside /app so the dev bind mount of ./backend does not hide it.
