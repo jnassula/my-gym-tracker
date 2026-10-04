@@ -209,6 +209,79 @@ _RESET = {
 }
 
 
+@dataclass(frozen=True)
+class _Deleted:
+    subject: str
+    preheader: str
+    kicker: str
+    title: str
+    body: str
+    gone: str
+    not_you: str
+    footer: str
+
+
+_DELETED = {
+    Language.PT: _Deleted(
+        subject="A tua conta foi eliminada",
+        preheader="Os teus planos, treinos, pesagens e ficheiros foram apagados.",
+        kicker="Conta eliminada",
+        title="Até à próxima, {name}.",
+        body="A tua conta myGymTracker foi eliminada, como pediste.",
+        gone=(
+            "Com ela foram apagados os teus planos, os treinos registados, as pesagens, os "
+            "dados de saúde e os ficheiros. Não é possível recuperá-los."
+        ),
+        not_you="Não foste tu? Responde a este email: alguém entrou na tua conta.",
+        footer="Recebeste este email porque a conta com este endereço foi eliminada.",
+    ),
+    Language.EN: _Deleted(
+        subject="Your account was deleted",
+        preheader="Your plans, workouts, weighings and files were erased.",
+        kicker="Account deleted",
+        title="Until next time, {name}.",
+        body="Your myGymTracker account was deleted, as you asked.",
+        gone=(
+            "Your plans, logged workouts, weighings, health data and files were erased with "
+            "it. They can't be recovered."
+        ),
+        not_you="Wasn't you? Reply to this email: someone got into your account.",
+        footer="You received this email because the account with this address was deleted.",
+    ),
+    Language.ES: _Deleted(
+        subject="Tu cuenta se ha eliminado",
+        preheader="Tus planes, entrenamientos, pesajes y archivos se han borrado.",
+        kicker="Cuenta eliminada",
+        title="Hasta la próxima, {name}.",
+        body="Tu cuenta de myGymTracker se ha eliminado, como pediste.",
+        gone=(
+            "Con ella se han borrado tus planes, los entrenamientos registrados, los pesajes, "
+            "los datos de salud y los archivos. No se pueden recuperar."
+        ),
+        not_you="¿No has sido tú? Responde a este correo: alguien entró en tu cuenta.",
+        footer="Has recibido este correo porque se eliminó la cuenta con esta dirección.",
+    ),
+}
+
+
+def account_deleted_email(*, to: str, name: str, language: Language) -> EmailMessage:
+    """Sent when someone deletes their own account: the last thing the address hears from us,
+    and the way its owner finds out if it wasn't them."""
+    copy = _DELETED[language]
+    title = copy.title.format(name=name)
+    return branded_email(
+        to=to,
+        subject=_subject(copy.subject),
+        text=f"{title}\n\n{copy.body}\n\n{copy.gone}\n\n{copy.not_you}\n\n{copy.footer}\n",
+        language=language.value,
+        preheader=copy.preheader,
+        kicker=copy.kicker,
+        title=title,
+        blocks=[paragraph(copy.body), paragraph(copy.gone, muted=True), note(copy.not_you)],
+        footer=copy.footer,
+    )
+
+
 def _subject(subject: str) -> str:
     return f"{APP_NAME} · {subject}"
 

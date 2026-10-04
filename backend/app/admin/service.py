@@ -41,12 +41,12 @@ from app.admin.schemas import (
 )
 from app.auth.service import revoke_all_sessions
 from app.core.storage import Storage
-from app.files.models import StoredFile
 from app.health.models import HealthConnection, HealthProvider
 from app.logs import service as logs
 from app.logs.models import WorkoutSession
 from app.notifications.models import PushSubscription
 from app.notifications.service import cancel_rest_end
+from app.users import service as users
 from app.users.models import User
 from app.workouts.models import WorkoutPlan
 
@@ -259,18 +259,10 @@ async def set_active(
 async def delete_user(
     session: AsyncSession, storage: Storage, admin: User, user_id: uuid.UUID
 ) -> None:
-    """Deletes the account and everything it owns. There is no way back.
-
-    The PDFs go first: if the storage fails nothing else is lost and the deletion can be tried
-    again (deleting an object that is gone succeeds), so no personal file is left behind.
-    """
+    """Deletes the account and everything it owns (``users.service.delete_account``). There is
+    no way back."""
     user = await _account(session, admin, user_id)
-    keys = await session.scalars(select(StoredFile.object_key).where(StoredFile.user_id == user.id))
-    for key in keys.all():
-        await storage.delete(key)
-    cancel_rest_end(user.id)
-    await session.delete(user)  # every table that points at the user cascades
-    await session.commit()
+    await users.delete_account(session, storage, user)
     logger.info("Administrator %s deleted account %s", admin.id, user_id)
 
 

@@ -3,14 +3,20 @@
 import asyncio
 import uuid
 
-from fastapi import UploadFile
+from fastapi import BackgroundTasks, UploadFile
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.admin.errors import AdminProtectedError
+from app.auth import passwords
+from app.auth.emails import account_deleted_email
+from app.auth.errors import InvalidCurrentPasswordError
+from app.core.email import Mailer
 from app.core.storage import Storage
 from app.files import service as files
 from app.files.errors import UnsupportedFileTypeError
-from app.files.models import FileKind
+from app.files.models import FileKind, StoredFile
+from app.notifications.service import cancel_rest_end
 from app.users import avatar
 from app.users.models import User
 from app.users.schemas import UserUpdate
@@ -69,3 +75,40 @@ async def remove_avatar(session: AsyncSession, storage: Storage, user: User) -> 
         await files.remove_file(session, storage, user.id, previous)
         await session.commit()
     return user
+
+
+# --- deleting an account ---------------------------------------------------------------------
+
+
+async def delete_account(session: AsyncSession, storage: Storage, user: User) -> None:
+    """Deletes the account and everything it owns. There is no way back.
+
+    The files go first: if the storage fails nothing else is lost and the deletion can be tried
+    again (deleting an object that is gone succeeds), so no personal file is left behind.
+    """
+    keys = await session.scalars(select(StoredFile.object_key).where(StoredFile.user_id == user.id))
+    for key in keys.all():
+        await storage.delete(key)
+    cancel_rest_end(user.id)
+    await session.delete(user)  # every table that points at the user cascades
+    await session.commit()
+
+
+async def delete_own_account(
+    session: AsyncSession,
+    storage: Storage,
+    user: User,
+    password: str,
+    *,
+    mailer: Mailer,
+    background: BackgroundTasks,
+) -> None:
+    """The user deletes their account, proving it is them with the password: a session left
+    open on someone else's phone isn't enough. The address is told, in case it wasn't them."""
+    if user.is_admin:
+        raise AdminProtectedError  # an administrator steps down first (app.admin.grant --revoke)
+    if not (await passwords.verify(password, user.password_hash))[0]:
+        raise InvalidCurrentPasswordError
+    goodbye = account_deleted_email(to=user.email, name=user.name, language=user.language)
+    await delete_account(session, storage, user)
+    background.add_task(mailer.send, goodbye)

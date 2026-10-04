@@ -66,6 +66,12 @@ class UserRead(BaseModel):
 CLEARABLE_FIELDS = {"height_cm", "birth_date", "sex"}
 
 
+class AccountDelete(BaseModel):
+    """Deleting one's own account takes the password again."""
+
+    password: Annotated[str, StringConstraints(min_length=1, max_length=128)]
+
+
 class UserUpdate(BaseModel):
     """Profile and preferences; send only what changes."""
 
