@@ -20,6 +20,9 @@ MAX_REPS = 32
 MAX_NOTES = 2000
 MAX_SETS = 50
 MAX_REST = 3600
+# As many days as sheets in one import, and what a saved day may hold.
+MAX_DAYS = 10
+MAX_EXERCISES = 60
 
 # Warnings the model raises itself; the other two follow from the values.
 MODEL_FLAGS = (
@@ -126,8 +129,8 @@ def to_parsed_plan(output: PlanOutput) -> ParsedPlan:
     days: list[ParsedDay] = []
     used: set[int] = set()
     rest_days = {day for day in output.rest_days if 0 <= day <= 6}
-    for day in output.days if output.is_workout_plan else []:
-        exercises = [e for e in map(_exercise, day.exercises) if e is not None]
+    for day in output.days[:MAX_DAYS] if output.is_workout_plan else []:
+        exercises = [e for e in map(_exercise, day.exercises[:MAX_EXERCISES]) if e is not None]
         weekday = day.weekday if day.weekday is not None and 0 <= day.weekday <= 6 else None
         if not exercises:
             if weekday is not None:

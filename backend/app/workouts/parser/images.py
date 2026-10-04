@@ -54,7 +54,7 @@ def prepare(data: bytes) -> bytes:
             image = upright.convert("RGB")
     except UnreadableImageError:
         raise
-    except (UnidentifiedImageError, OSError, ValueError) as exc:
+    except (UnidentifiedImageError, Image.DecompressionBombError, OSError, ValueError) as exc:
         raise UnreadableImageError(str(exc)) from exc
     image.thumbnail((MAX_SIDE, MAX_SIDE))  # never scales up
     out = io.BytesIO()
@@ -74,6 +74,8 @@ def pdf_pages(data: bytes, *, max_pages: int) -> list[bytes]:
         pages = []
         for page in document:
             width, height = page.get_size()
+            if min(width, height) <= 0:
+                raise UnreadableImageError("A page without a size")
             scale = MAX_SIDE / max(width, height)
             bitmap = page.render(scale=scale)
             with bitmap.to_pil() as rendered:
@@ -82,6 +84,8 @@ def pdf_pages(data: bytes, *, max_pages: int) -> list[bytes]:
             pages.append(out.getvalue())
             page.close()
         return pages
+    except pdfium.PdfiumError as exc:  # a page that doesn't load or render
+        raise UnreadableImageError(str(exc)) from exc
     finally:
         document.close()
 

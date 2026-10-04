@@ -6,7 +6,7 @@ import pytest
 from app.exercises.models import MuscleGroup as G
 from app.workouts.parser import NoWorkoutStructureError, ParsedExercise, ParsedPlan
 from app.workouts.parser import ParseWarning as W
-from app.workouts.parser.output import PlanOutput, to_parsed_plan
+from app.workouts.parser.output import MAX_DAYS, MAX_EXERCISES, PlanOutput, to_parsed_plan
 from tests.workouts.layout import PLAN_REPLY
 
 
@@ -130,3 +130,12 @@ def test_dates_that_are_not_iso_are_dropped() -> None:
 def test_no_training_days_is_not_a_workout_plan(reply: dict[str, Any]) -> None:
     with pytest.raises(NoWorkoutStructureError):
         read(reply)
+
+
+def test_a_reply_is_cut_to_what_a_plan_can_hold() -> None:
+    sheets = [day(*[exercise()] * (MAX_EXERCISES + 5), weekday=None) for _ in range(MAX_DAYS + 3)]
+
+    plan = read({"is_workout_plan": True, "days": sheets})
+
+    assert len(plan.days) == MAX_DAYS
+    assert {len(sheet.exercises) for sheet in plan.days} == {MAX_EXERCISES}

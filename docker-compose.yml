@@ -69,6 +69,7 @@ services:
       LLM_API_KEY: ${LLM_API_KEY:-}
       LLM_BASE_URL: ${LLM_BASE_URL:-https://api.deepseek.com}
       LLM_MODEL: ${LLM_MODEL:-deepseek-flash}
+      LLM_DAILY_IMPORTS: ${LLM_DAILY_IMPORTS:-500}
       # Web Push. Empty key: notifications are off (the rest of the app works).
       VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY:-}
       VAPID_SUBJECT: ${VAPID_SUBJECT:-mailto:admin@mygymtracker.local}

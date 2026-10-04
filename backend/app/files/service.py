@@ -104,5 +104,7 @@ async def read_file(
 
 def inline_disposition(filename: str) -> str:
     """RFC 6266: an ASCII fallback plus the UTF-8 name ("Treino Jonatã.pdf")."""
-    fallback = filename.encode("ascii", "replace").decode().replace('"', "")
+    ascii_name = filename.encode("ascii", "replace").decode()
+    # What would end the quoted string, or the header itself, is left out.
+    fallback = "".join(c for c in ascii_name if c.isprintable() and c not in '"\\')
     return f"inline; filename=\"{fallback}\"; filename*=UTF-8''{quote(filename)}"

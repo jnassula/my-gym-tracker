@@ -1,4 +1,5 @@
 import io
+import zlib
 from typing import Any
 
 import pdfplumber
@@ -6,6 +7,7 @@ import pytest
 from httpx import AsyncClient, Response
 from PIL import Image
 
+from app.core.config import get_settings
 from app.workouts import service
 from app.workouts.parser import NoWorkoutStructureError, ParserUnavailableError, images
 from tests.conftest import FakePlanParser, MemoryStorage
@@ -417,3 +419,62 @@ async def test_the_single_file_field_still_works_for_older_apps(
 
     assert response.status_code == 200
     assert response.json()["name"] == PLAN_REPLY["title"].removeprefix("Periodização de ")
+
+
+def claimed_png(width: int, height: int) -> bytes:
+    """A PNG header that is valid (its checksum included) and claims this size, with no pixels."""
+    header = width.to_bytes(4, "big") + height.to_bytes(4, "big") + bytes([8, 2, 0, 0, 0])
+    checksum = zlib.crc32(b"IHDR" + header).to_bytes(4, "big")
+    return b"\x89PNG\r\n\x1a\n" + len(header).to_bytes(4, "big") + b"IHDR" + header + checksum
+
+
+async def test_a_photo_claiming_an_absurd_size_is_refused_not_an_error(
+    client: AsyncClient, plan_parser: FakePlanParser
+) -> None:
+    headers = await signup(client)
+
+    response = await upload_photos(
+        client, headers, ("bomba.png", claimed_png(20_000, 20_000), "image/png")
+    )
+
+    assert response.status_code == 422
+    assert response.json()["code"] == "image_unreadable"
+    assert plan_parser.images == []
+
+
+async def test_an_account_imports_so_many_plans_a_day(client: AsyncClient) -> None:
+    ana = await signup(client, "ana@example.pt")
+    rui = await signup(client, "rui@example.pt")
+    for _ in range(20):
+        assert (await upload(client, ana)).status_code == 200
+
+    refused = await upload(client, ana)
+
+    assert refused.status_code == 429
+    assert refused.json()["code"] == "rate_limited"
+    assert (await upload(client, rui)).status_code == 200  # the day's quota is each account's
+
+
+async def test_all_accounts_together_have_a_daily_budget(
+    client: AsyncClient, monkeypatch: pytest.MonkeyPatch, plan_parser: FakePlanParser
+) -> None:
+    monkeypatch.setattr(get_settings(), "llm_daily_imports", 2)
+    ana = await signup(client, "ana@example.pt")
+    rui = await signup(client, "rui@example.pt")
+    assert (await upload(client, ana)).status_code == 200
+    assert (await upload(client, rui)).status_code == 200
+
+    refused = await upload(client, rui)
+
+    assert refused.status_code == 429
+    assert refused.json()["code"] == "import_budget_reached"
+    assert len(plan_parser.texts) == 2  # the reader wasn't called for the third
+
+
+async def test_no_budget_means_no_ceiling(
+    client: AsyncClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(get_settings(), "llm_daily_imports", 0)
+    headers = await signup(client)
+
+    assert [(await upload(client, headers)).status_code for _ in range(3)] == [200, 200, 200]

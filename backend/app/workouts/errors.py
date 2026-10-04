@@ -37,6 +37,12 @@ class PdfNoStructureError(_PdfError):
     detail = "No workout days were found in the PDF"
 
 
+class ImportBudgetReachedError(AppError):
+    status_code = HTTPStatus.TOO_MANY_REQUESTS
+    code = "import_budget_reached"
+    detail = "No more imports today; create the plan by hand or try again tomorrow"
+
+
 class PdfReaderUnavailableError(AppError):
     status_code = HTTPStatus.SERVICE_UNAVAILABLE
     code = "pdf_reader_unavailable"

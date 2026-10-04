@@ -44,6 +44,8 @@ class Settings(BaseSettings):
     llm_base_url: str = "https://api.deepseek.com"
     llm_model: str = "deepseek-flash"
     llm_timeout_seconds: float = 120.0
+    # Each import is a paid call: at most this many a day, all accounts together (0: no ceiling).
+    llm_daily_imports: int = Field(default=500, ge=0)
 
     # --- Web Push (VAPID). Empty key: notifications are off. `python -m app.notifications.keys`
     vapid_private_key: SecretStr = SecretStr("")

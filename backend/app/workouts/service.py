@@ -61,6 +61,8 @@ logger = logging.getLogger(__name__)
 MAX_PDF_BYTES = 20 * 1024 * 1024
 # Photos: one sheet each, so a plan is a handful; a PDF of photos counts its pages.
 MAX_IMAGES = 10
+# Reading a file takes a thread, memory and a call to the LLM: the others wait their turn.
+_reading = asyncio.Semaphore(2)
 _TITLE_PREFIX = re.compile(r"^periodiza[cç][aã]o\s+de\s+", re.IGNORECASE)
 
 
@@ -124,21 +126,13 @@ async def _read_pdf(data: bytes) -> tuple[str | None, list[bytes]]:
         raise PdfUnreadableError from exc
 
 
-async def import_files(
-    session: AsyncSession,
-    storage: Storage,
-    parser: PlanParser,
-    user_id: uuid.UUID,
-    uploads: list[UploadFile],
-) -> ImportPreview:
-    """One PDF with text, or photos of printed sheets (loose, or the pages of one PDF)."""
-    if not uploads:
-        raise NoFilesError
-    if len(uploads) > MAX_IMAGES:
-        raise TooManyFilesError
+async def _read(
+    parser: PlanParser, uploads: list[UploadFile]
+) -> tuple[ParsedPlan, tuple[bytes, str | None]]:
+    """What the files say, and the PDF to keep as the plan's file."""
     text: str | None = None
     images: list[bytes] = []
-    source: tuple[bytes, str | None] | None = None  # the PDF to keep as the plan's file
+    source: tuple[bytes, str | None] | None = None
     for upload in uploads:
         data = await files.read_upload(upload, max_bytes=MAX_PDF_BYTES)
         if b"%PDF-" in data[:1024]:
@@ -162,6 +156,23 @@ async def import_files(
         # Loose photos are bound into one PDF: a plan keeps a single source file.
         first = PurePath(uploads[0].filename or "ficha").stem or "ficha"
         source = (await asyncio.to_thread(photos.bind_pdf, images), f"{first}.pdf")
+    return parsed, source
+
+
+async def import_files(
+    session: AsyncSession,
+    storage: Storage,
+    parser: PlanParser,
+    user_id: uuid.UUID,
+    uploads: list[UploadFile],
+) -> ImportPreview:
+    """One PDF with text, or photos of printed sheets (loose, or the pages of one PDF)."""
+    if not uploads:
+        raise NoFilesError
+    if len(uploads) > MAX_IMAGES:
+        raise TooManyFilesError
+    async with _reading:
+        parsed, source = await _read(parser, uploads)
     # Only files that parsed are kept.
     stored = await files.store_file(
         session,

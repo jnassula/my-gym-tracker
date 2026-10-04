@@ -3,12 +3,15 @@ from typing import Annotated
 from urllib.parse import quote
 
 from fastapi import APIRouter, Depends, File, Request, Response, UploadFile, status
+from limits import parse
 
 from app.auth.dependencies import CurrentUser, client_key
+from app.core.config import get_settings
 from app.core.db import SessionDep
 from app.core.rate_limit import limiter
 from app.core.storage import Storage, get_storage
 from app.workouts import service
+from app.workouts.errors import ImportBudgetReachedError
 from app.workouts.parser import PlanParser, get_plan_parser
 from app.workouts.schemas import ImportPreview, PlanCreate, PlanRead, PlanSummary, PlanUpdate
 
@@ -18,8 +21,17 @@ StorageDep = Annotated[Storage, Depends(get_storage)]
 ParserDep = Annotated[PlanParser, Depends(get_plan_parser)]
 
 
+def _spend_daily_import() -> None:
+    """Every import is a paid call to the LLM: a ceiling for all accounts together, counted
+    only once the caller's own limits let the request through."""
+    budget = get_settings().llm_daily_imports
+    if budget and limiter.enabled and not limiter.limiter.hit(parse(f"{budget}/day"), "imports"):
+        raise ImportBudgetReachedError
+
+
 @router.post("/import")
 @limiter.limit("30/hour")
+@limiter.limit("20/day", key_func=client_key)
 async def import_files(
     request: Request,
     *,
@@ -36,6 +48,7 @@ async def import_files(
 
     ``file`` is the single PDF older apps send; ``files`` takes a PDF or up to 10 photos.
     """
+    _spend_daily_import()
     uploads = ([file] if file is not None else []) + files
     return await service.import_files(session, storage, parser, user.id, uploads)
 
