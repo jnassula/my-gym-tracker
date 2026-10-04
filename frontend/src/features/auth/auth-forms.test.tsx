@@ -8,6 +8,7 @@ import { authResponse, json, renderWithRouter } from '@/test/render'
 import { ChangePasswordForm } from './change-password-form'
 import { LoginForm } from './login-form'
 import { RegisterForm } from './register-form'
+import { VerifyEmailScreen } from './verify-email-screen'
 
 const fetchMock = vi.fn<typeof fetch>()
 
@@ -54,6 +55,20 @@ describe('LoginForm', () => {
     expect(screen.getByLabelText('Palavra-passe')).toHaveAttribute('aria-invalid', 'true')
   })
 
+  it('offers the confirmation link again to an account that hasn’t confirmed', async () => {
+    fetchMock.mockResolvedValueOnce(json({ detail: 'confirm', code: 'email_not_verified' }, 403))
+    fetchMock.mockResolvedValueOnce(new Response(null, { status: 202 }))
+    renderWithRouter(<LoginForm onSuccess={vi.fn()} />)
+
+    await userEvent.type(await screen.findByLabelText('Email'), 'jonata@example.pt')
+    await userEvent.type(screen.getByLabelText('Palavra-passe'), 'Treino2026!')
+    await userEvent.click(screen.getByRole('button', { name: 'Entrar' }))
+    await userEvent.click(await screen.findByRole('button', { name: 'Reenviar email' }))
+
+    await waitFor(() => expect(lastBody()).toEqual({ email: 'jonata@example.pt' }))
+    expect(String(fetchMock.mock.lastCall?.[0])).toBe('/api/auth/verify-email/resend')
+  })
+
   it('signs in, remembering the device by default', async () => {
     fetchMock.mockResolvedValueOnce(json(authResponse()))
     const onSuccess = vi.fn()
@@ -84,7 +99,7 @@ describe('LoginForm', () => {
 
 describe('RegisterForm', () => {
   it('shows the strength meter as the password is typed', async () => {
-    renderWithRouter(<RegisterForm onSuccess={vi.fn()} />)
+    renderWithRouter(<RegisterForm />)
 
     await userEvent.type(await screen.findByLabelText('Palavra-passe'), 'Treino2026!')
 
@@ -95,19 +110,54 @@ describe('RegisterForm', () => {
     expect(screen.getByText('Forte — 8+ caracteres, número e símbolo')).toBeInTheDocument()
   })
 
-  it('shows a taken email inline and sends language and time zone', async () => {
-    fetchMock.mockResolvedValueOnce(
-      json({ detail: 'exists', code: 'email_taken' }, 409),
-    )
-    renderWithRouter(<RegisterForm onSuccess={vi.fn()} />)
+  it('asks to confirm the email instead of signing in, and can send the link again', async () => {
+    fetchMock.mockImplementation(async () => new Response(null, { status: 202 }))
+    renderWithRouter(<RegisterForm />)
 
     await userEvent.type(await screen.findByLabelText('Nome'), 'Jonata')
-    await userEvent.type(screen.getByLabelText('Email'), 'jonata@example.pt')
+    await userEvent.type(screen.getByLabelText('Email'), 'Jonata@Example.pt')
     await userEvent.type(screen.getByLabelText('Palavra-passe'), 'Treino2026!')
     await userEvent.click(screen.getByRole('button', { name: 'Criar conta' }))
 
-    expect(await screen.findByText('Já existe uma conta com este email.')).toBeInTheDocument()
+    expect(await screen.findByText('Confirma o teu email')).toBeInTheDocument()
+    expect(screen.getByText(/Enviámos um link para jonata@example.pt/)).toBeInTheDocument()
+    expect(String(fetchMock.mock.lastCall?.[0])).toBe('/api/auth/signup')
     expect(lastBody()).toMatchObject({ language: 'pt', timezone: expect.any(String) })
+    expect(sessionStore.get()).toBeNull()
+
+    await userEvent.click(screen.getByRole('button', { name: 'Reenviar email' }))
+
+    expect(await screen.findByText(/Enviado outra vez/)).toBeInTheDocument()
+    expect(String(fetchMock.mock.lastCall?.[0])).toBe('/api/auth/verify-email/resend')
+    expect(lastBody()).toEqual({ email: 'jonata@example.pt' })
+  })
+})
+
+describe('VerifyEmailScreen', () => {
+  it('confirms the account with the link and signs in', async () => {
+    fetchMock.mockResolvedValueOnce(json(authResponse()))
+    renderWithRouter(<VerifyEmailScreen />, '/verify-email#token=link-token')
+
+    await waitFor(() => expect(sessionStore.get()?.accessToken).toBe('access-1'))
+    expect(fetchMock).toHaveBeenCalledTimes(1) // the link works once: it is used once
+    expect(String(fetchMock.mock.lastCall?.[0])).toBe('/api/auth/verify-email')
+    expect(lastBody()).toEqual({ token: 'link-token' })
+  })
+
+  it('says so when the link is no longer good', async () => {
+    fetchMock.mockResolvedValueOnce(json({ detail: 'used', code: 'invalid_verify_token' }, 400))
+    renderWithRouter(<VerifyEmailScreen />, '/verify-email#token=old')
+
+    expect(await screen.findByText('Link inválido ou expirado')).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Entrar' })).toHaveAttribute('href', '/login')
+    expect(sessionStore.get()).toBeNull()
+  })
+
+  it('asks nothing of the server without a link', async () => {
+    renderWithRouter(<VerifyEmailScreen />, '/verify-email')
+
+    expect(await screen.findByText('Link inválido ou expirado')).toBeInTheDocument()
+    expect(fetchMock).not.toHaveBeenCalled()
   })
 })
 

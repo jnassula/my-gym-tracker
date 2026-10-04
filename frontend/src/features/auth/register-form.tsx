@@ -1,17 +1,22 @@
 import { zodResolver } from '@hookform/resolvers/zod'
+import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
 
 import { isLanguage } from '@/i18n'
 
-import { browserTimezone, register } from './api'
+import { browserTimezone, signUp } from './api'
+import { CheckEmail } from './check-email'
 import { errorKey } from './errors'
 import { PasswordField, TextField } from './form-fields'
 import { FormAlert, SubmitButton } from './form-parts'
 import { registerSchema, type RegisterValues } from './schemas'
 
-export function RegisterForm({ onSuccess }: { onSuccess: () => void }) {
+/** Sign-up. The account opens with the link sent to the address, so what follows the form is
+ * "confirm your email", whatever the address was (the server tells nobody which have accounts). */
+export function RegisterForm() {
   const { t, i18n } = useTranslation()
+  const [sentTo, setSentTo] = useState<string | null>(null)
   const form = useForm<RegisterValues>({
     resolver: zodResolver(registerSchema),
     defaultValues: { name: '', email: '', password: '' },
@@ -19,18 +24,18 @@ export function RegisterForm({ onSuccess }: { onSuccess: () => void }) {
 
   const onSubmit = form.handleSubmit(async (values) => {
     try {
-      await register({
+      await signUp({
         ...values,
         language: isLanguage(i18n.language) ? i18n.language : 'pt',
         timezone: browserTimezone(),
       })
-      onSuccess()
+      setSentTo(values.email.trim().toLowerCase())
     } catch (error) {
-      const key = errorKey(error)
-      if (key === 'errors.email_taken') form.setError('email', { message: key })
-      else form.setError('root', { message: key })
+      form.setError('root', { message: errorKey(error) })
     }
   })
+
+  if (sentTo) return <CheckEmail email={sentTo} />
 
   return (
     <form onSubmit={onSubmit} noValidate className="grid gap-3.5">

@@ -78,6 +78,18 @@
       "sentBody": "Revisa tu bandeja de entrada (y el spam). El enlace caduca en 30 minutos.",
       "resend": "Reenviar"
     },
+    "verify": {
+      "title": "Confirmar correo",
+      "checking": "Confirmando tu correo…",
+      "sentTitle": "Confirma tu correo",
+      "sentBody": "Hemos enviado un enlace a {{email}}. Ábrelo para entrar en la app.",
+      "spam": "Si no lo ves, mira en la carpeta de spam. El enlace caduca en 24 horas.",
+      "resend": "Reenviar correo",
+      "resent": "Enviado otra vez. El enlace anterior sigue sirviendo.",
+      "invalidTitle": "Enlace no válido o caducado",
+      "invalidBody": "El enlace de confirmación caduca en 24 horas y solo funciona una vez. Si ya confirmaste, entra; si no, entra con tu contraseña para pedir otro.",
+      "login": "Entrar"
+    },
     "reset": {
       "title": "Nueva contraseña",
       "for": "Para {{email}}",
@@ -237,6 +249,8 @@
     "unknown": "Algo ha salido mal. Inténtalo de nuevo.",
     "file_too_large": "El archivo es demasiado grande.",
     "payload_too_large": "La solicitud es demasiado grande.",
+    "email_not_verified": "Confirma tu correo primero: te hemos enviado un enlace.",
+    "invalid_verify_token": "El enlace no es válido, ha caducado o ya se usó.",
     "import_budget_reached": "Hoy ya no se pueden importar más planes. Crea el plan a mano o inténtalo mañana.",
     "push_endpoint_not_allowed": "Este navegador usa un servicio de notificaciones que la app no conoce.",
     "push_endpoint_in_use": "Este dispositivo ya está registrado. Desactiva y vuelve a activar las notificaciones.",

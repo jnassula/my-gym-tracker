@@ -22,10 +22,21 @@ export async function login(input: LoginInput) {
   )
 }
 
-export async function register(input: RegisterInput) {
+/** Creates the account. It opens with the link sent to its address (`verifyEmail`). */
+export function signUp(input: RegisterInput) {
+  return api<void>('/api/auth/signup', { method: 'POST', body: input, auth: false })
+}
+
+/** The confirmation link was opened: the account is confirmed and this device signed in. */
+export async function verifyEmail(token: string) {
   return startSession(
-    await api<AuthResponse>('/api/auth/register', { method: 'POST', body: input, auth: false }),
+    await api<AuthResponse>('/api/auth/verify-email', { method: 'POST', body: { token }, auth: false }),
   )
+}
+
+/** The confirmation link again; the server says the same whatever the address is. */
+export function resendVerification(email: string) {
+  return api<void>('/api/auth/verify-email/resend', { method: 'POST', body: { email }, auth: false })
 }
 
 /** How long signing out waits for the push service before going on without it. */

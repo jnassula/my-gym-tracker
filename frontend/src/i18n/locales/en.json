@@ -78,6 +78,18 @@
       "sentBody": "Check your inbox (and spam). The link expires in 30 minutes.",
       "resend": "Resend"
     },
+    "verify": {
+      "title": "Confirm email",
+      "checking": "Confirming your email…",
+      "sentTitle": "Confirm your email",
+      "sentBody": "We sent a link to {{email}}. Open it to get into the app.",
+      "spam": "If you don't see it, check the spam folder. The link expires in 24 hours.",
+      "resend": "Send the email again",
+      "resent": "Sent again. The earlier link still works.",
+      "invalidTitle": "Invalid or expired link",
+      "invalidBody": "The confirmation link expires in 24 hours and works only once. If you already confirmed, sign in; otherwise sign in with your password to ask for another.",
+      "login": "Sign in"
+    },
     "reset": {
       "title": "New password",
       "for": "For {{email}}",
@@ -237,6 +249,8 @@
     "unknown": "Something went wrong. Please try again.",
     "file_too_large": "The file is too large.",
     "payload_too_large": "The request is too large.",
+    "email_not_verified": "Confirm your email first: we sent you a link.",
+    "invalid_verify_token": "The link is invalid, expired or already used.",
     "import_budget_reached": "No more plans can be imported today. Create the plan by hand or try tomorrow.",
     "push_endpoint_not_allowed": "This browser uses a notification service the app doesn't know.",
     "push_endpoint_in_use": "This device is already registered. Turn notifications off and on again.",

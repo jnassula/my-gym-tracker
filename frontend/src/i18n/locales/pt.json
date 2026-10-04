@@ -78,6 +78,18 @@
       "sentBody": "Verifica a caixa de entrada (e o spam). O link expira em 30 minutos.",
       "resend": "Reenviar"
     },
+    "verify": {
+      "title": "Confirmar email",
+      "checking": "A confirmar o teu email…",
+      "sentTitle": "Confirma o teu email",
+      "sentBody": "Enviámos um link para {{email}}. Abre-o para entrares na app.",
+      "spam": "Se não o vires, espreita a pasta de spam. O link expira em 24 horas.",
+      "resend": "Reenviar email",
+      "resent": "Enviado outra vez. O link anterior continua a servir.",
+      "invalidTitle": "Link inválido ou expirado",
+      "invalidBody": "O link de confirmação expira em 24 horas e só funciona uma vez. Se já confirmaste, entra; senão, entra com a tua palavra-passe para pedires outro.",
+      "login": "Entrar"
+    },
     "reset": {
       "title": "Nova palavra-passe",
       "for": "Para {{email}}",
@@ -237,6 +249,8 @@
     "unknown": "Algo correu mal. Tenta novamente.",
     "file_too_large": "O ficheiro é demasiado grande.",
     "payload_too_large": "O pedido é demasiado grande.",
+    "email_not_verified": "Confirma o teu email primeiro: enviámos-te um link.",
+    "invalid_verify_token": "O link é inválido, expirou ou já foi usado.",
     "import_budget_reached": "Por hoje não dá para importar mais planos. Cria o plano à mão ou tenta amanhã.",
     "push_endpoint_not_allowed": "Este navegador usa um serviço de notificações que a app não conhece.",
     "push_endpoint_in_use": "Este dispositivo já está registado. Desativa e volta a ativar as notificações.",

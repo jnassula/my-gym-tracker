@@ -8,11 +8,12 @@ import {
 import { render } from '@testing-library/react'
 import type { ReactNode } from 'react'
 
-/** Renders UI that uses router Links/hooks, inside a throwaway single-route router. */
-export function renderWithRouter(ui: ReactNode) {
+/** Renders UI that uses router Links/hooks, inside a throwaway single-route router; `at` is
+ * the address it opens on, for a screen that reads it ("/verify-email#token=…"). */
+export function renderWithRouter(ui: ReactNode, at = '/') {
   const router = createRouter({
     routeTree: createRootRoute({ component: () => ui }),
-    history: createMemoryHistory({ initialEntries: ['/'] }),
+    history: createMemoryHistory({ initialEntries: [at] }),
   })
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   return render(
