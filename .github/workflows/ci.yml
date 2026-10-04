@@ -218,6 +218,7 @@ jobs:
           SMTP_HOST=smtp.invalid
           EMAIL_FROM=myGymTracker <no-reply@example.com>
           VAPID_SUBJECT=mailto:ci@example.com
+          DEMOS_AUTO_COPY=false
           EOF
           docker compose up --detach --wait --wait-timeout 180
       - name: Smoke test

@@ -1,8 +1,9 @@
-"""Brings the demonstrations to this server: the catalogue of ExerciseDB's free dataset into
-the database and each exercise's animation into the object storage (see ``source.py`` for its
-terms). Run it once after the first deploy, and again whenever to pick up what is missing.
+"""Brings the demonstrations to this server by hand: the catalogue of ExerciseDB's free dataset
+into the database and each exercise's animation into the object storage (see ``source.py`` for
+its terms). The backend does this by itself on its first start (``copier``); the command reads
+the catalogue again and also asks again for the animations the source didn't have.
 
-    python -m app.demos.sync              everything missing: 1,500 GIFs, about half an hour
+    python -m app.demos.sync              everything missing
     python -m app.demos.sync --limit 40   the catalogue and the first 40, to try it
     python -m app.demos.sync --again      all of them once more (a storage restored without them)
 """

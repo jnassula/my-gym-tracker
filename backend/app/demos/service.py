@@ -11,10 +11,11 @@ import uuid
 from collections import Counter
 from collections.abc import Callable
 
-from sqlalchemy import delete, func, select, update
+from sqlalchemy import ColumnElement, and_, delete, func, select, update
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.db import utcnow
 from app.core.storage import Storage
 from app.demos.errors import DemoNotFoundError
 from app.demos.matcher import BATCH, DemoMatcher, MatchExercise
@@ -42,6 +43,21 @@ def _group(group: MuscleGroup | None) -> str:
 # --- the catalogue and its animations ----------------------------------------------------------
 
 
+def _untried() -> ColumnElement[bool]:
+    return and_(ExerciseDemo.size_bytes.is_(None), ExerciseDemo.checked_at.is_(None))
+
+
+async def to_copy(session: AsyncSession) -> bool:
+    """Whether this server still has animations to fetch: no catalogue yet, or animations the
+    source was never asked for (a copy that was interrupted, or that it didn't answer)."""
+    total, _ = await counts(session)
+    if not total:
+        return True
+    return bool(
+        await session.scalar(select(func.count()).select_from(ExerciseDemo).where(_untried()))
+    )
+
+
 async def sync(
     session: AsyncSession,
     storage: Storage,
@@ -49,40 +65,45 @@ async def sync(
     *,
     limit: int | None = None,
     again: bool = False,
+    untried_only: bool = False,
     report: Callable[[str], None] = lambda _line: None,
 ) -> int:
     """Copies the source's catalogue into the database and the animations still missing into
     the object storage; how many were copied. Safe to run again: it goes on from where it
     stopped, and an animation the source refuses is left for the next run. A run that brought
     new animations has every exercise linked again. ``again`` copies them all once more, for
-    a storage that lost them (restored from a backup without them)."""
-    catalogue = await source.catalogue()
-    for exercise in catalogue:
-        row = insert(ExerciseDemo).values(
-            id=exercise.id,
-            name=exercise.name,
-            body_parts=exercise.body_parts,
-            equipments=exercise.equipments,
-            target_muscles=exercise.target_muscles,
-        )
-        await session.execute(
-            row.on_conflict_do_update(
-                index_elements=["id"],
-                set_={
-                    key: row.excluded[key]
-                    for key in ("name", "body_parts", "equipments", "target_muscles")
-                },
+    a storage that lost them (restored from a backup without them). ``untried_only`` is the
+    server's own run (``copier``): the catalogue is only read when there is none, and the
+    animations the source already said it doesn't have aren't asked for again."""
+    total, _ = await counts(session)
+    if not untried_only or not total:
+        catalogue = await source.catalogue()
+        for exercise in catalogue:
+            row = insert(ExerciseDemo).values(
+                id=exercise.id,
+                name=exercise.name,
+                body_parts=exercise.body_parts,
+                equipments=exercise.equipments,
+                target_muscles=exercise.target_muscles,
             )
-        )
+            await session.execute(
+                row.on_conflict_do_update(
+                    index_elements=["id"],
+                    set_={
+                        key: row.excluded[key]
+                        for key in ("name", "body_parts", "equipments", "target_muscles")
+                    },
+                )
+            )
+        report(f"catalogue: {len(catalogue)} exercises")
     if again:
-        await session.execute(update(ExerciseDemo).values(size_bytes=None))
+        await session.execute(update(ExerciseDemo).values(size_bytes=None, checked_at=None))
     await session.commit()
-    report(f"catalogue: {len(catalogue)} exercises")
 
     missing = list(
         await session.scalars(
             select(ExerciseDemo)
-            .where(ExerciseDemo.size_bytes.is_(None))
+            .where(_untried() if untried_only else ExerciseDemo.size_bytes.is_(None))
             .order_by(ExerciseDemo.id)
             .limit(limit)
         )
@@ -93,16 +114,20 @@ async def sync(
             data = await source.gif(demo.id)
         except SourceError as error:
             report(f"skipped {demo.id}: {error}")
+            if error.missing:  # it has no such file: the server's own run won't ask again
+                demo.checked_at = utcnow()
+                await session.commit()
             continue
         await storage.put(object_key(demo.id), data, GIF_TYPE)
         demo.size_bytes = len(data)
+        demo.checked_at = utcnow()
         await session.commit()  # one at a time: an interrupted run keeps what it copied
         copied += 1
         if number % 50 == 0 or number == len(missing):
             report(f"animations: {number}/{len(missing)}")
     if copied:
-        # What was decided meanwhile was chosen from a smaller catalogue (the linker runs while
-        # the copy does): every exercise is asked about again, with all of it to choose from.
+        # What was decided meanwhile was chosen from a smaller catalogue: every exercise is
+        # asked about again, with all of it to choose from.
         await session.execute(delete(ExerciseDemoLink))
         await session.commit()
     return copied

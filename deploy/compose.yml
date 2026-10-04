@@ -114,6 +114,7 @@ services:
       LLM_BASE_URL: ${LLM_BASE_URL:-https://api.deepseek.com}
       LLM_MODEL: ${LLM_MODEL:-deepseek-flash}
       LLM_DAILY_IMPORTS: ${LLM_DAILY_IMPORTS:-500}
+      DEMOS_AUTO_COPY: ${DEMOS_AUTO_COPY:-true}
       VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY:-}
       VAPID_SUBJECT: ${VAPID_SUBJECT:?set in .env}
       # Whose X-Forwarded-For is believed: the proxies on Docker's private networks. uvicorn

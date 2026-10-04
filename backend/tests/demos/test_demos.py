@@ -31,14 +31,22 @@ class FakeSource:
     def __init__(self) -> None:
         self.fetched: list[str] = []
         self.missing = {"gone404"}
+        self.silent: set[str] = set()  # it doesn't answer for these (a bad moment)
+        self.catalogues = 0
+        self.down = False
 
     async def catalogue(self) -> list[SourceExercise]:
+        if self.down:
+            raise SourceError("no answer")
+        self.catalogues += 1
         return CATALOGUE
 
     async def gif(self, demo_id: str) -> bytes:
         self.fetched.append(demo_id)
+        if demo_id in self.silent:
+            raise SourceError(f"{demo_id}: timed out")
         if demo_id in self.missing:
-            raise SourceError(f"{demo_id}: HTTP 404")
+            raise SourceError(f"{demo_id}: HTTP 404", missing=True)
         return GIF
 
 

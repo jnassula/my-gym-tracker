@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from sqlalchemy import ForeignKey, String, Text
 from sqlalchemy.dialects.postgresql import ARRAY
 from sqlalchemy.orm import Mapped, mapped_column
@@ -20,6 +22,9 @@ class ExerciseDemo(CreatedAt, Base):
     target_muscles: Mapped[list[str]] = mapped_column(ARRAY(String(60)))
     # Null: catalogued, the animation not copied yet (it isn't offered until it is).
     size_bytes: Mapped[int | None]
+    # When the source answered for this animation: with the file, or that it has none. Null:
+    # never asked (or it didn't answer), which is what a server still has to fetch by itself.
+    checked_at: Mapped[datetime | None]
 
 
 class ExerciseDemoLink(CreatedAt, Base):

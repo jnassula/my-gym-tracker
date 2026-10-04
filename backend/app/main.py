@@ -20,10 +20,11 @@ from app.core.db import SessionLocal, engine
 from app.core.errors import ErrorResponse, register_exception_handlers
 from app.core.no_store import NoStoreMiddleware
 from app.core.rate_limit import GlobalRateLimit, limiter, rate_limit_exceeded_handler
-from app.core.storage import ensure_bucket
-from app.demos import linker
+from app.core.storage import ensure_bucket, get_storage
+from app.demos import copier, linker
 from app.demos.matcher import get_demo_matcher
 from app.demos.router import router as demos_router
+from app.demos.source import ExerciseDb
 from app.exercises.router import router as exercises_router
 from app.files.router import router as files_router
 from app.health import sweeper
@@ -58,6 +59,8 @@ API_PREFIX = "/api/"
 # Per client (the account, or the address when signed out), over every endpoint together.
 GLOBAL_LIMIT = "300/minute"
 
+logger = logging.getLogger(__name__)
+
 # What a request body may weigh: small JSON, except where a route takes a file or a batch.
 # Uploads get room for the multipart framing around the file their service accepts.
 DEFAULT_BODY_BYTES = 256 * 1024
@@ -82,6 +85,10 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
     # Without an LLM key nothing can be linked: the exercises wait until there is one.
     if (matcher := get_demo_matcher()) is not None:
         background.append(asyncio.create_task(linker.run_forever(SessionLocal, matcher)))
+    else:
+        logger.warning("Demonstrations: no LLM_API_KEY, so no exercise gets its animation")
+    if get_settings().demos_auto_copy:
+        background.append(copier.start(SessionLocal, get_storage(), ExerciseDb()))
     if sender.public_key is not None:
         background.append(asyncio.create_task(scheduler.run_forever(SessionLocal, sender)))
     yield

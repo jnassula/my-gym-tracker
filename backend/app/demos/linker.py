@@ -23,10 +23,21 @@ ROUNDS = 12
 MAX_QUESTIONS_PER_DAY = 300
 
 _wake = asyncio.Event()
+_copying = asyncio.Event()
 
 
 def nudge() -> None:
     """A plan was saved: don't wait for the next minute."""
+    _wake.set()
+
+
+def hold() -> None:
+    """The animations are being copied (``copier``): nothing is linked from half a catalogue."""
+    _copying.set()
+
+
+def release() -> None:
+    _copying.clear()
     _wake.set()
 
 
@@ -51,6 +62,8 @@ async def run_forever(sessions: async_sessionmaker[AsyncSession], matcher: DemoM
         _wake.clear()
         try:
             for _ in range(ROUNDS):
+                if _copying.is_set():
+                    break
                 if not budget.take():
                     logger.warning("Demonstrations: the day's questions are spent")
                     break

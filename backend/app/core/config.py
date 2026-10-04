@@ -49,6 +49,10 @@ class Settings(BaseSettings):
     # Each import is a paid call: at most this many a day, all accounts together (0: no ceiling).
     llm_daily_imports: int = Field(default=500, ge=0)
 
+    # --- Exercise animations (ExerciseDB's free dataset, see app/demos/source.py) ---
+    # A server without them fetches them by itself when it starts, once (half an hour).
+    demos_auto_copy: bool = True
+
     # --- Web Push (VAPID). Empty key: notifications are off. `python -m app.notifications.keys`
     vapid_private_key: SecretStr = SecretStr("")
     vapid_subject: str = "mailto:admin@mygymtracker.local"
