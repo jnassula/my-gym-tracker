@@ -71,16 +71,19 @@ export function useEnableDevice() {
   })
 }
 
+/** This browser stops receiving the account's notifications, here and on the server. */
+export async function disableDevice() {
+  const endpoint = await unsubscribeDevice()
+  if (endpoint) {
+    const query = new URLSearchParams({ endpoint })
+    await api<void>(`/api/notifications/subscriptions?${query}`, { method: 'DELETE' })
+  }
+}
+
 export function useDisableDevice() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: async () => {
-      const endpoint = await unsubscribeDevice()
-      if (endpoint) {
-        const query = new URLSearchParams({ endpoint })
-        await api<void>(`/api/notifications/subscriptions?${query}`, { method: 'DELETE' })
-      }
-    },
+    mutationFn: disableDevice,
     onSettled: () => queryClient.invalidateQueries({ queryKey: notificationKeys.device }),
   })
 }

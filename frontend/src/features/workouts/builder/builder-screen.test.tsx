@@ -9,7 +9,7 @@ import { json, renderWithRouter, user } from '@/test/render'
 import type { Plan, PlanCreate, PlanSummary } from '../types'
 import { BuilderScreen } from './builder-screen'
 import type { BuilderSearch } from './search'
-import { DRAFT_KEY, loadDraft } from './storage'
+import { draftKey, loadDraft } from './storage'
 
 const fetchMock = vi.fn<typeof fetch>()
 
@@ -195,12 +195,12 @@ describe('BuilderScreen', () => {
         ],
       },
     ])
-    expect(localStorage.getItem(DRAFT_KEY)).toBeNull()
+    expect(localStorage.getItem(draftKey(user.id))).toBeNull()
   })
 
   it('resumes the draft saved on this device, at the step asked for', async () => {
     localStorage.setItem(
-      DRAFT_KEY,
+      draftKey(user.id),
       JSON.stringify({
         version: 1,
         name: 'Rascunho A',
@@ -216,12 +216,12 @@ describe('BuilderScreen', () => {
 
   it('"Criar do zero" drops the saved draft; "Duplicar" starts from the plan', async () => {
     localStorage.setItem(
-      DRAFT_KEY,
+      draftKey(user.id),
       JSON.stringify({ version: 1, name: 'Velho', validUntil: null, days: [] }),
     )
     const { unmount } = renderWithRouter(<Harness initial={{ fresh: true }} />)
     expect(await screen.findByLabelText('Nome do treino')).toHaveValue('')
-    await waitFor(() => expect(localStorage.getItem(DRAFT_KEY)).toBeNull())
+    await waitFor(() => expect(localStorage.getItem(draftKey(user.id))).toBeNull())
     unmount()
 
     renderWithRouter(<Harness initial={{ duplicate: 'plan-1' }} />)
@@ -250,7 +250,7 @@ describe('BuilderScreen', () => {
   it('asks before a group with exercises is removed', async () => {
     const u = userEvent.setup()
     localStorage.setItem(
-      DRAFT_KEY,
+      draftKey(user.id),
       JSON.stringify({
         version: 1,
         name: 'B',

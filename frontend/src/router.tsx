@@ -2,6 +2,7 @@ import { QueryClient } from '@tanstack/react-query'
 import { createRouter } from '@tanstack/react-router'
 
 import { Spinner } from '@/components/ui/spinner'
+import { releaseAvatars } from '@/features/settings/api'
 import { sessionStore } from '@/lib/auth'
 
 import { routeTree } from './routeTree.gen'
@@ -23,6 +24,7 @@ export const router = createRouter({
 // Losing the session (logout, refresh failure) re-runs the route guards, which redirect.
 sessionStore.subscribe(() => {
   if (!sessionStore.get()) {
+    releaseAvatars(queryClient)
     queryClient.clear()
     void router.invalidate()
   }

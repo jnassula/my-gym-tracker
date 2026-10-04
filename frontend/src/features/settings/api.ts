@@ -59,6 +59,13 @@ export const avatarQuery = (fileId: string) =>
     gcTime: Infinity,
   })
 
+/** The session ended: no photo's object URL outlives it in this tab. */
+export function releaseAvatars(queryClient: QueryClient) {
+  for (const [, url] of queryClient.getQueriesData<string>({ queryKey: ['avatar'] })) {
+    if (url) URL.revokeObjectURL(url)
+  }
+}
+
 function forgetAvatar(queryClient: QueryClient, fileId: string | null | undefined) {
   if (!fileId) return
   const { queryKey } = avatarQuery(fileId)

@@ -1,3 +1,7 @@
+import { disableDevice } from '@/features/notifications/api'
+import { hasPushDevice } from '@/features/notifications/push'
+import { restTimer } from '@/features/training/rest-timer'
+import { clearDraft } from '@/features/workouts/builder/storage'
 import { api, startSession } from '@/lib/api'
 import { sessionStore } from '@/lib/auth'
 import type { AccessTokenResponse, AuthResponse } from '@/lib/auth/types'
@@ -24,10 +28,28 @@ export async function register(input: RegisterInput) {
   )
 }
 
+/** How long signing out waits for the push service before going on without it. */
+const DEVICE_TIMEOUT_MS = 3000
+
+/** While the session still works: this device stops getting the account's notifications. */
+async function forgetThisDevice() {
+  if (!hasPushDevice()) return
+  const giveUp = new Promise<void>((resolve) => setTimeout(resolve, DEVICE_TIMEOUT_MS))
+  await Promise.race([disableDevice(), giveUp]).catch(() => undefined)
+}
+
+/**
+ * Signing out leaves nothing of the account on the device: the next person to use it gets
+ * neither its reminders nor its plan draft. (A session that merely expired keeps the draft,
+ * under the account's own key.)
+ */
 export async function logout() {
+  await forgetThisDevice()
   try {
     await api<void>('/api/auth/logout', { method: 'POST', auth: false })
   } finally {
+    clearDraft()
+    restTimer.skip()
     // Even if the request fails, this device forgets the session.
     sessionStore.set(null)
   }
