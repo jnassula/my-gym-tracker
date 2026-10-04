@@ -20,6 +20,7 @@ from sqlalchemy.orm import selectinload
 
 from app.core.db import utcnow
 from app.core.storage import Storage
+from app.demos import linker
 from app.exercises import service as exercises
 from app.exercises.key import exercise_key
 from app.exercises.models import Exercise
@@ -213,6 +214,7 @@ async def create_plan(session: AsyncSession, user_id: uuid.UUID, data: PlanCreat
     )
     session.add(plan)
     await session.commit()
+    linker.nudge()  # its exercises get their demonstrations now, not at the next minute
     return await get_plan(session, user_id, plan.id)
 
 

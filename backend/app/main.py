@@ -21,6 +21,9 @@ from app.core.errors import ErrorResponse, register_exception_handlers
 from app.core.no_store import NoStoreMiddleware
 from app.core.rate_limit import GlobalRateLimit, limiter, rate_limit_exceeded_handler
 from app.core.storage import ensure_bucket
+from app.demos import linker
+from app.demos.matcher import get_demo_matcher
+from app.demos.router import router as demos_router
 from app.exercises.router import router as exercises_router
 from app.files.router import router as files_router
 from app.health import sweeper
@@ -41,6 +44,7 @@ DOMAIN_ROUTERS = (
     users_router,
     workouts_router,
     exercises_router,
+    demos_router,
     logs_router,
     progress_router,
     notifications_router,
@@ -75,6 +79,9 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
         asyncio.create_task(sweeper.run_forever(SessionLocal)),
         asyncio.create_task(janitor.run_forever(SessionLocal)),
     ]
+    # Without an LLM key nothing can be linked: the exercises wait until there is one.
+    if (matcher := get_demo_matcher()) is not None:
+        background.append(asyncio.create_task(linker.run_forever(SessionLocal, matcher)))
     if sender.public_key is not None:
         background.append(asyncio.create_task(scheduler.run_forever(SessionLocal, sender)))
     yield
