@@ -22,7 +22,7 @@ ENV VITE_APP_VERSION=${APP_VERSION}
 RUN npm run build
 
 # ---- prod: nginx serves the build and proxies /api to the backend ----
-FROM nginx:1.29-alpine@sha256:5616878291a2eed594aee8db4dade5878cf7edcb475e59193904b198d9b830de AS prod
+FROM nginx:1.31-alpine@sha256:df221db836e1754089190208cee7eeda94f233197056426eda74a43ab1abeac2 AS prod
 # deploy.sh prunes old releases by this label, and nothing else on the server.
 LABEL mygymtracker.image=frontend
 # The distribution's security fixes published since the base image was built. CI passes the
