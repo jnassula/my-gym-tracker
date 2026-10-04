@@ -11,7 +11,7 @@ from tests.training import PLAN, Clock, Gym
 
 MONDAY_1740 = datetime(2026, 9, 28, 16, 40, tzinfo=UTC)  # 17:40 in Lisbon, after the 17:30 reminder
 DEVICE = {
-    "endpoint": "https://push.example/v1/abc",
+    "endpoint": "https://fcm.googleapis.com/fcm/send/abc",
     "keys": {"p256dh": "BNcRdreALR", "auth": "tBHItJI5sv"},
 }
 

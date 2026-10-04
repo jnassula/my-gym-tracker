@@ -24,7 +24,7 @@ ATHLETE = "atleta@example.pt"
 PASSWORD = "Treino2026!"
 SQUAT = "0/3"
 DEVICE = {
-    "endpoint": "https://push.example/v1/abc",
+    "endpoint": "https://fcm.googleapis.com/fcm/send/abc",
     "keys": {"p256dh": "BNcRdreALR", "auth": "tBHItJI5sv"},
 }
 

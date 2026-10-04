@@ -15,6 +15,7 @@ from py_vapid import Vapid01
 from pywebpush import WebPushException, webpush_async
 
 from app.core.config import get_settings
+from app.notifications.endpoints import is_push_service
 
 logger = logging.getLogger(__name__)
 
@@ -77,6 +78,8 @@ class WebPushSender:
         return self._public_key
 
     async def send(self, endpoint: Endpoint, message: PushMessage) -> SendResult:
+        if not is_push_service(endpoint.endpoint):  # stored before only push services were taken
+            return SendResult.GONE
         try:
             await webpush_async(
                 subscription_info={
@@ -92,7 +95,8 @@ class WebPushSender:
         except WebPushException as exc:
             if exc.status_code in (404, 410):
                 return SendResult.GONE
-            logger.warning("Push failed (%s): %s", exc.status_code, exc.message)
+            # The status alone: the message carries whatever the other side answered.
+            logger.warning("Push failed (%s)", exc.status_code)
             return SendResult.FAILED
         except Exception:  # network trouble must not break a request or the scheduler
             logger.warning("Push failed", exc_info=True)

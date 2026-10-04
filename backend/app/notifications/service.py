@@ -5,15 +5,19 @@ Routers only map HTTP to these functions; the scheduled reminders live in ``sche
 
 import asyncio
 import contextlib
+import hmac
 import logging
 import uuid
 from datetime import datetime, time, timedelta
 
 from sqlalchemy import delete, select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.db import utcnow
 from app.notifications import messages
+from app.notifications.endpoints import is_push_service
+from app.notifications.errors import PushEndpointInUseError, PushEndpointNotAllowedError
 from app.notifications.models import NotificationSettings, PushSubscription
 from app.notifications.schemas import (
     NotificationSettingsRead,
@@ -36,6 +40,8 @@ DEFAULTS = {
 }
 # A rest longer than this isn't a rest: refuse to hold a timer for it.
 MAX_REST = timedelta(hours=1)
+# Phones, tablets and computers of one person. One more pushes the oldest out.
+MAX_DEVICES = 10
 
 
 def now() -> datetime:
@@ -75,24 +81,43 @@ async def update_settings(
 # --- subscriptions -------------------------------------------------------------------------------
 
 
+def _same_keys(subscription: PushSubscription, data: SubscriptionCreate) -> bool:
+    return hmac.compare_digest(subscription.p256dh, data.keys.p256dh) and hmac.compare_digest(
+        subscription.auth, data.keys.auth
+    )
+
+
 async def subscribe(session: AsyncSession, user: User, data: SubscriptionCreate) -> None:
-    """Remember this device. A browser signing in as someone else moves its endpoint over."""
+    """Remember this device. A browser signing in as someone else moves its endpoint over: it
+    shows the subscription's keys, which someone who only saw the address doesn't have."""
+    if not is_push_service(data.endpoint):
+        raise PushEndpointNotAllowedError
     existing = await session.scalar(
         select(PushSubscription).where(PushSubscription.endpoint == data.endpoint)
     )
-    if existing is None:
-        session.add(
-            PushSubscription(
-                user_id=user.id,
-                endpoint=data.endpoint,
-                p256dh=data.keys.p256dh,
-                auth=data.keys.auth,
-            )
-        )
-    else:
+    if existing is not None:
+        if existing.user_id != user.id and not _same_keys(existing, data):
+            raise PushEndpointInUseError
         existing.user_id = user.id
         existing.p256dh = data.keys.p256dh
         existing.auth = data.keys.auth
+        await session.commit()
+        return
+    devices = await _endpoints(session, user.id)
+    for oldest in devices[: max(0, len(devices) - MAX_DEVICES + 1)]:
+        await session.delete(oldest)
+    try:
+        async with session.begin_nested():
+            session.add(
+                PushSubscription(
+                    user_id=user.id,
+                    endpoint=data.endpoint,
+                    p256dh=data.keys.p256dh,
+                    auth=data.keys.auth,
+                )
+            )
+    except IntegrityError:  # the same device, twice at once: the other request stored it
+        pass
     await session.commit()
 
 
@@ -106,8 +131,13 @@ async def unsubscribe(session: AsyncSession, user: User, endpoint: str) -> None:
 
 
 async def _endpoints(session: AsyncSession, user_id: uuid.UUID) -> list[PushSubscription]:
+    """The user's devices, oldest first."""
     return list(
-        await session.scalars(select(PushSubscription).where(PushSubscription.user_id == user_id))
+        await session.scalars(
+            select(PushSubscription)
+            .where(PushSubscription.user_id == user_id)
+            .order_by(PushSubscription.created_at)
+        )
     )
 
 
@@ -124,15 +154,16 @@ async def notify(
     session: AsyncSession, sender: PushSender, user_id: uuid.UUID, message: PushMessage
 ) -> int:
     """Send to every device of the user; forget devices the push service says are gone."""
-    sent = 0
-    for subscription in await _endpoints(session, user_id):
-        result = await sender.send(_endpoint(subscription), message)
-        if result is SendResult.SENT:
-            sent += 1
-        elif result is SendResult.GONE:
+    subscriptions = await _endpoints(session, user_id)
+    # At once (there are at most MAX_DEVICES): a slow push service delays nobody else's.
+    results = await asyncio.gather(
+        *(sender.send(_endpoint(subscription), message) for subscription in subscriptions)
+    )
+    for subscription, result in zip(subscriptions, results, strict=True):
+        if result is SendResult.GONE:
             await session.delete(subscription)
     await session.commit()
-    return sent
+    return results.count(SendResult.SENT)
 
 
 async def send_test(session: AsyncSession, sender: PushSender, user: User) -> int:
@@ -169,8 +200,7 @@ async def schedule_rest_end(
 
     async def fire() -> None:
         await asyncio.sleep(delay)
-        for endpoint in endpoints:
-            await sender.send(endpoint, message)
+        await asyncio.gather(*(sender.send(endpoint, message) for endpoint in endpoints))
 
     timer = asyncio.create_task(fire())
     _rest_timers[user.id] = timer

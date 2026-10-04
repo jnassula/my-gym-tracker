@@ -5,12 +5,20 @@ from typing import Any
 import pytest
 from httpx import AsyncClient
 
-from app.notifications.sender import WebPushSender, generate_vapid_key, public_key_of
+from app.notifications.sender import (
+    Endpoint,
+    PushMessage,
+    SendResult,
+    WebPushSender,
+    generate_vapid_key,
+    public_key_of,
+)
+from app.notifications.service import MAX_DEVICES
 from tests.conftest import FakePushSender
 from tests.helpers import signup
 
 DEVICE: dict[str, Any] = {
-    "endpoint": "https://push.example/v1/abc",
+    "endpoint": "https://fcm.googleapis.com/fcm/send/abc",
     "keys": {"p256dh": "BNcRdreALR", "auth": "tBHItJI5sv"},
 }
 
@@ -226,3 +234,54 @@ def test_vapid_keys_generate_a_browser_key() -> None:
 
     assert len(public_key) == 87  # 65-byte uncompressed P-256 point, base64url without padding
     assert WebPushSender(private_key, "mailto:admin@example.pt").public_key == public_key
+
+
+async def test_only_a_browsers_push_service_is_an_address_to_send_to(client: AsyncClient) -> None:
+    headers = await signup(client)
+    device = {**DEVICE, "endpoint": "https://storage.internal.example/hook"}
+
+    response = await client.post("/api/notifications/subscriptions", json=device, headers=headers)
+
+    assert response.status_code == 422
+    assert response.json()["code"] == "push_endpoint_not_allowed"
+    assert (await client.post("/api/notifications/test", headers=headers)).json() == {"sent": 0}
+
+
+async def test_knowing_a_devices_address_is_not_enough_to_take_it(client: AsyncClient) -> None:
+    alice = await signup(client, "alice@example.pt")
+    mallory = await signup(client, "mallory@example.pt")
+    await subscribe(client, alice)
+    stolen = {**DEVICE, "keys": {"p256dh": "BMallorysKey", "auth": "mallorys-auth"}}
+
+    response = await client.post("/api/notifications/subscriptions", json=stolen, headers=mallory)
+
+    assert response.status_code == 409
+    assert response.json()["code"] == "push_endpoint_in_use"
+    assert (await client.post("/api/notifications/test", headers=alice)).json() == {"sent": 1}
+    assert (await client.post("/api/notifications/test", headers=mallory)).json() == {"sent": 0}
+
+
+async def test_one_more_device_pushes_the_oldest_out(
+    client: AsyncClient, push_sender: FakePushSender
+) -> None:
+    headers = await signup(client)
+    devices = [
+        {**DEVICE, "endpoint": f"https://fcm.googleapis.com/fcm/send/device-{number}"}
+        for number in range(MAX_DEVICES + 1)
+    ]
+    for device in devices:
+        await subscribe(client, headers, device)
+
+    assert (await client.post("/api/notifications/test", headers=headers)).json() == {
+        "sent": MAX_DEVICES
+    }
+    assert devices[0]["endpoint"] not in [endpoint for endpoint, _ in push_sender.sent]
+    assert devices[-1]["endpoint"] in [endpoint for endpoint, _ in push_sender.sent]
+
+
+async def test_an_address_stored_before_the_rule_is_forgotten_not_called() -> None:
+    sender = WebPushSender(generate_vapid_key(), "mailto:admin@example.pt")
+    stored = Endpoint("https://storage.internal.example/hook", "BNcRdreALR", "tBHItJI5sv")
+
+    # No request leaves: a real send to this host would fail as FAILED, not GONE.
+    assert await sender.send(stored, PushMessage("myGymTracker", "Olá")) is SendResult.GONE
