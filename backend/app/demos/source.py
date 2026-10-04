@@ -4,13 +4,12 @@ Its terms (the "Usage Restrictions" of https://oss.exercisedb.dev): free for per
 non-commercial apps, with credit to AscendAPI, in 180 px GIFs; not for a monetised product
 without a paid plan. Its endpoints are for exploring the data, not for a live app to lean on:
 so the catalogue and the GIFs are copied once into our own database and storage (``sync``),
-slowly, and the app never calls them again.
+slowly, and nothing a user does ever calls them.
 """
 
 import asyncio
 import json
 import re
-import time
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -25,13 +24,20 @@ PAGE_SIZE = 25  # the most the API gives at once
 PAGE_PAUSE = 1.0
 GIF_PAUSE = 0.25
 RETRIES = 5
+BUSY_PAUSE = 15.0  # seconds, times the attempt, after a 429 or a 5xx
+NETWORK_PAUSE = 1.0  # the same, after a request that got no answer
 MAX_GIF_BYTES = 2 * 1024 * 1024  # they are about 100 KB
 USER_AGENT = "myGymTracker demo sync"
 _ID = re.compile(r"^[A-Za-z0-9]{4,32}$")
 
 
 class SourceError(Exception):
-    """The source answered something that isn't the catalogue or an animation."""
+    """The source answered something that isn't the catalogue or an animation. ``missing``: it
+    said it has no such thing (asking again won't help), rather than failing to answer."""
+
+    def __init__(self, message: str, *, missing: bool = False) -> None:
+        super().__init__(message)
+        self.missing = missing
 
 
 @dataclass(frozen=True)
@@ -48,20 +54,29 @@ class DemoSource(Protocol):
     async def gif(self, demo_id: str) -> bytes: ...
 
 
-def _get(url: str) -> bytes:
-    """A GET of one of the two addresses above, patient with the source's rate limit."""
+def _fetch(url: str) -> bytes:
     request = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})  # noqa: S310
+    with urllib.request.urlopen(request, timeout=30) as response:  # noqa: S310
+        return bytes(response.read(MAX_GIF_BYTES + 1))
+
+
+async def _get(url: str) -> bytes:
+    """A GET of one of the two addresses above, patient with the source's rate limit and with
+    a bad moment of the network. The waiting is ours, not a thread's, so it can be cancelled."""
     for attempt in range(1, RETRIES + 1):
         try:
-            with urllib.request.urlopen(request, timeout=30) as response:  # noqa: S310
-                return bytes(response.read(MAX_GIF_BYTES + 1))
+            return await asyncio.to_thread(_fetch, url)
         except urllib.error.HTTPError as error:
-            if error.code != HTTPStatus.TOO_MANY_REQUESTS or attempt == RETRIES:
+            busy = error.code == HTTPStatus.TOO_MANY_REQUESTS or error.code >= 500
+            if not busy:  # a 404: it has no such file
+                raise SourceError(f"{url}: HTTP {error.code}", missing=True) from error
+            if attempt == RETRIES:
                 raise SourceError(f"{url}: HTTP {error.code}") from error
-            time.sleep(15 * attempt)  # its own pace, when it says so (this runs in a thread)
+            await asyncio.sleep(BUSY_PAUSE * attempt)  # its own pace, when it says so
         except (urllib.error.URLError, TimeoutError) as error:
             if attempt == RETRIES:
                 raise SourceError(f"{url}: {error}") from error
+            await asyncio.sleep(NETWORK_PAUSE * attempt)
     raise SourceError(url)
 
 
@@ -75,7 +90,7 @@ class ExerciseDb:
         cursor: str | None = None
         while True:
             query = {"limit": PAGE_SIZE} | ({"after": cursor} if cursor else {})
-            body = await asyncio.to_thread(_get, f"{API}?{urllib.parse.urlencode(query)}")
+            body = await _get(f"{API}?{urllib.parse.urlencode(query)}")
             try:
                 page = json.loads(body)
                 items, meta = page["data"], page["meta"]
@@ -101,8 +116,10 @@ class ExerciseDb:
     async def gif(self, demo_id: str) -> bytes:
         if not _ID.match(demo_id):
             raise SourceError(f"Not an id of the source: {demo_id!r}")
-        data = await asyncio.to_thread(_get, f"{MEDIA}{demo_id}.gif")
+        try:
+            data = await _get(f"{MEDIA}{demo_id}.gif")
+        finally:
+            await asyncio.sleep(GIF_PAUSE)  # whatever it answered, the next one waits its turn
         if not data.startswith(b"GIF8") or len(data) > MAX_GIF_BYTES:
-            raise SourceError(f"{demo_id}: not a GIF of a size we take")
-        await asyncio.sleep(GIF_PAUSE)
+            raise SourceError(f"{demo_id}: not a GIF of a size we take", missing=True)
         return data
