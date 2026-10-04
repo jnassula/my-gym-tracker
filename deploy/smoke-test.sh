@@ -34,7 +34,7 @@ fi
 
 headers=$(fetch --head "$base/")
 for header in strict-transport-security x-content-type-options x-frame-options \
-    content-security-policy-report-only; do
+    content-security-policy cross-origin-opener-policy; do
     echo "$headers" | grep -qi "^$header:" || fail "missing header $header"
 done
 

@@ -13,7 +13,7 @@ from app.auth import janitor
 from app.auth.dependencies import client_key
 from app.auth.router import router as auth_router
 from app.body.router import router as body_router
-from app.core import healthcheck
+from app.core import csp, healthcheck
 from app.core.body_limit import BodyLimitMiddleware
 from app.core.config import Settings, get_settings
 from app.core.db import SessionLocal, engine
@@ -63,6 +63,7 @@ BODY_LIMITS = {
     ("POST", "/api/workouts"): 2 * _MB,  # a week of days, each exercise with its notes
     ("PUT", "/api/users/me/avatar"): MAX_AVATAR_BYTES + _MB,
     ("POST", "/api/health/sync"): MAX_BODY_BYTES,
+    ("POST", "/api/csp-report"): 16 * 1024,
 }
 
 
@@ -119,6 +120,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     app.include_router(healthcheck.router)
     api = APIRouter(prefix=API_PREFIX.rstrip("/"))
+    api.include_router(csp.router)
     for router in DOMAIN_ROUTERS:
         api.include_router(router)
     app.include_router(api)

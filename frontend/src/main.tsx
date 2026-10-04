@@ -1,3 +1,6 @@
+// First: it must be set before any schema is used.
+import '@/lib/zod-config'
+
 import { QueryClientProvider } from '@tanstack/react-query'
 import { RouterProvider } from '@tanstack/react-router'
 import { ThemeProvider } from 'next-themes'
