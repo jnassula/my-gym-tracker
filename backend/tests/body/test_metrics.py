@@ -2,6 +2,7 @@ from datetime import UTC, date, datetime, timedelta
 from decimal import Decimal
 
 from app.body.metrics import (
+    PAIR_WITHIN,
     Point,
     Reading,
     Weighing,
@@ -62,6 +63,25 @@ def test_each_weight_gets_the_body_fat_measured_with_it() -> None:
         Weighing(T0, Decimal("78.45"), Decimal("22.5")),
         Weighing(T0 + timedelta(days=1), Decimal("78.20"), None),
     ]
+
+
+def test_pairing_a_long_batch_gives_what_comparing_every_pair_would() -> None:
+    """The nearest body fat is looked up, not searched for: same answer, ties included."""
+    step = timedelta(seconds=37)
+    weights = [(T0 + step * (index * 7 % 2000), 70.0 + index % 9) for index in range(300)]
+    fats = [(T0 + step * (index * 11 % 500), 15.0 + index % 13) for index in range(400)]
+    fats += [(at, fat + 1) for at, fat in fats[:50]]  # two readings at one instant
+
+    def brute(at: datetime) -> Decimal | None:
+        near = [(abs(fat_at - at), fat) for fat_at, fat in fats if abs(fat_at - at) <= PAIR_WITHIN]
+        return Decimal(str(min(near)[1])).quantize(Decimal("0.1")) if near else None
+
+    paired = pair(weights, fats)
+
+    assert [w.at for w in paired] == [at for at, _ in weights]
+    assert [w.body_fat_pct for w in paired] == [brute(at) for at, _ in weights]
+    assert any(w.body_fat_pct is None for w in paired)
+    assert any(w.body_fat_pct is not None for w in paired)
 
 
 def test_the_same_weighing_seen_through_another_source() -> None:

@@ -29,6 +29,13 @@ from app.users.models import User
 # A manual entry for an earlier day has no time of its own.
 NOON = time(12, 0)
 EARLIEST_DAY = date(2000, 1, 1)
+EARLIEST = datetime.combine(EARLIEST_DAY, time(0), UTC)
+# What a bridge sends is anything a health app holds: beyond these a value isn't a weight or a
+# body fat at all (infinity included), and is dropped before any arithmetic on it.
+SANE_KG = 1_000
+SANE_PCT = 100
+# Postgres takes at most 32767 parameters per statement: 7 per row.
+INSERT_CHUNK = 4_000
 # Sources that send weighings through a data source's bridge, not this app's own screens.
 BRIDGES = frozenset({MeasurementSource.APPLE_HEALTH, MeasurementSource.HEALTH_CONNECT})
 BODY_FAT_PCT = (2, 75)
@@ -184,15 +191,20 @@ async def take(
     so is one the user deleted.
     """
     low, high = BODY_FAT_PCT
+    latest = now() + SAME_WITHIN
     weighings = [
         Weighing(
             w.at,
             w.weight,
             w.body_fat_pct if w.body_fat_pct and low <= w.body_fat_pct <= high else None,
         )
-        for w in pair(weights, fats)
-        # Out of range is a mistyped entry in the health app, and a date ahead a wrong clock.
-        if WEIGHT_KG[0] <= w.weight <= WEIGHT_KG[1] and w.at <= now() + SAME_WITHIN
+        for w in pair(
+            # A date ahead is a wrong clock, one before the app's first day a broken record.
+            [(at, kg) for at, kg in weights if EARLIEST <= at <= latest and 0 < kg < SANE_KG],
+            [(at, pct) for at, pct in fats if 0 <= pct <= SANE_PCT],
+        )
+        # Out of range is a mistyped entry in the health app.
+        if WEIGHT_KG[0] <= w.weight <= WEIGHT_KG[1]
     ]
     if not weighings:
         return 0
@@ -227,15 +239,16 @@ async def take(
         if w.at not in deleted
         and not any(same_weighing(w, other.measured_at, other.weight) for other in others)
     }
-    if values:
-        statement = insert(BodyMeasurement).values(list(values.values()))
+    rows = list(values.values())
+    for start in range(0, len(rows), INSERT_CHUNK):
+        statement = insert(BodyMeasurement).values(rows[start : start + INSERT_CHUNK])
         await session.execute(
             statement.on_conflict_do_update(
                 index_elements=["user_id", "source", "measured_at"],
                 set_={key: statement.excluded[key] for key in ("weight", "body_fat_pct")},
             )
         )
-    return len(values)
+    return len(rows)
 
 
 async def forget(session: AsyncSession, user_id: uuid.UUID, source: MeasurementSource) -> None:

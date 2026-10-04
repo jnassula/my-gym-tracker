@@ -8,9 +8,10 @@ data from one source, the first to send it: a watch that writes to both health a
 otherwise count its calories twice.
 """
 
+import asyncio
 import secrets
 import uuid
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 
 from sqlalchemy import delete, func, or_, select, update
 from sqlalchemy.dialects.postgresql import insert
@@ -52,6 +53,10 @@ SETTING_TYPES = {
 # later), so it waits for a session, this long at most.
 SENT_ONCE = frozenset({HealthProvider.HEALTH_CONNECT})
 WAIT = timedelta(hours=3)
+# A sample dated outside these isn't one: before the app existed, or ahead of now by more than
+# a wrong clock explains (it would wait for a session forever).
+EARLIEST = datetime(2000, 1, 1, tzinfo=UTC)
+AHEAD = timedelta(minutes=5)
 
 
 def now() -> datetime:
@@ -282,7 +287,8 @@ async def sync(
     samples to the sessions they fall in."""
     weighings = 0
     if connection.body:
-        readings = batch.body()
+        # Reading a batch is thousands of dates and numbers: not on the event loop.
+        readings = await asyncio.to_thread(batch.body)
         weighings = await body.take(
             session,
             user,
@@ -290,7 +296,7 @@ async def sync(
             [(s.at, s.value) for s in readings.weights],
             [(s.at, s.value) for s in readings.fats],
         )
-    result = await store(session, user, connection, batch.samples())
+    result = await store(session, user, connection, await asyncio.to_thread(batch.samples))
     return result.model_copy(update={"weighings": weighings})
 
 
@@ -309,9 +315,11 @@ async def store(
     await _lock(session, user.id)
     source = connection.provider
     enabled = enabled_types(connection)
-    wanted = [
+    sent = [
         (kind, sample) for kind, items in samples.items() if kind in enabled for sample in items
     ]
+    latest = now() + AHEAD
+    wanted = [(kind, sample) for kind, sample in sent if EARLIEST <= sample.at <= latest]
     waiting_since = now() - WAIT if source in SENT_ONCE else None
     owners = await _owners(session, user.id, [sample.at for _, sample in wanted])
     holders = await _holders(session, user.id, owners)
@@ -353,7 +361,7 @@ async def store(
     connection.last_sync_at = now()
     await session.commit()
     kept = [row["session_id"] for row in values if row["session_id"] is not None]
-    return SyncResult(received=len(wanted), kept=len(kept), sessions=len(set(kept)))
+    return SyncResult(received=len(sent), kept=len(kept), sessions=len(set(kept)))
 
 
 async def _settle(session: AsyncSession, user_id: uuid.UUID) -> None:
@@ -386,6 +394,7 @@ async def _settle(session: AsyncSession, user_id: uuid.UUID) -> None:
             or_(
                 HealthSample.source.not_in(SENT_ONCE),
                 HealthSample.recorded_at < now() - WAIT,
+                HealthSample.recorded_at > now() + AHEAD,  # no session will ever reach it
             ),
         )
     )

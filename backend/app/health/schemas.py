@@ -220,10 +220,12 @@ class HealthConnectBatch(BaseModel):
     record, left out when there is none, among many kinds the app doesn't read. Instants are UTC
     ("2026-09-29T17:02:05Z")."""
 
+    # Heart rate is bounded by the request's size (a watch writing every second fills two days
+    # with 170 000 samples). The others are few, and an interval of energy becomes many samples.
     heart_rate: list[_HeartRate] = []
-    active_calories: list[_Energy] = []
-    weight: list[_Mass] = []
-    body_fat: list[_BodyFat] = []
+    active_calories: list[_Energy] = Field(default=[], max_length=MAX_SAMPLES)
+    weight: list[_Mass] = Field(default=[], max_length=MAX_SAMPLES)
+    body_fat: list[_BodyFat] = Field(default=[], max_length=MAX_SAMPLES)
 
     def body(self) -> BodyBatch:
         return BodyBatch(
@@ -234,18 +236,19 @@ class HealthConnectBatch(BaseModel):
     def samples(self) -> dict[HealthSampleType, list[Sample]]:
         low, high = HEART_RATE_RANGE
         least, most = CALORIES_RANGE
+        energy: list[Sample] = []
+        for record in self.active_calories:
+            if len(energy) >= MAX_SAMPLES:  # a month of minutes: the rest isn't a workout's
+                break
+            if least <= record.calories <= most:
+                energy.extend(spread(record.start_time, record.end_time, record.calories))
         return {
             HealthSampleType.HEART_RATE: [
                 Sample(record.time, record.bpm)
                 for record in self.heart_rate
                 if low <= record.bpm <= high
             ],
-            HealthSampleType.CALORIES: [
-                piece
-                for record in self.active_calories
-                if least <= record.calories <= most
-                for piece in spread(record.start_time, record.end_time, record.calories)
-            ],
+            HealthSampleType.CALORIES: energy,
         }
 
 

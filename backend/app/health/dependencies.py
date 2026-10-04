@@ -1,5 +1,6 @@
 """What a bridge's request carries: its source's token and the samples."""
 
+import asyncio
 from http import HTTPStatus
 from typing import Annotated
 
@@ -44,7 +45,10 @@ async def read_batch(request: Request, token: HealthTokenUser) -> Batch:
     if len(body) > MAX_BODY_BYTES:
         raise HTTPException(HTTPStatus.REQUEST_ENTITY_TOO_LARGE)
     try:
-        return PARSERS[connection.provider].model_validate_json(body or b"{}")
+        # Megabytes of JSON to validate: in a thread, the event loop keeps serving.
+        return await asyncio.to_thread(
+            PARSERS[connection.provider].model_validate_json, body or b"{}"
+        )
     except ValidationError as error:
         raise RequestValidationError(error.errors()) from error
 

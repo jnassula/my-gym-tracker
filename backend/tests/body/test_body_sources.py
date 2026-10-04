@@ -192,3 +192,25 @@ async def test_the_app_itself_cant_claim_a_data_sources_weighing(gym: Gym) -> No
     )
 
     assert (response.status_code, response.json()["code"]) == (422, "validation_error")
+
+
+async def test_years_of_weighings_arrive_in_one_run(gym: Gym, db_session: AsyncSession) -> None:
+    """More rows than one statement takes: they are written in several."""
+    count = 6_000
+    payload = {
+        "weight": [
+            {"kilograms": 70 + n % 20, "time": android.utc(MORNING - 30 * n)} for n in range(count)
+        ],
+        "body_fat": [
+            {"percentage": 20 + n % 10, "time": android.utc(MORNING - 30 * n)}
+            for n in range(0, count, 2)
+        ],
+    }
+
+    result = await sync(gym, await android.connect(gym), payload)
+
+    assert result["weighings"] == count
+    kept = select(func.count()).select_from(BodyMeasurement)
+    assert await db_session.scalar(kept) == count
+    with_fat = kept.where(BodyMeasurement.body_fat_pct.is_not(None))
+    assert await db_session.scalar(with_fat) == count // 2

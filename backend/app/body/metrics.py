@@ -1,5 +1,6 @@
 """Pure arithmetic for the body weight chart: one point per day, or per week over a year."""
 
+from bisect import bisect_left
 from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta
@@ -78,9 +79,19 @@ def pair(
     """Health apps keep weight and body fat as separate samples: each weight gets the body fat
     measured with it (the nearest, within ``PAIR_WITHIN``). A body fat without a weight is
     nothing to keep."""
+    by_time = sorted(fats)
+    times = [fat_at for fat_at, _ in by_time]
     weighings = []
     for at, weight in weights:
-        near = [(abs(fat_at - at), fat) for fat_at, fat in fats if abs(fat_at - at) <= PAIR_WITHIN]
+        # The nearest is the first at or after the weight's instant, or the one before it (the
+        # first of those sharing that instant): a bridge's batch is thousands of samples.
+        index = bisect_left(times, at)
+        around = by_time[index : index + 1]
+        if index > 0:
+            around.append(by_time[bisect_left(times, times[index - 1])])
+        near = [
+            (abs(fat_at - at), fat) for fat_at, fat in around if abs(fat_at - at) <= PAIR_WITHIN
+        ]
         fat = min(near)[1] if near else None
         weighings.append(
             Weighing(

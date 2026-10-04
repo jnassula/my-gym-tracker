@@ -1,5 +1,6 @@
 """Health Connect's sync: what the HC Webhook app posts from Android, and what the app keeps."""
 
+import uuid
 from datetime import timedelta
 from typing import Any
 
@@ -9,7 +10,8 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.health import service
-from app.health.models import HealthSample
+from app.health.models import HealthProvider, HealthSample, HealthSampleType
+from app.health.schemas import MAX_SAMPLES
 from tests.health import test_sync_api as shortcut
 from tests.health.test_sync_api import sync, train
 from tests.helpers import signup
@@ -271,3 +273,84 @@ async def test_the_screen_needs_a_session_and_a_known_source(client: AsyncClient
         f"{CONNECTION}/settings", json={"calories": False}, headers=headers
     )
     assert (missing.status_code, missing.json()["code"]) == (404, "health_not_connected")
+
+
+async def test_a_sample_dated_ahead_is_not_kept_waiting(
+    gym: Gym, clock: Clock, db_session: AsyncSession
+) -> None:
+    """Only a sample that could still meet a session waits: one dated ahead never would."""
+    token = await connect(gym)
+
+    result = await sync(gym, token, {"heart_rate": [{"bpm": 120, "time": utc(120)}]})
+
+    assert result == {"received": 1, "kept": 0, "sessions": 0, "weighings": 0}
+    assert await stored(db_session) == 0
+
+
+async def test_a_sample_left_ahead_by_an_older_release_is_swept(
+    gym: Gym, clock: Clock, db_session: AsyncSession
+) -> None:
+    db_session.add(
+        HealthSample(
+            user_id=uuid.UUID((await gym.get("/api/users/me"))["id"]),
+            type=HealthSampleType.HEART_RATE,
+            source=HealthProvider.HEALTH_CONNECT,
+            value=120,
+            recorded_at=MONDAY + timedelta(days=30),
+        )
+    )
+    await db_session.flush()
+
+    await service.sweep(db_session)
+
+    assert await stored(db_session) == 0
+
+
+@pytest.mark.parametrize("time", ["0001-01-01T00:00:00Z", "9999-12-31T23:59:59Z"])
+async def test_dates_no_calendar_holds_are_dropped_not_an_error(gym: Gym, time: str) -> None:
+    payload = {
+        "heart_rate": [{"bpm": 120, "time": time}],
+        "active_calories": [{"calories": 30, "start_time": time, "end_time": time}],
+        "weight": [{"kilograms": 78.4, "time": time}],
+    }
+
+    result = await sync(gym, await connect(gym), payload)
+
+    assert result == {"received": 2, "kept": 0, "sessions": 0, "weighings": 0}
+
+
+async def test_a_number_that_is_not_one_is_dropped_not_an_error(gym: Gym) -> None:
+    body = (
+        f'{{"weight": [{{"kilograms": Infinity, "time": "{utc(-60)}"}},'
+        f' {{"kilograms": 1e300, "time": "{utc(-61)}"}}],'
+        f' "body_fat": [{{"percentage": NaN, "time": "{utc(-60)}"}}]}}'
+    )
+
+    response = await gym.client.post("/api/health/sync", content=body, headers=await connect(gym))
+
+    assert response.status_code == 200, response.text
+    assert response.json()["weighings"] == 0
+
+
+async def test_energy_is_spread_over_a_bounded_number_of_minutes(gym: Gym) -> None:
+    """Each interval becomes a sample per minute: a batch of long ones stops at the ceiling."""
+    four_hours = [
+        {"calories": 100, "start_time": utc(-240 * (n + 2)), "end_time": utc(-240 * (n + 1))}
+        for n in range(MAX_SAMPLES // 240 + 50)
+    ]
+
+    result = await sync(gym, await connect(gym), {"active_calories": four_hours})
+
+    assert MAX_SAMPLES <= result["received"] < MAX_SAMPLES + 240
+
+
+async def test_more_intervals_than_a_bridge_ever_sends_are_refused(gym: Gym) -> None:
+    interval = {"calories": 1, "start_time": utc(-2), "end_time": utc(-1)}
+
+    response = await gym.client.post(
+        "/api/health/sync",
+        json={"active_calories": [interval] * (MAX_SAMPLES + 1)},
+        headers=await connect(gym),
+    )
+
+    assert response.status_code == 422
