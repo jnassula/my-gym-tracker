@@ -1,5 +1,5 @@
 import { disableDevice } from '@/features/notifications/api'
-import { hasPushDevice } from '@/features/notifications/push'
+import { hasPushDevice, unsubscribeDevice } from '@/features/notifications/push'
 import { restTimer } from '@/features/training/rest-timer'
 import { clearDraft } from '@/features/workouts/builder/storage'
 import { api, startSession } from '@/lib/api'
@@ -38,6 +38,26 @@ async function forgetThisDevice() {
   await Promise.race([disableDevice(), giveUp]).catch(() => undefined)
 }
 
+/** What a signed-out device no longer holds of the account. */
+function forgetAccount() {
+  clearDraft()
+  restTimer.skip()
+  sessionStore.set(null)
+}
+
+/**
+ * Deletes the account (the server asks for the password again) and leaves nothing of it here.
+ * The server forgot the account's devices with it; this browser stops listening for them too.
+ */
+export async function deleteAccount(password: string) {
+  await api<void>('/api/users/me', { method: 'DELETE', body: { password } })
+  if (hasPushDevice()) {
+    const giveUp = new Promise<null>((resolve) => setTimeout(() => resolve(null), DEVICE_TIMEOUT_MS))
+    await Promise.race([unsubscribeDevice(), giveUp]).catch(() => null)
+  }
+  forgetAccount()
+}
+
 /**
  * Signing out leaves nothing of the account on the device: the next person to use it gets
  * neither its reminders nor its plan draft. (A session that merely expired keeps the draft,
@@ -48,10 +68,8 @@ export async function logout() {
   try {
     await api<void>('/api/auth/logout', { method: 'POST', auth: false })
   } finally {
-    clearDraft()
-    restTimer.skip()
     // Even if the request fails, this device forgets the session.
-    sessionStore.set(null)
+    forgetAccount()
   }
 }
 

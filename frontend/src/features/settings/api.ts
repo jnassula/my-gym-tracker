@@ -59,6 +59,19 @@ export const avatarQuery = (fileId: string) =>
     gcTime: Infinity,
   })
 
+/** Everything the app holds about the account, as a file the browser saves. */
+export async function downloadData() {
+  const blob = await api<Blob>('/api/users/me/export', { responseType: 'blob' })
+  const url = URL.createObjectURL(blob)
+  const anchor = document.createElement('a')
+  anchor.href = url
+  anchor.download = `mygymtracker-${new Date().toISOString().slice(0, 10)}.json`
+  document.body.append(anchor)
+  anchor.click()
+  anchor.remove()
+  setTimeout(() => URL.revokeObjectURL(url), 60_000)
+}
+
 /** The session ended: no photo's object URL outlives it in this tab. */
 export function releaseAvatars(queryClient: QueryClient) {
   for (const [, url] of queryClient.getQueriesData<string>({ queryKey: ['avatar'] })) {

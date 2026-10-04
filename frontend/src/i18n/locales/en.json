@@ -131,6 +131,23 @@
     "notifications": "Notifications",
     "profileLink": "{{name}}'s profile",
     "saveError": "Couldn't save. Try again.",
+    "accountData": {
+      "title": "Account and data",
+      "exportTitle": "Your data",
+      "exportBody": "A file with everything the app keeps about you: profile, plans, workouts, weighings and health data.",
+      "export": "Export my data",
+      "exported": "File saved.",
+      "deleteTitle": "Delete account",
+      "deleteBody": "Erases the account with its plans, workouts, weighings, health data and files. There is no way back.",
+      "delete": "Delete account",
+      "confirmTitle": "Delete your account?",
+      "confirmBody": "Everything you logged is erased for good. If you want to keep your data, export it first.",
+      "typeEmail": "Type {{email}} to confirm",
+      "password": "Password",
+      "cancel": "Cancel",
+      "confirm": "Delete for good",
+      "deleted": "Account deleted."
+    },
     "profile": {
       "title": "Profile",
       "name": "Name",

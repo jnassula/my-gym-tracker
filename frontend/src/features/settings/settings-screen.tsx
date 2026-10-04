@@ -113,6 +113,7 @@ export function SettingsScreen() {
           />
           <LinkRow to="/settings/pdfs" label={t('settings.pdfs')} value={plans.data?.length} />
           <LinkRow to="/settings/notifications" label={t('settings.notifications')} />
+          <LinkRow to="/settings/account" label={t('settings.accountData.title')} />
         </SettingsGroup>
 
         {user.is_admin && (

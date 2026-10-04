@@ -131,6 +131,23 @@
     "notifications": "Notificaciones",
     "profileLink": "Perfil de {{name}}",
     "saveError": "No se ha podido guardar. Inténtalo de nuevo.",
+    "accountData": {
+      "title": "Cuenta y datos",
+      "exportTitle": "Tus datos",
+      "exportBody": "Un archivo con todo lo que la app guarda sobre ti: perfil, planes, entrenamientos, pesajes y datos de salud.",
+      "export": "Exportar mis datos",
+      "exported": "Archivo guardado.",
+      "deleteTitle": "Eliminar cuenta",
+      "deleteBody": "Borra la cuenta con los planes, los entrenamientos, los pesajes, los datos de salud y los archivos. No se puede deshacer.",
+      "delete": "Eliminar cuenta",
+      "confirmTitle": "¿Eliminar tu cuenta?",
+      "confirmBody": "Todo lo que registraste se borra para siempre. Si quieres conservar tus datos, expórtalos antes.",
+      "typeEmail": "Escribe {{email}} para confirmar",
+      "password": "Contraseña",
+      "cancel": "Cancelar",
+      "confirm": "Eliminar para siempre",
+      "deleted": "Cuenta eliminada."
+    },
     "profile": {
       "title": "Perfil",
       "name": "Nombre",
