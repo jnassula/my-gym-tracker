@@ -9,6 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from slowapi.errors import RateLimitExceeded
 
 from app.admin.router import router as admin_router
+from app.auth import janitor
 from app.auth.dependencies import client_key
 from app.auth.router import router as auth_router
 from app.body.router import router as body_router
@@ -69,7 +70,10 @@ BODY_LIMITS = {
 async def lifespan(_: FastAPI) -> AsyncIterator[None]:
     await ensure_bucket()
     sender = get_push_sender()
-    background = [asyncio.create_task(sweeper.run_forever(SessionLocal))]
+    background = [
+        asyncio.create_task(sweeper.run_forever(SessionLocal)),
+        asyncio.create_task(janitor.run_forever(SessionLocal)),
+    ]
     if sender.public_key is not None:
         background.append(asyncio.create_task(scheduler.run_forever(SessionLocal, sender)))
     yield

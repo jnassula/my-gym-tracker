@@ -32,6 +32,15 @@ def verify_password(password: str, password_hash: str | None) -> bool:
     return _password_hash.verify(password, password_hash)
 
 
+def verify_and_update(password: str, password_hash: str | None) -> tuple[bool, str | None]:
+    """Whether the password is right and, when its hash was made with older parameters than
+    today's, the hash to store instead."""
+    if password_hash is None:
+        _password_hash.verify(password, _DUMMY_HASH)
+        return False, None
+    return _password_hash.verify_and_update(password, password_hash)
+
+
 def new_refresh_token() -> str:
     return secrets.token_urlsafe(32)
 

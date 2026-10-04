@@ -201,6 +201,13 @@ def _reset_rate_limits() -> None:
 
 
 @pytest.fixture(autouse=True)
+def _forget_failed_logins() -> None:
+    from app.auth.service import login_throttle  # noqa: PLC0415  # imported after env is set
+
+    login_throttle.reset()
+
+
+@pytest.fixture(autouse=True)
 def _forget_health() -> None:
     """The healthcheck reuses its last answer for a few seconds: not from one test to the next."""
     from app.core import healthcheck  # noqa: PLC0415  # imported after env is set

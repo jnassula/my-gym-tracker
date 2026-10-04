@@ -1,6 +1,8 @@
 import uuid
 
 import pytest
+from pwdlib import PasswordHash
+from pwdlib.hashers.argon2 import Argon2Hasher
 
 from app.auth import security
 from app.auth.errors import InvalidResetTokenError, InvalidTokenError
@@ -16,6 +18,19 @@ def test_passwords_are_hashed_with_argon2id_and_verified() -> None:
 
 def test_verify_without_a_hash_always_fails() -> None:
     assert not security.verify_password("anything", None)
+    assert security.verify_and_update("anything", None) == (False, None)
+
+
+def test_a_hash_made_with_older_parameters_is_made_again() -> None:
+    older = PasswordHash((Argon2Hasher(time_cost=1, memory_cost=1024),)).hash("Treino2026!")
+
+    right, stronger = security.verify_and_update("Treino2026!", older)
+
+    assert right
+    assert stronger is not None
+    assert stronger != older
+    assert security.verify_and_update("Treino2026!", stronger) == (True, None)
+    assert security.verify_and_update("treino2026!", older) == (False, None)
 
 
 def test_access_token_round_trip() -> None:

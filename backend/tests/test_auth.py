@@ -8,8 +8,11 @@ from httpx import AsyncClient, Response
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.auth import security
+from app.auth import security, service
+from app.auth.errors import InvalidCredentialsError, LoginThrottledError
 from app.auth.models import RefreshToken
+from app.auth.throttle import MAX_FAILURES, WINDOW
+from app.core.config import get_settings
 from app.users.models import User
 from tests.conftest import Outbox
 
@@ -398,3 +401,167 @@ async def test_change_password_requires_authentication(client: AsyncClient) -> N
     )
 
     assert response.status_code == 401
+
+
+# --- a session has a last day -----------------------------------------------------------------
+
+
+async def tokens(db_session: AsyncSession) -> list[RefreshToken]:
+    rows = await db_session.scalars(select(RefreshToken).order_by(RefreshToken.created_at))
+    return list(rows)
+
+
+async def test_refreshing_keeps_the_day_the_session_started(
+    client: AsyncClient, db_session: AsyncSession
+) -> None:
+    await register(client)
+    [first] = await tokens(db_session)
+
+    assert (await client.post("/api/auth/refresh")).status_code == 200
+
+    [_, second] = await tokens(db_session)
+    assert first.session_started_at is not None
+    assert second.session_started_at == first.session_started_at
+    assert second.expires_at > first.expires_at
+
+
+async def test_a_session_ends_some_time_after_its_sign_in_however_fresh(
+    client: AsyncClient, db_session: AsyncSession
+) -> None:
+    await register(client)
+    limit = timedelta(days=get_settings().session_max_days)
+    await db_session.execute(
+        update(RefreshToken).values(session_started_at=datetime.now(UTC) - limit)
+    )
+
+    response = await client.post("/api/auth/refresh")
+
+    assert response.status_code == 401
+    assert response.json()["code"] == "invalid_refresh_token"
+    assert [token.revoked for token in await tokens(db_session)] == [True]
+
+
+async def test_a_token_from_before_sessions_had_a_start_counts_from_its_own(
+    client: AsyncClient, db_session: AsyncSession
+) -> None:
+    await register(client)
+    await db_session.execute(update(RefreshToken).values(session_started_at=None))
+
+    assert (await client.post("/api/auth/refresh")).status_code == 200
+
+    await db_session.execute(
+        update(RefreshToken).values(
+            session_started_at=None, created_at=datetime.now(UTC) - timedelta(days=365)
+        )
+    )
+    assert (await client.post("/api/auth/refresh")).status_code == 401
+
+
+async def test_expired_sessions_are_cleared_for_everyone(
+    client: AsyncClient, db_session: AsyncSession
+) -> None:
+    await register(client)
+    await register(client, "outra@example.pt")
+    [gone, kept] = await tokens(db_session)
+    await db_session.execute(
+        update(RefreshToken)
+        .where(RefreshToken.id == gone.id)
+        .values(expires_at=datetime.now(UTC) - timedelta(seconds=1))
+    )
+
+    await service.forget_expired_sessions(db_session)
+
+    assert [token.id for token in await tokens(db_session)] == [kept.id]
+
+
+# --- the cookie only works from the app's own pages --------------------------------------------
+
+
+@pytest.mark.parametrize(
+    "headers",
+    [
+        {"Sec-Fetch-Site": "cross-site"},
+        {"Sec-Fetch-Site": "same-site"},  # another app on a sibling subdomain
+        {"Origin": "https://attacker.example"},
+    ],
+)
+@pytest.mark.parametrize("path", ["/api/auth/refresh", "/api/auth/logout"])
+async def test_another_site_cannot_use_the_session_cookie(
+    client: AsyncClient, headers: dict[str, str], path: str
+) -> None:
+    await register(client)
+
+    response = await client.post(path, headers=headers)
+
+    assert response.status_code == 403
+    assert response.json()["code"] == "forbidden"
+    assert (await client.post("/api/auth/refresh")).status_code == 200  # untouched
+
+
+@pytest.mark.parametrize(
+    "headers",
+    [
+        {"Sec-Fetch-Site": "same-origin", "Origin": "https://whatever.the.proxy.says"},
+        {"Sec-Fetch-Site": "none"},
+        {"Origin": get_settings().frontend_url},
+        {},  # not a browser: no cookie it could be tricked into sending
+    ],
+)
+async def test_the_apps_own_pages_refresh_as_before(
+    client: AsyncClient, headers: dict[str, str]
+) -> None:
+    await register(client)
+
+    assert (await client.post("/api/auth/refresh", headers=headers)).status_code == 200
+
+
+# --- passwords -----------------------------------------------------------------------------------
+
+
+async def test_signing_in_stores_the_password_under_todays_parameters(
+    client: AsyncClient, db_session: AsyncSession
+) -> None:
+    from pwdlib import PasswordHash  # noqa: PLC0415
+    from pwdlib.hashers.argon2 import Argon2Hasher  # noqa: PLC0415
+
+    session_before = bearer(await register(client))
+    older = PasswordHash((Argon2Hasher(time_cost=1, memory_cost=1024),)).hash(PASSWORD)
+    await db_session.execute(update(User).values(password_hash=older))
+
+    assert (await login(client)).status_code == 200
+
+    stored = await db_session.scalar(select(User.password_hash))
+    assert stored != older
+    assert security.verify_and_update(PASSWORD, stored) == (True, None)
+    # The password is the same one: nobody was signed out.
+    assert (await client.get("/api/users/me", headers=session_before)).status_code == 200
+
+
+async def test_many_failures_close_an_account_whatever_the_address(
+    client: AsyncClient, db_session: AsyncSession, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Straight at the service: over HTTP the per-address limit would answer first."""
+    await register(client)
+    email = "jonata@example.pt"
+    for _ in range(MAX_FAILURES):
+        with pytest.raises(InvalidCredentialsError):
+            await service.login(db_session, email, "wrong-password", remember=False)
+
+    with pytest.raises(LoginThrottledError) as refused:
+        await service.login(db_session, email, PASSWORD, remember=False)
+
+    assert refused.value.status_code == 429
+    retry_after = (refused.value.headers or {})["Retry-After"]
+    assert 0 < int(retry_after) <= WINDOW.total_seconds()
+    later = datetime.now(UTC) + WINDOW
+    monkeypatch.setattr(service, "_now", lambda: later)
+    assert (await service.login(db_session, email, PASSWORD, remember=False)).user.email == email
+
+
+async def test_an_unknown_email_is_closed_the_same_way(db_session: AsyncSession) -> None:
+    for _ in range(MAX_FAILURES):
+        with pytest.raises(InvalidCredentialsError):
+            await service.login(db_session, "ninguem@example.pt", "whatever", remember=False)
+
+    with pytest.raises(LoginThrottledError):
+        await service.login(db_session, "ninguem@example.pt", "whatever", remember=False)

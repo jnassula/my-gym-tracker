@@ -5,6 +5,7 @@ refresh token (httpOnly cookie) stored hashed. Every refresh rotates the token; 
 an already-rotated token revokes its whole family (theft detection).
 """
 
+import asyncio
 import uuid
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
@@ -23,11 +24,13 @@ from app.auth.errors import (
     InvalidCurrentPasswordError,
     InvalidRefreshTokenError,
     InvalidResetTokenError,
+    LoginThrottledError,
     RefreshTokenReusedError,
     TokenRevokedError,
 )
 from app.auth.models import RefreshToken
 from app.auth.schemas import RegisterRequest
+from app.auth.throttle import LoginThrottle
 from app.core.config import get_settings
 from app.core.email import Mailer
 from app.users.models import User
@@ -43,8 +46,24 @@ class IssuedSession:
     persistent: bool
 
 
+login_throttle = LoginThrottle()
+# argon2 takes tens of milliseconds and 64 MiB each time: in a thread, a few at once, so a burst
+# of sign-ins neither stalls every other request nor takes the memory.
+_hashing = asyncio.Semaphore(4)
+
+
 def _now() -> datetime:
     return datetime.now(UTC)
+
+
+async def _hash(password: str) -> str:
+    async with _hashing:
+        return await asyncio.to_thread(security.hash_password, password)
+
+
+async def _verify(password: str, password_hash: str | None) -> tuple[bool, str | None]:
+    async with _hashing:
+        return await asyncio.to_thread(security.verify_and_update, password, password_hash)
 
 
 async def _issue_session(
@@ -53,6 +72,7 @@ async def _issue_session(
     *,
     persistent: bool,
     family_id: uuid.UUID | None = None,
+    started_at: datetime | None = None,
 ) -> IssuedSession:
     now = _now()
     raw_refresh = security.new_refresh_token()
@@ -63,6 +83,7 @@ async def _issue_session(
             family_id=family_id or uuid.uuid4(),
             expires_at=now + timedelta(days=get_settings().refresh_token_ttl_days),
             persistent=persistent,
+            session_started_at=started_at or now,
         )
     )
     access = security.create_access_token(user.id, now)
@@ -102,8 +123,8 @@ async def _find_refresh_token(
     return await session.scalar(stmt)
 
 
-def _set_password(user: User, password: str) -> None:
-    user.password_hash = security.hash_password(password)
+async def _set_password(user: User, password: str) -> None:
+    user.password_hash = await _hash(password)
     user.password_changed_at = _now()
 
 
@@ -117,7 +138,7 @@ async def register(
         raise EmailTakenError
     user = User(
         email=data.email,
-        password_hash=security.hash_password(data.password),
+        password_hash=await _hash(data.password),
         name=data.name,
         language=data.language,
         timezone=data.timezone,
@@ -142,11 +163,19 @@ async def register(
 async def login(
     session: AsyncSession, email: str, password: str, *, remember: bool
 ) -> IssuedSession:
+    if (wait := login_throttle.retry_after(email, _now())) is not None:
+        raise LoginThrottledError(wait)
     user = await get_user_by_email(session, email)
     # Always run a hash verification so unknown emails are not faster to reject.
-    password_ok = security.verify_password(password, user.password_hash if user else None)
+    password_ok, stronger_hash = await _verify(password, user.password_hash if user else None)
     if user is None or not password_ok:
+        login_throttle.failed(email, _now())
         raise InvalidCredentialsError
+    login_throttle.succeeded(email)
+    if stronger_hash is not None:
+        # Hashed with older parameters: stored again with today's. The password didn't change,
+        # so nobody is signed out (password_changed_at stays).
+        user.password_hash = stronger_hash
     # Only after the right password: strangers don't learn which accounts are deactivated.
     if user.deactivated_at is not None:
         raise AccountDisabledError
@@ -169,12 +198,21 @@ async def refresh(session: AsyncSession, raw_refresh_token: str | None) -> Issue
         await _revoke_family(session, token.family_id)
         await session.commit()
         raise RefreshTokenReusedError
+    started_at = token.session_started_at or token.created_at
+    if _now() - started_at > timedelta(days=get_settings().session_max_days):
+        await _revoke_family(session, token.family_id)
+        await session.commit()
+        raise InvalidRefreshTokenError
     user = await get_user(session, token.user_id)
     if user is None or user.deactivated_at is not None:
         raise InvalidRefreshTokenError
     token.revoked = True
     issued = await _issue_session(
-        session, user, persistent=token.persistent, family_id=token.family_id
+        session,
+        user,
+        persistent=token.persistent,
+        family_id=token.family_id,
+        started_at=started_at,
     )
     await session.commit()
     return issued
@@ -185,6 +223,13 @@ async def logout(session: AsyncSession, raw_refresh_token: str | None) -> None:
     if token is not None:
         await _revoke_family(session, token.family_id)
         await session.commit()
+
+
+async def forget_expired_sessions(session: AsyncSession) -> None:
+    """Expired refresh tokens are no use to anyone, not even to detect reuse. A sign-in clears
+    its own account's; this clears everyone's (``janitor`` runs it every hour)."""
+    await session.execute(delete(RefreshToken).where(RefreshToken.expires_at < _now()))
+    await session.commit()
 
 
 async def authenticate(session: AsyncSession, claims: security.AccessClaims) -> User:
@@ -238,7 +283,7 @@ async def check_reset_token(session: AsyncSession, token: str) -> str:
 
 async def reset_password(session: AsyncSession, token: str, new_password: str) -> IssuedSession:
     user = await _user_for_reset_token(session, token)
-    _set_password(user, new_password)
+    await _set_password(user, new_password)
     await revoke_all_sessions(session, user.id)
     issued = await _issue_session(session, user, persistent=False)
     await session.commit()
@@ -258,9 +303,9 @@ async def change_password(
     The session cookie of the calling device stays valid. Access tokens issued before the
     change are revoked, so a fresh one is returned for this device.
     """
-    if not security.verify_password(current_password, user.password_hash):
+    if not (await _verify(current_password, user.password_hash))[0]:
         raise InvalidCurrentPasswordError
-    _set_password(user, new_password)
+    await _set_password(user, new_password)
     current = await _find_refresh_token(session, raw_refresh_token)
     keep_family = current.family_id if current and current.user_id == user.id else None
     await revoke_all_sessions(session, user.id, except_family=keep_family)

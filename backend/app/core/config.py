@@ -26,6 +26,8 @@ class Settings(BaseSettings):
     jwt_secret: SecretStr = Field(min_length=32)
     access_token_ttl_minutes: int = 15
     refresh_token_ttl_days: int = 7
+    # A session ends this long after its sign-in, however often it was refreshed.
+    session_max_days: int = Field(default=90, ge=1)
     password_reset_ttl_minutes: int = 30
     # Browsers only send Secure cookies over HTTPS (Safari included, even on localhost).
     cookie_secure: bool = True

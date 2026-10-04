@@ -58,6 +58,7 @@ services:
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
       DATABASE_URL: *db-url
       JWT_SECRET: ${JWT_SECRET:?set in .env}
+      SESSION_MAX_DAYS: ${SESSION_MAX_DAYS:-90}
       COOKIE_SECURE: "true"
       FRONTEND_URL: https://${DOMAIN:?set in .env}
       SMTP_HOST: ${SMTP_HOST:?set in .env}

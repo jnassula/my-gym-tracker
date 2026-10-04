@@ -22,3 +22,6 @@ class RefreshToken(UUIDPrimaryKey, CreatedAt, Base):
     revoked: Mapped[bool] = mapped_column(default=False, server_default="false")
     # "Remember me": persistent cookie (7 days) vs. session cookie. Kept across rotations.
     persistent: Mapped[bool] = mapped_column(default=False, server_default="false")
+    # When the user signed in: every rotation copies it, so a session has a last day however
+    # often it is refreshed. Null on tokens from before the column: their own creation counts.
+    session_started_at: Mapped[datetime | None]
