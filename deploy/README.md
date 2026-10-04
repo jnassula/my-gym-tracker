@@ -45,7 +45,8 @@ sudo usermod -aG docker deploy
 # A chave com que o GitHub Actions entra (gera-a no teu computador, não no servidor)
 ssh-keygen -t ed25519 -N "" -C "github-actions-deploy" -f mygymtracker_deploy
 # mygymtracker_deploy.pub vai para o servidor; a privada, mygymtracker_deploy, vai para o GitHub
-sudo -u deploy sh -c 'mkdir -p ~/.ssh && chmod 700 ~/.ssh && cat >> ~/.ssh/authorized_keys' < mygymtracker_deploy.pub
+# "restrict": a chave só corre comandos e copia ficheiros (sem terminal, túneis ou agente)
+sudo -u deploy sh -c 'mkdir -p ~/.ssh && chmod 700 ~/.ssh && sed "s/^/restrict /" >> ~/.ssh/authorized_keys' < mygymtracker_deploy.pub
 
 # A pasta da stack
 sudo install -d -o deploy -g deploy -m 750 /opt/mygymtracker
@@ -131,7 +132,7 @@ docker compose run --rm --no-deps backup now      # um backup completo agora
 ls -lh backups/
 ```
 
-**Estes backups estão no mesmo disco que os dados.** Guarda uma cópia fora do servidor: os snapshots do fornecedor da VPS, ou um `rsync`/`rclone` da pasta `backups/` para outro sítio.
+**Estes backups estão no mesmo disco que os dados, e não estão cifrados** (têm os dados de toda a gente: treinos, peso, saúde). Guarda uma cópia fora do servidor, cifrada por quem a faz: os snapshots do fornecedor da VPS, ou um `rclone` com um remoto `crypt` (ou `rsync` de ficheiros passados por `age`/`gpg`) da pasta `backups/` para outro sítio.
 
 ### Repor um backup
 
@@ -168,6 +169,16 @@ O Caddy desta stack ocupa as portas 80 e 443, por isso é ele que termina o TLS 
 3. `docker compose up -d caddy`, e depois de mudar um site, `docker compose exec caddy caddy reload --config /etc/caddy/Caddyfile`.
 
 Opções globais do Caddy (por exemplo `metrics`, para um Prometheus) vão em `caddy/global/*.caddy`.
+
+O Caddy e as outras apps ficam na rede `default`; o backend não está nela (só o nginx lhe chega, pela rede `app`). Um `compose.override.yml` que ligasse outra coisa diretamente ao `backend` tem de a pôr na rede `app`. Se à frente do Caddy houver um CDN ou outro proxy (`trusted_proxies` nas opções globais), confirma no log do nginx que o primeiro endereço de cada linha é o do visitante: é por ele que os limites de pedidos contam.
+
+## O que os contentores podem fazer
+
+Cada serviço corre sem poder ganhar privilégios (`no-new-privileges`) e sem as capacidades de root do Linux, salvo as que o `compose.yml` lhe dá uma a uma (o Caddy abre as portas 80 e 443; o Postgres e o backup precisam de mexer em ficheiros de outros utilizadores). O Caddy, o nginx e o backend têm o sistema de ficheiros só de leitura e escrevem em `/tmp` (memória); o nginx e o backend não correm como root. As imagens de terceiros estão fixadas pelo digest, que o Dependabot atualiza.
+
+O backend tem um teto de memória (`BACKEND_MEMORY`, 1536 MB por omissão): ler um PDF ou uma foto feitos para isso pode pedir muita, e assim é o backend que reinicia em vez de o servidor ficar sem ela. Num servidor pequeno, baixa-o no `.env`.
+
+O `deploy.sh` recusa uma tag que não seja uma tag de imagem e deixa o `.env` só para o utilizador `deploy` (`chmod 600`).
 
 ## Correr a stack de produção localmente
 
