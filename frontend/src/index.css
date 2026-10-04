@@ -2,6 +2,7 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 @import "@fontsource-variable/inter";
+@import "./themes.css";
 
 @custom-variant dark (&:is(.dark *));
 
@@ -52,9 +53,12 @@
 
 /*
  * Nocturne design system mapped onto shadcn tokens (see design/README.md).
- * Dark is the default theme; light swaps the same OKLCH ramps.
+ * Dark is the default theme; light swaps the same OKLCH ramps. It is the palette when <html>
+ * names none; the other palettes are in themes.css. An element may ask for it by name
+ * (data-palette), as the theme picker's preview does inside another palette.
  */
-:root {
+:root,
+[data-palette='nocturne'] {
     --background: #f3f5fe;           /* neutral-100 */
     --foreground: #161826;           /* nocturne ground */
     --card: #e4e7f5;                 /* neutral-200 */
@@ -91,7 +95,8 @@
     --sidebar-ring: #796cbf;
 }
 
-.dark {
+.dark,
+.dark [data-palette='nocturne'] {
     --background: #161826;           /* nocturne ground */
     --foreground: #e9e9ed;
     --card: #232532;                 /* nocturne surface */
