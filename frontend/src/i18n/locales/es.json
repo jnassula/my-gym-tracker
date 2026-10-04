@@ -134,7 +134,26 @@
     "preferences": "Preferencias",
     "language": "Idioma",
     "units": "Unidades",
-    "darkTheme": "Tema oscuro",
+    "theme": {
+      "title": "Tema",
+      "appearance": "Apariencia",
+      "mode": "Modo",
+      "dark": "Oscuro",
+      "light": "Claro",
+      "palette": "Colores",
+      "current": "{{palette}} · {{mode}}",
+      "palettes": {
+        "nocturne": { "name": "Nocturne", "description": "Lila tranquilo: el original" },
+        "ferro": { "name": "Hierro", "description": "Naranja brasa y tonos cálidos" },
+        "lima": { "name": "Lima", "description": "Verde lima: energía y contraste" },
+        "gelo": { "name": "Hielo", "description": "Azul frío, técnico y tranquilo" },
+        "brasa": { "name": "Brasa", "description": "Rojo coral, máxima intensidad" },
+        "ouro": { "name": "Oro", "description": "Dorado sobrio, de club" },
+        "violeta": { "name": "Violeta", "description": "Violeta eléctrico" },
+        "menta": { "name": "Menta", "description": "Verde menta: salud y constancia" },
+        "grafite": { "name": "Grafito", "description": "Sin color: solo contraste" }
+      }
+    },
     "autoRest": "Descanso automático",
     "autoRestHint": "Registrar una serie inicia el descanso",
     "timezone": "Zona horaria",

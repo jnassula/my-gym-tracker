@@ -33,6 +33,7 @@ import { Route as AppSettingsNotificationsRouteImport } from './routes/_app/sett
 import { Route as AppSettingsPasswordRouteImport } from './routes/_app/settings/password'
 import { Route as AppSettingsPdfsRouteImport } from './routes/_app/settings/pdfs'
 import { Route as AppSettingsProfileRouteImport } from './routes/_app/settings/profile'
+import { Route as AppSettingsThemeRouteImport } from './routes/_app/settings/theme'
 import { Route as AppSettingsTimezoneRouteImport } from './routes/_app/settings/timezone'
 import { Route as AppWorkoutsIndexRouteImport } from './routes/_app/workouts/index'
 import { Route as AppWorkoutsImportRouteImport } from './routes/_app/workouts/import'
@@ -164,6 +165,11 @@ const AppSettingsProfileRoute = AppSettingsProfileRouteImport.update({
   path: '/settings/profile',
   getParentRoute: () => AppRoute,
 } as any)
+const AppSettingsThemeRoute = AppSettingsThemeRouteImport.update({
+  id: '/settings/theme',
+  path: '/settings/theme',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppSettingsTimezoneRoute = AppSettingsTimezoneRouteImport.update({
   id: '/settings/timezone',
   path: '/settings/timezone',
@@ -244,6 +250,7 @@ export interface FileRoutesByFullPath {
   '/settings/password': typeof AppSettingsPasswordRoute
   '/settings/pdfs': typeof AppSettingsPdfsRoute
   '/settings/profile': typeof AppSettingsProfileRoute
+  '/settings/theme': typeof AppSettingsThemeRoute
   '/settings/timezone': typeof AppSettingsTimezoneRoute
   '/workouts/import': typeof AppWorkoutsImportRoute
   '/workouts/new': typeof AppWorkoutsNewRoute
@@ -278,6 +285,7 @@ export interface FileRoutesByTo {
   '/settings/password': typeof AppSettingsPasswordRoute
   '/settings/pdfs': typeof AppSettingsPdfsRoute
   '/settings/profile': typeof AppSettingsProfileRoute
+  '/settings/theme': typeof AppSettingsThemeRoute
   '/settings/timezone': typeof AppSettingsTimezoneRoute
   '/workouts/import': typeof AppWorkoutsImportRoute
   '/workouts/new': typeof AppWorkoutsNewRoute
@@ -316,6 +324,7 @@ export interface FileRoutesById {
   '/_app/settings/password': typeof AppSettingsPasswordRoute
   '/_app/settings/pdfs': typeof AppSettingsPdfsRoute
   '/_app/settings/profile': typeof AppSettingsProfileRoute
+  '/_app/settings/theme': typeof AppSettingsThemeRoute
   '/_app/settings/timezone': typeof AppSettingsTimezoneRoute
   '/_app/workouts/import': typeof AppWorkoutsImportRoute
   '/_app/workouts/new': typeof AppWorkoutsNewRoute
@@ -352,6 +361,7 @@ export interface FileRouteTypes {
     | '/settings/password'
     | '/settings/pdfs'
     | '/settings/profile'
+    | '/settings/theme'
     | '/settings/timezone'
     | '/workouts/import'
     | '/workouts/new'
@@ -386,6 +396,7 @@ export interface FileRouteTypes {
     | '/settings/password'
     | '/settings/pdfs'
     | '/settings/profile'
+    | '/settings/theme'
     | '/settings/timezone'
     | '/workouts/import'
     | '/workouts/new'
@@ -423,6 +434,7 @@ export interface FileRouteTypes {
     | '/_app/settings/password'
     | '/_app/settings/pdfs'
     | '/_app/settings/profile'
+    | '/_app/settings/theme'
     | '/_app/settings/timezone'
     | '/_app/workouts/import'
     | '/_app/workouts/new'
@@ -617,6 +629,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppSettingsProfileRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/settings/theme': {
+      id: '/_app/settings/theme'
+      path: '/settings/theme'
+      fullPath: '/settings/theme'
+      preLoaderRoute: typeof AppSettingsThemeRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/settings/timezone': {
       id: '/_app/settings/timezone'
       path: '/settings/timezone'
@@ -721,6 +740,7 @@ interface AppRouteChildren {
   AppSettingsPasswordRoute: typeof AppSettingsPasswordRoute
   AppSettingsPdfsRoute: typeof AppSettingsPdfsRoute
   AppSettingsProfileRoute: typeof AppSettingsProfileRoute
+  AppSettingsThemeRoute: typeof AppSettingsThemeRoute
   AppSettingsTimezoneRoute: typeof AppSettingsTimezoneRoute
   AppWorkoutsImportRoute: typeof AppWorkoutsImportRoute
   AppWorkoutsNewRoute: typeof AppWorkoutsNewRoute
@@ -748,6 +768,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppSettingsPasswordRoute: AppSettingsPasswordRoute,
   AppSettingsPdfsRoute: AppSettingsPdfsRoute,
   AppSettingsProfileRoute: AppSettingsProfileRoute,
+  AppSettingsThemeRoute: AppSettingsThemeRoute,
   AppSettingsTimezoneRoute: AppSettingsTimezoneRoute,
   AppWorkoutsImportRoute: AppWorkoutsImportRoute,
   AppWorkoutsNewRoute: AppWorkoutsNewRoute,

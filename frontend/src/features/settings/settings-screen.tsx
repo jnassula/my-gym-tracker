@@ -1,7 +1,6 @@
 import { CaretRightIcon, SignOutIcon } from '@phosphor-icons/react'
 import { useQuery } from '@tanstack/react-query'
 import { Link, useNavigate } from '@tanstack/react-router'
-import { useTheme } from 'next-themes'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
@@ -19,6 +18,8 @@ import { UserAvatar } from '@/features/settings/user-avatar'
 import { plansQuery } from '@/features/workouts/api'
 import { LANGUAGES } from '@/i18n'
 import { useRequiredSession } from '@/lib/auth'
+import { useMode } from '@/lib/theme/mode'
+import { usePalette } from '@/lib/theme/palette'
 import { APP_VERSION } from '@/lib/version'
 
 export function SettingsScreen() {
@@ -26,7 +27,8 @@ export function SettingsScreen() {
   const { user } = useRequiredSession()
   const navigate = useNavigate()
   const update = useUpdateMe()
-  const { resolvedTheme, setTheme } = useTheme()
+  const mode = useMode()
+  const palette = usePalette()
   const plans = useQuery(plansQuery())
   const health = useQuery(healthQuery())
   const [loggingOut, setLoggingOut] = useState(false)
@@ -81,10 +83,13 @@ export function SettingsScreen() {
               onChange={(unit) => save({ unit })}
             />
           </SettingsRow>
-          <SwitchRow
-            label={t('settings.darkTheme')}
-            checked={resolvedTheme !== 'light'}
-            onCheckedChange={(dark) => setTheme(dark ? 'dark' : 'light')}
+          <LinkRow
+            to="/settings/theme"
+            label={t('settings.theme.title')}
+            value={t('settings.theme.current', {
+              palette: t(`settings.theme.palettes.${palette}.name`),
+              mode: t(`settings.theme.${mode}`),
+            })}
           />
           <SwitchRow
             label={t('settings.autoRest')}

@@ -134,7 +134,26 @@
     "preferences": "Preferences",
     "language": "Language",
     "units": "Units",
-    "darkTheme": "Dark theme",
+    "theme": {
+      "title": "Theme",
+      "appearance": "Appearance",
+      "mode": "Mode",
+      "dark": "Dark",
+      "light": "Light",
+      "palette": "Colours",
+      "current": "{{palette}} · {{mode}}",
+      "palettes": {
+        "nocturne": { "name": "Nocturne", "description": "Calm lilac: the original" },
+        "ferro": { "name": "Iron", "description": "Ember orange and warm tones" },
+        "lima": { "name": "Lime", "description": "Lime green: energy and contrast" },
+        "gelo": { "name": "Ice", "description": "Cool blue, technical and calm" },
+        "brasa": { "name": "Ember", "description": "Coral red, maximum intensity" },
+        "ouro": { "name": "Gold", "description": "Sober gold, like a club" },
+        "violeta": { "name": "Violet", "description": "Electric violet" },
+        "menta": { "name": "Mint", "description": "Mint green: health and consistency" },
+        "grafite": { "name": "Graphite", "description": "No colour: contrast alone" }
+      }
+    },
     "autoRest": "Auto rest timer",
     "autoRestHint": "Logging a set starts the rest",
     "timezone": "Time zone",
