@@ -10,7 +10,7 @@ export const Route = createFileRoute('/_auth/login')({
   // Only same-app paths are honoured, so the redirect can't send users off-site.
   validateSearch: (search: Record<string, unknown>): LoginSearch => {
     const target = search.redirect
-    return typeof target === 'string' && target.startsWith('/') && !target.startsWith('//')
+    return typeof target === 'string' && /^\/(?![/\\])/.test(target) && !target.includes('\\')
       ? { redirect: target }
       : {}
   },

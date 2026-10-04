@@ -1,12 +1,22 @@
 /// <reference lib="webworker" />
 /** Web Push: show what the backend sends, and open the app where it points when tapped. */
 
+import { appUrl } from '../lib/app-url'
+
 declare let self: ServiceWorkerGlobalScope
 
 type Payload = { title: string; body: string; url?: string; tag?: string | null }
 
+function read(data: PushMessageData | null): Payload | undefined {
+  try {
+    return data?.json() as Payload | undefined
+  } catch {
+    return undefined // not ours: nothing to show
+  }
+}
+
 self.addEventListener('push', (event) => {
-  const payload = event.data?.json() as Payload | undefined
+  const payload = read(event.data)
   if (!payload) return
   event.waitUntil(
     self.registration.showNotification(payload.title, {
@@ -22,7 +32,8 @@ self.addEventListener('push', (event) => {
 
 self.addEventListener('notificationclick', (event) => {
   event.notification.close()
-  const url = (event.notification.data as { url?: string } | null)?.url ?? '/'
+  const data = event.notification.data as { url?: unknown } | null
+  const url = appUrl(data?.url, self.location.origin)
   event.waitUntil(
     (async () => {
       const windows = await self.clients.matchAll({ type: 'window', includeUncontrolled: true })
