@@ -43,3 +43,37 @@ Rules applied in the app:
 - **Colour:** no pure black or white, and never flood large areas with the accent.
 - **Copy:** PT-PT first; EN and ES follow 1:1. Exercise names stay exactly as written in the PDF.
 - **Custom pieces**, where the library has nothing: password strength meter, weight stepper, sparklines, calendar heatmap and the plate calculator.
+
+## Themes
+
+Nocturne is the app's own theme and the default. Beside it the app offers the eight palette
+families of the Claude Design canvas "myGymTracker Ferro" (section 3b), as colours only: the
+typography, radii and components stay Nocturne's (the canvas's Ferro system, with Barlow and
+block buttons, is not built).
+
+| Theme | Dark (from the canvas) | Light |
+| --- | --- | --- |
+| Nocturne | lilac on night blue (the original) | the original light mode |
+| Ferro | ember orange `#FF7A1A` on warm grey | the canvas's "Papel": brick orange on warm paper |
+| Lima | acid lime `#C9F24A` on green-grey | derived: olive green on a green-tinted white |
+| Gelo | cyan `#4FD1FF` on night blue | the canvas's "Neve": electric blue on blue-white |
+| Brasa | coral red `#FF4F3D` on true black (its destructive is pink) | derived |
+| Ouro | gold `#F5B82E` on blue graphite (its warning is orange) | derived |
+| Violeta | electric violet `#B388FF` on dark plum | derived |
+| Menta | mint `#3DDC97` on cold charcoal | derived |
+| Grafite | no colour: a near-white accent, grey charts | derived: a near-black accent |
+
+The canvas drew eight dark palettes and two light ones; every theme has both modes in the app
+(the user's decision, 2026-10-04), so six light modes were derived: the lightness steps the two
+drawn light palettes share (measured in OKLCH), each family's own hues, and the accent darkened
+until it reads on the ground (4.5:1 or more). Two of the canvas's own values missed 4.5:1 by a
+hair (Papel's warning on a card, Neve's muted text on the ground) and were stepped just enough.
+
+Every palette maps onto the same shadcn tokens (`frontend/src/themes.css`): ground → background,
+surface → card and popover, raised → secondary and muted, accent → primary and ring, accent
+tint → accent, text on the accent → the ground (dark) or the surface (light). Chart colours and
+the heart rate's are the accent's and the destructive's hue stepped into the lightness band the
+dataviz validator asks for, as Nocturne's are: a theme's bright accent (Lima's, Gelo's) is too
+light for a mark on a dark card. Grafite's charts are greys on purpose, so its two series differ
+in lightness alone.
+
