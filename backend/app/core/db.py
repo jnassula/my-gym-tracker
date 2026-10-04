@@ -62,7 +62,13 @@ class CreatedAt:
     created_at: Mapped[datetime] = mapped_column(default=utcnow, server_default=func.now())
 
 
-engine = create_async_engine(get_settings().database_url, pool_pre_ping=True)
+engine = create_async_engine(
+    get_settings().database_url,
+    pool_pre_ping=True,
+    # A failed statement is logged with its traceback: on the live site, without the values it
+    # carried (emails, push endpoints, weights).
+    hide_parameters=get_settings().environment == "production",
+)
 SessionLocal = async_sessionmaker(engine, expire_on_commit=False)
 
 

@@ -4,6 +4,7 @@ from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.pool import NullPool
 
+from app.core import healthcheck
 from app.core.config import get_settings
 from app.core.db import get_session
 from app.main import app
@@ -52,3 +53,15 @@ async def test_health_returns_503_when_storage_is_unreachable(
     assert response.status_code == 503
     assert response.json()["storage"] == "unavailable"
     assert response.json()["database"] == "ok"
+
+
+async def test_health_reuses_its_last_answer_for_a_few_seconds(
+    client: AsyncClient, storage: MemoryStorage
+) -> None:
+    assert (await client.get("/health")).status_code == 200
+    storage.available = False
+
+    assert (await client.get("/health")).status_code == 200  # not checked again yet
+
+    healthcheck.latest.checked_at -= healthcheck.CACHE_SECONDS
+    assert (await client.get("/health")).status_code == 503

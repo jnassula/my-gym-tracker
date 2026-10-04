@@ -14,9 +14,10 @@ from app.auth.router import router as auth_router
 from app.body.router import router as body_router
 from app.core import healthcheck
 from app.core.body_limit import BodyLimitMiddleware
-from app.core.config import get_settings
+from app.core.config import Settings, get_settings
 from app.core.db import SessionLocal, engine
 from app.core.errors import ErrorResponse, register_exception_handlers
+from app.core.no_store import NoStoreMiddleware
 from app.core.rate_limit import GlobalRateLimit, limiter, rate_limit_exceeded_handler
 from app.core.storage import ensure_bucket
 from app.exercises.router import router as exercises_router
@@ -79,24 +80,30 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
     await engine.dispose()
 
 
-def create_app() -> FastAPI:
-    settings = get_settings()
+def create_app(settings: Settings | None = None) -> FastAPI:
+    settings = settings or get_settings()
     logging.basicConfig(level=settings.log_level)
 
+    # The API's description is for whoever develops it: the live site doesn't hand it out.
+    docs = settings.environment != "production"
     app = FastAPI(
         title="myGymTracker API",
         version=settings.app_version,
         lifespan=lifespan,
         responses={"default": {"model": ErrorResponse}},
+        docs_url="/docs" if docs else None,
+        redoc_url="/redoc" if docs else None,
+        openapi_url="/openapi.json" if docs else None,
     )
     register_exception_handlers(app)
     app.state.limiter = limiter
     app.add_exception_handler(RateLimitExceeded, rate_limit_exceeded_handler)
 
     # The last one added runs first: a client over its limit is turned away before its body
-    # is counted.
+    # is counted, and every answer of the API, these refusals included, says not to keep it.
     app.add_middleware(BodyLimitMiddleware, default=DEFAULT_BODY_BYTES, limits=BODY_LIMITS)
     app.add_middleware(GlobalRateLimit, limit=GLOBAL_LIMIT, prefix=API_PREFIX, key=client_key)
+    app.add_middleware(NoStoreMiddleware, prefix=API_PREFIX)
     if settings.cors_origins:
         app.add_middleware(
             CORSMiddleware,

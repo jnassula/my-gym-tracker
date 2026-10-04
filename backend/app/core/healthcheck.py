@@ -2,6 +2,7 @@
 
 import asyncio
 import logging
+import time
 from typing import Annotated, Literal
 
 from fastapi import APIRouter, Depends, Response
@@ -17,6 +18,7 @@ from app.core.storage import Storage, get_storage
 logger = logging.getLogger(__name__)
 
 CHECK_TIMEOUT_SECONDS = 2.0
+CACHE_SECONDS = 5.0  # under the 10 s between Docker's own checks: each of those is a fresh one
 
 ComponentStatus = Literal["ok", "unavailable"]
 
@@ -58,6 +60,28 @@ async def check_health(session: AsyncSession, storage: Storage) -> HealthStatus:
     )
 
 
+class _Latest:
+    """The last answer, reused for ``CACHE_SECONDS``: the endpoint is public, and during an
+    outage every check would otherwise hold a connection and a thread until it times out."""
+
+    def __init__(self) -> None:
+        self.health: HealthStatus | None = None
+        self.checked_at = 0.0
+        self.lock = asyncio.Lock()
+
+    async def get(self, session: AsyncSession, storage: Storage) -> HealthStatus:
+        async with self.lock:  # one check at a time; whoever waited reads its answer
+            if self.health is None or time.monotonic() - self.checked_at >= CACHE_SECONDS:
+                self.health = await check_health(session, storage)
+                self.checked_at = time.monotonic()
+            return self.health
+
+    def forget(self) -> None:
+        self.health = None
+
+
+latest = _Latest()
+
 router = APIRouter(tags=["system"])
 
 
@@ -67,7 +91,7 @@ async def healthcheck(
     storage: Annotated[Storage, Depends(get_storage)],
     response: Response,
 ) -> HealthStatus:
-    health = await check_health(session, storage)
+    health = await latest.get(session, storage)
     if health.status != "ok":
         response.status_code = 503
     return health

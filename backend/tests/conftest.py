@@ -200,6 +200,14 @@ def _reset_rate_limits() -> None:
     limiter.reset()
 
 
+@pytest.fixture(autouse=True)
+def _forget_health() -> None:
+    """The healthcheck reuses its last answer for a few seconds: not from one test to the next."""
+    from app.core import healthcheck  # noqa: PLC0415  # imported after env is set
+
+    healthcheck.latest.forget()
+
+
 @pytest.fixture
 async def client(
     db_session: AsyncSession,
