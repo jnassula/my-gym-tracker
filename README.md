@@ -131,6 +131,22 @@ Uma sessão é um dia do plano treinado numa data (a data local do utilizador): 
 | `PATCH`/`DELETE /api/logs/sets/{id}` | corrigir ou apagar uma série (as seguintes são renumeradas) |
 | `POST /api/logs/sessions/{id}/finish` | termina a sessão e devolve o resumo |
 
+## Atividades (futevôlei, surf…)
+
+Em **Definições → Atividades** ficam as coisas que fazes além do ginásio. Cada uma tem um nome, os **dias fixos** em que acontece (ou nenhum: marca-se no próprio dia) e as **zonas do corpo** com que não deve partilhar o dia (superiores, inferiores, abdómen).
+
+- A app vê os exercícios de cada treino do plano e percebe que zonas trabalha (um treino é "de inferiores" quando pelo menos 40 % dos exercícios o são), por isso a regra continua a funcionar quando o plano muda. O ecrã mostra o que isso dá no plano atual ("No plano atual evita: Treino B").
+- **A sugestão do dia contorna as atividades**: no dia do surf não sugere o treino de superiores; na véspera do futevôlei adianta o de inferiores ("Amanhã tens Futevôlei: hoje ainda encaixa"); e se tudo o que falta não combina com a atividade de hoje, não sugere nada (nem manda lembrete). "Trocar" continua a deixar escolher qualquer treino, com o aviso "evitar hoje".
+- No Início, por baixo da semana, cada atividade é um botão para hoje; "Outros dias" marca os restantes dias da semana ou tira um dia fixo que não aconteceu. A faixa da semana e o calendário mostram um ponto nos dias com atividade.
+- Uma atividade não é um treino: não conta para a semana, a sequência, o volume nem a adesão.
+
+| Endpoint | |
+| --- | --- |
+| `GET /api/activities` | as atividades, e os dias do plano ativo com as zonas que cada um trabalha |
+| `POST /api/activities` | `{name, weekdays, avoid}` |
+| `PATCH`/`DELETE /api/activities/{id}` | alterar; apagar (os dias passados ficam no calendário) |
+| `PUT`/`DELETE /api/activities/{id}/days/{date}` | a atividade está (ou não está) nesse dia, até duas semanas de distância |
+
 ## Como fazer (animações dos exercícios)
 
 No ecrã de um exercício, **Como fazer** abre uma animação do movimento. As animações vêm do conjunto gratuito do [ExerciseDB](https://oss.exercisedb.dev) (AscendAPI): 1 500 exercícios catalogados, dos quais 1 324 têm GIF (180 px). **Os termos desse conjunto só permitem uso pessoal e não comercial, com crédito à AscendAPI** (a app mostra-o por baixo de cada animação); para uma app paga é preciso o plano pago deles ou outra fonte.
@@ -386,6 +402,7 @@ backend/
   app/
     core/           config, sessão de BD, formato de erros, healthcheck, email, rate limit
     auth/ users/ workouts/ exercises/ logs/ files/ progress/ notifications/ health/ body/ demos/
+    activities/
                     um domínio por pasta: router.py, schemas.py, models.py, service.py
     models.py       regista todos os modelos (Alembic e testes)
     main.py         app FastAPI; os routers dos domínios ficam em /api
@@ -394,7 +411,7 @@ backend/
 frontend/
   src/
     routes/         rotas (TanStack Router, file-based); _auth = só visitantes, _app = autenticado
-    features/       código por funcionalidade (auth, workouts, training, demos, progress, settings, notifications, health, body)
+    features/       código por funcionalidade (auth, workouts, training, activities, demos, progress, settings, notifications, health, body)
     sw/             service worker (cache da PWA e Web Push)
     components/ui/  componentes shadcn (gerados pela CLI; ajustes do design notados em CLAUDE.md)
     components/     componentes partilhados (shell da app, logótipo)
