@@ -7,6 +7,7 @@ from app.progress.metrics import (
     LoggedSet,
     Record,
     adherence,
+    adherence_weeks,
     duration_seconds,
     records,
     session_tops,
@@ -80,12 +81,42 @@ def test_records_beat_every_earlier_date() -> None:
     ]
 
 
-def test_adherence_and_duration() -> None:
-    planned = [date(2026, 9, 28), date(2026, 9, 30), date(2026, 10, 2)]
+def test_adherence_is_the_weeks_target_met_over_the_last_weeks() -> None:
+    """Three workouts a week. A week of five counts as three: it doesn't make up for another."""
+    w1, w2, w3, w4 = (date(2026, 9, 7) + timedelta(days=7 * n) for n in range(4))
+    workouts = {w1: 3, w2: 1, w3: 5}  # and none in the fourth
+
+    assert adherence(workouts, 3, [w4, w3, w2, w1]) == (3 + 1 + 3 + 0) / 12
+    assert adherence(workouts, 3, [w1]) == 1
+    assert adherence(workouts, 3, []) is None  # no week to judge yet
+    assert adherence(workouts, 0, [w1]) is None  # no plan to judge by
+
+
+def test_adherence_looks_at_the_last_four_whole_weeks() -> None:
+    wednesday = date(2026, 9, 30)  # its week starts on Monday 28
+    mondays = [date(2026, 9, 21), date(2026, 9, 14), date(2026, 9, 7), date(2026, 8, 31)]
+    long_ago = date(2026, 1, 1)
+
+    assert adherence_weeks(wednesday, long_ago, this_week_complete=False) == mondays
+    # A week already complete counts at once, and the oldest of the four makes room.
+    assert adherence_weeks(wednesday, long_ago, this_week_complete=True) == [
+        date(2026, 9, 28),
+        *mondays[:3],
+    ]
+    # The first plan came on Tuesday 1 September: that week wasn't whole, nor any before it.
+    assert adherence_weeks(wednesday, date(2026, 9, 1), this_week_complete=False) == mondays[:3]
+    assert adherence_weeks(wednesday, date(2026, 9, 7), this_week_complete=False) == mondays[:3]
+    # A plan of this week: nothing to judge until the week is done.
+    assert adherence_weeks(wednesday, date(2026, 9, 29), this_week_complete=False) == []
+    assert adherence_weeks(wednesday, date(2026, 9, 28), this_week_complete=True) == [
+        date(2026, 9, 28)
+    ]
+    assert adherence_weeks(wednesday, date(2026, 9, 29), this_week_complete=True) == []
+
+
+def test_duration() -> None:
     start = datetime(2026, 9, 28, 18, tzinfo=UTC)
 
-    assert adherence(planned, {date(2026, 9, 28), date(2026, 10, 2)}) == 2 / 3
-    assert adherence([], set()) is None
     assert duration_seconds(start, start + timedelta(minutes=58), None) == 58 * 60
     assert duration_seconds(start, None, start + timedelta(minutes=40)) == 40 * 60
     assert duration_seconds(start, None, None) == 0

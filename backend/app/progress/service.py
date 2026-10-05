@@ -32,10 +32,12 @@ from app.health.models import HealthSampleType
 from app.logs.errors import SessionNotFoundError
 from app.logs.models import ExerciseLog, WorkoutSession
 from app.logs.schemas import WeightPoint
-from app.logs.service import count_done, get_exercise, local_today
+from app.logs.service import WeekState, count_done, get_exercise, local_today, week_state
+from app.logs.week import Kind
 from app.progress.metrics import (
     LoggedSet,
     adherence,
+    adherence_weeks,
     duration_seconds,
     records,
     session_tops,
@@ -224,30 +226,46 @@ def _month_days(first: date) -> list[date]:
     return [first + timedelta(days=n) for n in range((following - first).days)]
 
 
+async def _adherence(session: AsyncSession, user: User, state: WeekState | None) -> float | None:
+    """The week's target against the last weeks' workouts, from the user's first plan on."""
+    if state is None:
+        return None
+    first_plan = await session.scalar(
+        select(func.min(WorkoutPlan.created_at)).where(WorkoutPlan.user_id == user.id)
+    )
+    if first_plan is None:
+        return None
+    weeks = adherence_weeks(
+        state.today,
+        first_plan.astimezone(ZoneInfo(user.timezone)).date(),
+        this_week_complete=state.done >= state.target,
+    )
+    if not weeks:
+        return None
+    dates = await session.scalars(
+        select(WorkoutSession.local_date).where(
+            WorkoutSession.user_id == user.id, WorkoutSession.local_date >= min(weeks)
+        )
+    )
+    return adherence(Counter(week_start(day) for day in dates), state.target, weeks)
+
+
 async def calendar(session: AsyncSession, user: User, month: date | None) -> ProgressCalendar:
     today = local_today(user)
     first = (month or today).replace(day=1)
     trained = await _trained_dates(session, user.id)
     plan = await _active_plan(session, user.id)
-    weekdays = {day.weekday for day in plan.days if day.weekday is not None} if plan else set()
-    # Days before the plan was imported weren't planned by it.
-    plan_start = plan.created_at.astimezone(ZoneInfo(user.timezone)).date() if plan else today
-
-    def planned(day: date) -> bool:
-        return day >= plan_start and day.weekday() in weekdays
+    state = await week_state(session, user, plan, today) if plan else None
+    # A workout is waiting today; no earlier date is "missed" (the plan's weekdays are where
+    # the trainer put each day, and the user trains the one that suits the week).
+    due_today = state is not None and state.suggestion.kind is Kind.SUGGEST
 
     def status(day: date) -> DayStatus:
         if day in trained:
             return "trained"
-        if day == today:
-            return "today" if planned(day) else "rest"
         if day > today:
             return "future"
-        return "missed" if planned(day) else "rest"
-
-    # Today only counts against the plan once it's over; trained today, it already counts.
-    window = [today - timedelta(days=n) for n in range(30)]
-    due = [day for day in window if planned(day) and (day < today or day in trained)]
+        return "today" if day == today and due_today else "rest"
 
     return ProgressCalendar(
         month=first,
@@ -255,7 +273,7 @@ async def calendar(session: AsyncSession, user: User, month: date | None) -> Pro
         days=[CalendarDay(date=day, status=status(day)) for day in _month_days(first)],
         week_streak=week_streak(trained, today),
         sessions_total=len(trained),
-        adherence_30d=adherence(due, trained),
+        adherence_30d=await _adherence(session, user, state),
         this_week=await _week_sessions(session, user, week_start(today)),
     )
 
@@ -361,26 +379,34 @@ async def week_comparison(session: AsyncSession, user: User) -> WeekComparison:
         this_week=totals(start, today),
         last_week=totals(last_start, last_start + timedelta(days=until)),
         days=days,
-        today=_today_comparison(plan, today, working),
+        today=_today_comparison(
+            plan, await week_state(session, user, plan, today) if plan else None, working
+        ),
     )
 
 
 def _today_comparison(
-    plan: WorkoutPlan | None, today: date, working: list[LoggedSet]
+    plan: WorkoutPlan | None, state: WeekState | None, working: list[LoggedSet]
 ) -> TodayComparison | None:
-    day = next((d for d in plan.days if d.weekday == today.weekday()), None) if plan else None
+    """Today's workout (the one started, else the one suggested), each exercise's heaviest set
+    today against its heaviest of last week, whatever day that workout was done on."""
+    if plan is None or state is None or state.suggestion.kind in (Kind.REST, Kind.COMPLETE):
+        return None
+    day = next((d for d in plan.days if d.id == state.suggestion.day_id), None)
     if day is None:
         return None
+    today, last_week = state.today, state.week_start - timedelta(days=7)
 
-    def heaviest(exercise: Exercise, on: date) -> list[LoggedSet]:
+    def lifted(exercise: Exercise, first: date, last: date) -> list[LoggedSet]:
         key = exercise_key(exercise.name, exercise.muscle_group)
-        return [s for s in working if s.local_date == on and s.key == key]
+        return [s for s in working if first <= s.local_date <= last and s.key == key]
 
     rows = []
     for exercise in day.exercises:
         if exercise.muscle_group is MuscleGroup.WARMUP:
             continue
-        this, last = heaviest(exercise, today), heaviest(exercise, today - timedelta(days=7))
+        this = lifted(exercise, today, today)
+        last = lifted(exercise, last_week, last_week + timedelta(days=6))
         rows.append(
             ExerciseComparison(
                 exercise_id=exercise.id,
@@ -403,12 +429,21 @@ async def session_detail(session: AsyncSession, user: User, session_id: uuid.UUI
     )
     if workout is None:
         raise SessionNotFoundError
-    day = await session.get(WorkoutDay, workout.day_id) if workout.day_id else None
+    day = (
+        await session.scalar(
+            select(WorkoutDay)
+            .where(WorkoutDay.id == workout.day_id)
+            .options(selectinload(WorkoutDay.exercises))
+        )
+        if workout.day_id
+        else None
+    )
     sets = [
         s
         for s in await _sets(session, user.id, since=workout.local_date)
         if s.session_id == workout.id
     ]
+    day_exercises = day.exercises if day else []
     samples = await health.samples_of(session, user.id, workout.id)
     heart_rate = samples[HealthSampleType.HEART_RATE]
 
@@ -429,6 +464,8 @@ async def session_detail(session: AsyncSession, user: User, session_id: uuid.UUI
         ),
         sets=len(working),
         volume=volume(working),
+        exercises_done=count_done(day_exercises, workout, Counter(s.exercise_id for s in sets)),
+        exercises_total=len(day_exercises),
         exercises=[
             SessionExercise(
                 exercise_id=exercise_id,

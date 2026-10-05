@@ -1,7 +1,7 @@
 """Progress arithmetic over a user's logged sets. Pure: no I/O, unit-tested on its own."""
 
 import uuid
-from collections.abc import Iterable, Sequence
+from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta
 from decimal import Decimal
@@ -121,12 +121,28 @@ def records(tops: dict[ExerciseKey, list[SessionTop]]) -> list[Record]:
     return found
 
 
-def adherence(planned: Iterable[date], trained: set[date]) -> float | None:
-    """Share of planned dates that were trained; None when nothing was planned."""
-    days = list(planned)
-    if not days:
+ADHERENCE_WEEKS = 4
+
+
+def adherence_weeks(today: date, since: date, *, this_week_complete: bool) -> list[date]:
+    """The weeks (their Mondays, newest first) adherence looks at: the last four that are over,
+    not counting any from before ``since`` nor the one ``since`` fell in the middle of, and this
+    week too once its workouts are done (a full week shouldn't wait until Monday to count)."""
+    this = week_start(today)
+    first = week_start(since) + timedelta(days=0 if since.weekday() == 0 else 7)
+    weeks = [this] if this_week_complete and this >= first else []
+    weeks += [this - timedelta(days=7 * n) for n in range(1, ADHERENCE_WEEKS + 1)]
+    return [week for week in weeks if week >= first][:ADHERENCE_WEEKS]
+
+
+def adherence(workouts: Mapping[date, int], target: int, weeks: Iterable[date]) -> float | None:
+    """How much of the week's target was met over these weeks, a week counting no more than
+    its target (a week of five doesn't make up for a week of one). ``workouts`` by the week's
+    Monday. None without a target or a week to judge."""
+    judged = list(weeks)
+    if target <= 0 or not judged:
         return None
-    return sum(1 for day in days if day in trained) / len(days)
+    return sum(min(workouts.get(week, 0), target) for week in judged) / (target * len(judged))
 
 
 def duration_seconds(

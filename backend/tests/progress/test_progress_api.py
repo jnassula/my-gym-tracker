@@ -131,14 +131,17 @@ async def test_calendar(gym: Gym, clock: Clock, db_session: AsyncSession) -> Non
     status = {day["date"]: day["status"] for day in calendar["days"]}
     assert len(status) == 30
     assert status["2026-09-01"] == "rest"  # Tuesday
-    assert status["2026-09-02"] == "missed"  # Wednesday, planned
+    # A Wednesday of the plan with no workout: a day off like any other, nothing "missed".
+    assert status["2026-09-02"] == "rest"
+    assert "missed" not in status.values()
     assert status["2026-09-28"] == "trained"
     assert status["2026-09-29"] == "rest"
-    assert status["2026-09-30"] == "today"
+    assert status["2026-09-30"] == "today"  # the week's second workout is waiting
     assert calendar["today"] == "2026-09-30"
     assert (calendar["week_streak"], calendar["sessions_total"]) == (1, 1)
-    # Mondays 7-28 and Wednesdays 2-23 were due (today isn't over): 1 of 8 trained.
-    assert calendar["adherence_30d"] == 1 / 8
+    # Two workouts a week since the plan came on 1 September: the weeks of 7, 14 and 21 are
+    # whole and had none (this one isn't done yet, so it doesn't count against anything).
+    assert calendar["adherence_30d"] == 0
     [monday] = calendar["this_week"]
     assert monday | {"session_id": None} == {
         "session_id": None,
@@ -153,6 +156,100 @@ async def test_calendar(gym: Gym, clock: Clock, db_session: AsyncSession) -> Non
     october = await gym.get("/api/progress/calendar?month=2026-10-15")
     assert october["month"] == "2026-10-01"
     assert {day["status"] for day in october["days"]} == {"future"}
+
+
+async def test_adherence_counts_workouts_whatever_their_weekday(
+    gym: Gym, clock: Clock, db_session: AsyncSession
+) -> None:
+    await db_session.execute(
+        update(WorkoutPlan).values(created_at=datetime(2026, 9, 1, 10, tzinfo=UTC))
+    )
+    clock.advance(days=-13)  # Tuesday 15 September
+    await train(gym, clock, [(EXTENSION, 45, 12)])  # Monday's workout, on a Tuesday
+    clock.advance(days=2)  # Thursday 17
+    await train(gym, clock, [(ROW, 40, 12)])  # Wednesday's, on a Thursday: the week is whole
+    clock.advance(days=6)  # Wednesday 23
+    await train(gym, clock, [(ROW, 40, 12)])  # one of two that week
+    clock.advance(days=5)  # Monday 28: the plan's day, nothing trained yet
+
+    calendar = await gym.get("/api/progress/calendar")
+
+    # Weeks of 7 (none), 14 (two of two) and 21 (one of two): 3 of 6.
+    assert calendar["adherence_30d"] == 3 / 6
+    status = {day["date"]: day["status"] for day in calendar["days"]}
+    assert (status["2026-09-14"], status["2026-09-15"]) == ("rest", "trained")
+    assert status["2026-09-28"] == "today"
+    await gym.client.put(f"/api/logs/days/{gym.day(1)}/done", headers=gym.headers)
+    await gym.client.put(f"/api/logs/days/{gym.day(0)}/done", headers=gym.headers)
+    # Both of this week's on its Monday: the week counts at once (7, 14, 21 and 28: 5 of 8).
+    assert (await gym.get("/api/progress/calendar"))["adherence_30d"] == 5 / 8
+
+
+async def test_a_rest_day_or_a_finished_week_is_not_waiting_for_a_workout(
+    gym: Gym, clock: Clock
+) -> None:
+    await gym.client.put(f"/api/logs/days/{gym.day(0)}/done", headers=gym.headers)
+    clock.advance(days=1)  # Tuesday: the other day is Wednesday's
+
+    def today(calendar: dict[str, Any]) -> str:
+        return str(next(d["status"] for d in calendar["days"] if d["date"] == calendar["today"]))
+
+    assert today(await gym.get("/api/progress/calendar")) == "rest"
+    clock.advance(days=1)
+    assert today(await gym.get("/api/progress/calendar")) == "today"
+    await gym.client.put(f"/api/logs/days/{gym.day(1)}/done", headers=gym.headers)
+    assert today(await gym.get("/api/progress/calendar")) == "trained"
+    clock.advance(days=1)  # Thursday: the week is done
+    assert today(await gym.get("/api/progress/calendar")) == "rest"
+
+
+async def test_without_a_plan_there_is_nothing_to_adhere_to(
+    client: AsyncClient, clock: Clock
+) -> None:
+    headers = await signup(client, "novo@example.pt")
+
+    calendar = (await client.get("/api/progress/calendar", headers=headers)).json()
+
+    assert calendar["adherence_30d"] is None
+    assert {day["status"] for day in calendar["days"]} <= {"rest", "future"}
+
+
+async def test_today_is_compared_whatever_weekday_the_workout_is_done_on(
+    gym: Gym, clock: Clock
+) -> None:
+    clock.advance(days=-5)  # Wednesday 23 September
+    await train(gym, clock, [(EXTENSION, 45, 12)])  # Monday's workout, that Wednesday
+    clock.advance(days=6)  # Tuesday 29: Monday's again, a day late
+    weeks = await gym.get("/api/progress/weeks")
+    assert weeks["today"]["day_id"] == gym.day(0)  # suggested, nothing lifted yet
+    await train(gym, clock, [(EXTENSION, 50, 10)])
+
+    weeks = await gym.get("/api/progress/weeks")
+
+    assert weeks["today"]["day_id"] == gym.day(0)
+    [extension, squat] = weeks["today"]["exercises"]
+    # Last week's was on another weekday: it is still what today is compared with.
+    assert (extension["last_week"], extension["this_week"]) == (45.0, 50.0)
+    assert (squat["last_week"], squat["this_week"]) == (None, None)
+
+
+async def test_no_comparison_when_nothing_is_due_today(gym: Gym, clock: Clock) -> None:
+    await gym.client.put(f"/api/logs/days/{gym.day(0)}/done", headers=gym.headers)
+    clock.advance(days=1)  # Tuesday, Wednesday's day still ahead
+
+    assert (await gym.get("/api/progress/weeks"))["today"] is None
+
+
+async def test_a_workout_only_marked_as_done_says_how_much_of_it(gym: Gym) -> None:
+    await gym.log(SQUAT, 80, 10)
+    session = (
+        await gym.client.put(f"/api/logs/days/{gym.day(0)}/done", headers=gym.headers)
+    ).json()
+
+    detail = await gym.get(f"/api/progress/sessions/{session['id']}")
+
+    assert (detail["exercises_done"], detail["exercises_total"]) == (4, 4)
+    assert (detail["sets"], len(detail["exercises"])) == (1, 1)  # only what was really logged
 
 
 async def test_week_against_week(gym: Gym, clock: Clock) -> None:

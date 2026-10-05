@@ -11,6 +11,8 @@ from app.logs.schemas import Kg, WeightPoint
 
 Range = Literal["4w", "3m", "1y"]
 RANGE_DAYS: dict[Range, int] = {"4w": 28, "3m": 91, "1y": 365}
+# "missed" is no longer sent: the plan's weekdays are a suggestion, so no date is missed (an
+# app installed before still knows the word). "today": nothing trained yet and a workout is due.
 DayStatus = Literal["trained", "missed", "rest", "today", "future"]
 
 
@@ -95,7 +97,9 @@ class ProgressCalendar(BaseModel):
     days: list[CalendarDay]
     week_streak: int
     sessions_total: int
-    # Planned days trained in the last 30 days (0 to 1); null without planned days.
+    # How much of the week's workouts was done over the last four weeks (0 to 1); null without
+    # an active plan or a whole week to judge. The name is from when it counted planned
+    # weekdays over 30 days.
     adherence_30d: float | None
     this_week: list[WeekSession]
 
@@ -135,7 +139,7 @@ class WeekComparison(BaseModel):
     this_week: Totals
     last_week: Totals
     days: list[DayVolume]  # both whole weeks, for the chart
-    today: TodayComparison | None  # when the active plan trains today
+    today: TodayComparison | None  # today's workout: the one started, or the one suggested
 
 
 class HeartRatePoint(BaseModel):
@@ -173,5 +177,9 @@ class SessionDetail(BaseModel):
     duration_seconds: int
     sets: int  # working sets
     volume: Kg  # working sets, weight times reps
+    # Of the day's exercises, how many were done (by their sets, or ticked: a workout marked
+    # as done has no sets to show).
+    exercises_done: int = 0
+    exercises_total: int = 0
     exercises: list[SessionExercise]  # in the order they were first logged
     health: SessionHealth | None
