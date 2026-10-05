@@ -20,3 +20,8 @@ export function formatTime(iso: string, language: string, timeZone?: string): st
     new Date(iso),
   )
 }
+
+/** ["Surf", "Futevôlei"] → "Surf e Futevôlei" (pt), "Surf and Futevôlei" (en). */
+export function formatList(items: string[], language: string): string {
+  return new Intl.ListFormat(intlLocale(language), { style: 'long', type: 'conjunction' }).format(items)
+}

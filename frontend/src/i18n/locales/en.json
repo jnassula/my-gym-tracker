@@ -36,12 +36,16 @@
     "reason": {
       "plan": "Today's workout in the plan.",
       "catch_up": "Still to do this week.",
-      "next": "Next in the plan's order."
+      "next": "Next in the plan's order.",
+      "before_activity": "{{activities}} tomorrow: today it still fits.",
+      "instead": "{{activities}} today: this one fits better."
     },
     "rest": {
       "title": "No workout in the plan today",
       "next": "Next: {{label}}, {{weekday}}.",
-      "nothing": "Rest, or get a workout in early."
+      "nothing": "Rest, or get a workout in early.",
+      "clashTitle": "{{activities}} today",
+      "clash": "The workout left, {{label}}, doesn't go with it. Another day."
     },
     "complete": {
       "title": "Week complete",
@@ -62,6 +66,7 @@
       "today": "Today · {{done}}/{{total}} done",
       "doneOn": "{{count}} ex. · done {{when}}",
       "pending": "{{count}} ex. · to do",
+      "avoid": "avoid today · {{activities}}",
       "close": "Close"
     },
     "lastRecord": "Latest record",
@@ -186,6 +191,8 @@
     },
     "autoRest": "Auto rest timer",
     "autoRestHint": "Logging a set starts the rest",
+    "activities": "Activities",
+    "activitiesHint": "Footvolley, surfing… to suggest the right workout",
     "timezone": "Time zone",
     "data": "Data",
     "pdfs": "Imported PDFs",
@@ -322,7 +329,11 @@
     "admin_account_protected": "Administrators' accounts can't be deactivated or deleted here.",
     "measurement_not_found": "That weighing no longer exists.",
     "measurement_date_invalid": "A weighing's date can't be after today.",
-    "demo_not_found": "This animation isn't available."
+    "demo_not_found": "This animation isn't available.",
+    "activity_not_found": "Activity not found.",
+    "activity_name_taken": "You already have an activity with that name.",
+    "activity_limit": "No room for more activities (20 at most).",
+    "activity_date_invalid": "A day can be marked up to two weeks away."
   },
   "weekdays": {
     "short": {
@@ -749,6 +760,47 @@
     "credit": "Animations: ExerciseDB, by AscendAPI",
     "close": "Close"
   },
+  "activities": {
+    "title": "Activities",
+    "intro": "What you do besides the gym. The app doesn't suggest workouts that don't go with them, and brings those forward to the day before.",
+    "empty": "No activities yet. Add footvolley, surfing, running…",
+    "add": "New activity",
+    "edit": "Edit activity",
+    "name": "Name",
+    "namePlaceholder": "E.g. Footvolley",
+    "weekdays": "Fixed days",
+    "weekdaysHint": "Without fixed days, you mark the activity on the day itself, on the home screen.",
+    "avoid": "Don't combine with workouts for",
+    "avoidHint": "On the activity's day the app doesn't suggest workouts for these areas.",
+    "regions": {
+      "upper": "Upper body",
+      "lower": "Lower body",
+      "core": "Abs"
+    },
+    "avoids": "In the current plan it avoids: {{days}}.",
+    "avoidsNone": "In the current plan it avoids no workout.",
+    "save": "Save",
+    "cancel": "Cancel",
+    "archive": "Delete activity",
+    "archiveTitle": "Delete {{name}}?",
+    "archiveBody": "It leaves your week from today. The days you did it stay on the calendar.",
+    "archiveConfirm": "Delete",
+    "noFixedDay": "No fixed day",
+    "avoidsRegions": "avoids {{regions}}",
+    "today": "Also today",
+    "toggle": "{{name}}, today",
+    "otherDays": "Other days",
+    "addFirst": "Activity",
+    "addFirstLabel": "Add an activity",
+    "mark": {
+      "title": "This week's activities",
+      "description": "Tap the days you're going (or went). A fixed day that didn't happen is taken off here too.",
+      "which": "Activity",
+      "days": "Days of {{name}} this week",
+      "manage": "Manage activities",
+      "close": "Close"
+    }
+  },
   "progress": {
     "streak": "week streak",
     "weekVolume": "volume · week",
@@ -805,6 +857,7 @@
       "noSessions": "No workouts yet this week.",
       "session": "{{duration}} · {{sets}} sets",
       "markedDone": "marked as done",
+      "activity": "activity",
       "today": "today · {{done}}/{{total}}"
     },
     "weeks": {

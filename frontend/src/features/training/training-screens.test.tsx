@@ -345,12 +345,14 @@ describe('DayScreen', () => {
           exercises_total: 3,
           sets: 9,
           trained: true,
+          avoid: [],
         },
       ],
       target: 1,
       workouts_done: 1,
       sessions: [{ session_id: 'session-0', day_id: 'day-1', date: '2026-09-28', complete: true }],
-      suggestion: { kind: 'complete', day_id: 'day-1', reason: null },
+      suggestion: { kind: 'complete', day_id: 'day-1', reason: null, because: [] },
+      activities: [],
     }
     renderWithRouter(<DayScreen plan={plan} dayId="day-1" week={week} />)
 

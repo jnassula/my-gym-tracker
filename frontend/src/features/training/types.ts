@@ -52,7 +52,12 @@ export type DayWeek = {
   sets: number
   /** Trained this week: on an earlier day (however far it got), or complete today. */
   trained: boolean
+  /** Today's activities (footvolley, surf) this workout shouldn't share the day with. */
+  avoid: string[]
 }
+
+/** An activity besides the gym on a date; `fixed`: there by its weekday, nothing said of the date. */
+export type WeekActivity = { activity_id: string; name: string; date: string; fixed: boolean }
 
 /** A workout of this week on its date; `day_id` may be another plan's day, or gone. */
 export type WeekWorkout = { session_id: string; day_id: string | null; date: string; complete: boolean }
@@ -66,6 +71,8 @@ export type Suggestion = {
   kind: 'continue' | 'done' | 'suggest' | 'rest' | 'complete'
   day_id: string | null
   reason: string | null
+  /** The activities behind a reason they gave: tomorrow's, or today's. */
+  because: string[]
 }
 
 export type PlanWeek = {
@@ -78,12 +85,16 @@ export type PlanWeek = {
   /** Every workout of the week, oldest first. */
   sessions: WeekWorkout[]
   suggestion: Suggestion
+  /** The user's other activities by date, Monday to the Monday after. */
+  activities: WeekActivity[]
 }
 
-/** The week as a server from before the flexible week sends it (after a rollback). */
+/** The week as an older server sends it (after a rollback): before the flexible week it had no
+ * suggestion, before the activities none of those. */
 export type OlderWeek = Pick<PlanWeek, 'today' | 'week_start'> &
-  Partial<Pick<PlanWeek, 'target' | 'workouts_done' | 'sessions' | 'suggestion'>> & {
-    days: Array<Omit<DayWeek, 'trained'> & { trained?: boolean }>
+  Partial<Pick<PlanWeek, 'target' | 'workouts_done' | 'sessions' | 'activities'>> & {
+    days: Array<Omit<DayWeek, 'trained' | 'avoid'> & { trained?: boolean; avoid?: string[] }>
+    suggestion?: Omit<Suggestion, 'because'> & { because?: string[] }
   }
 
 export type PersonalRecord = { exercise_id: string; name: string; weight: number }

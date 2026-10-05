@@ -47,6 +47,7 @@ const status = (id: string, date: string | null, trained: boolean): DayWeek => (
   exercises_total: 1,
   sets: 0,
   trained,
+  avoid: [],
 })
 
 function week(days: DayWeek[], suggestion: Suggestion): PlanWeek {
@@ -58,6 +59,7 @@ function week(days: DayWeek[], suggestion: Suggestion): PlanWeek {
     workouts_done: days.filter((item) => item.trained).length,
     sessions: [],
     suggestion,
+    activities: [],
   }
 }
 
@@ -93,7 +95,7 @@ describe('PlanWeekScreen', () => {
       fixed,
       week(
         [status('mon', '2026-09-30', false), status('wed', null, false), status('fri', '2026-09-28', true)],
-        { kind: 'continue', day_id: 'mon', reason: null },
+        { kind: 'continue', day_id: 'mon', reason: null, because: [] },
       ),
     )
     renderWithRouter(<PlanWeekScreen planId="plan-1" />)
@@ -116,7 +118,7 @@ describe('PlanWeekScreen', () => {
       week([status('mon', '2026-09-28', true), status('wed', null, false)], {
         kind: 'suggest',
         day_id: 'wed',
-        reason: 'plan',
+        reason: 'plan', because: []
       }),
     )
     renderWithRouter(<PlanWeekScreen planId="plan-1" />)
@@ -132,7 +134,7 @@ describe('PlanWeekScreen', () => {
       week([status('a', '2026-09-29', true), status('b', null, false)], {
         kind: 'suggest',
         day_id: 'b',
-        reason: 'next',
+        reason: 'next', because: []
       }),
     )
     renderWithRouter(<PlanWeekScreen planId="plan-1" />)

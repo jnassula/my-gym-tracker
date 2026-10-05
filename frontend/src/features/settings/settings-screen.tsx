@@ -97,6 +97,11 @@ export function SettingsScreen() {
             checked={user.auto_rest}
             onCheckedChange={(autoRest) => save({ auto_rest: autoRest })}
           />
+          <LinkRow
+            to="/settings/activities"
+            label={t('settings.activities')}
+            hint={t('settings.activitiesHint')}
+          />
           <LinkRow to="/settings/timezone" label={t('settings.timezone')} value={user.timezone} />
         </SettingsGroup>
 

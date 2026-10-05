@@ -103,6 +103,7 @@ describe('the week', () => {
     exercises_total: 4,
     sets: 0,
     trained,
+    avoid: [],
   })
   const week: PlanWeek = {
     today: '2026-09-30',
@@ -111,7 +112,8 @@ describe('the week', () => {
     target: 3,
     workouts_done: 1,
     sessions: [],
-    suggestion: { kind: 'continue', day_id: 'b', reason: null },
+    suggestion: { kind: 'continue', day_id: 'b', reason: null, because: [] },
+    activities: [],
   }
 
   it('says how each of the plan’s days stands, in the plan’s order', () => {
@@ -129,10 +131,10 @@ describe('the week', () => {
     const before = { ...week, days: [week.days[0], status('b', null, false), week.days[2]] }
 
     const suggested = (of: PlanWeek) => dayRows(days, of).filter((row) => row.suggested).map((row) => row.day.id)
-    expect(suggested({ ...before, suggestion: { kind: 'suggest', day_id: 'b', reason: 'plan' } })).toEqual(['b'])
-    expect(suggested({ ...before, suggestion: { kind: 'rest', day_id: 'c', reason: null } })).toEqual(['c'])
+    expect(suggested({ ...before, suggestion: { kind: 'suggest', day_id: 'b', reason: 'plan', because: [] } })).toEqual(['b'])
+    expect(suggested({ ...before, suggestion: { kind: 'rest', day_id: 'c', reason: null, because: [] } })).toEqual(['c'])
     // A week already complete names where another round would start: a day done, so not marked.
-    expect(suggested({ ...before, suggestion: { kind: 'complete', day_id: 'a', reason: null } })).toEqual([])
+    expect(suggested({ ...before, suggestion: { kind: 'complete', day_id: 'a', reason: null, because: [] } })).toEqual([])
   })
 
   it('a day trained earlier and started again today is today’s', () => {
@@ -144,7 +146,7 @@ describe('the week', () => {
   it('has a workout in hand while one is started or suggested', () => {
     const kinds = ['continue', 'suggest', 'done', 'rest', 'complete'] as const
 
-    expect(kinds.map((kind) => inHand({ ...week, suggestion: { kind, day_id: 'b', reason: null } }))).toEqual([
+    expect(kinds.map((kind) => inHand({ ...week, suggestion: { kind, day_id: 'b', reason: null, because: [] } }))).toEqual([
       true,
       true,
       false,
@@ -162,7 +164,7 @@ describe('the week', () => {
     expect(completed.days.map((item) => item.trained)).toEqual([true, false]) // as "done" used to mean
     expect([completed.workouts_done, completed.target]).toEqual([1, 2])
     expect(completed.sessions).toEqual([])
-    expect(completed.suggestion).toEqual({ kind: 'rest', day_id: null, reason: null }) // nothing suggested
+    expect(completed.suggestion).toEqual({ kind: 'rest', day_id: null, reason: null, because: [] }) // nothing suggested
     expect(completeWeek(week)).toEqual(week) // and leaves a whole one alone
   })
 })

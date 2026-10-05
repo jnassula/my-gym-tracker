@@ -49,14 +49,19 @@ export function isDayDone(
  * count as they did.
  */
 export function completeWeek(week: OlderWeek): PlanWeek {
-  const days = week.days.map((day) => ({ ...day, trained: day.trained ?? isDayDone(day) }))
+  const days = week.days.map((day) => ({
+    ...day,
+    trained: day.trained ?? isDayDone(day),
+    avoid: day.avoid ?? [],
+  }))
   return {
     ...week,
     days,
     target: week.target ?? days.length,
     workouts_done: week.workouts_done ?? days.filter((day) => day.trained).length,
     sessions: week.sessions ?? [],
-    suggestion: week.suggestion ?? { kind: 'rest', day_id: null, reason: null },
+    suggestion: { kind: 'rest', day_id: null, reason: null, because: [], ...week.suggestion },
+    activities: week.activities ?? [],
   }
 }
 
@@ -78,6 +83,8 @@ export type DayRow = {
   done: number
   /** The one the server would have the user do next. */
   suggested: boolean
+  /** Today's activities it shouldn't share the day with. */
+  avoid: string[]
 }
 
 /** The plan's days, each with how it stands this week, in the plan's order. */
@@ -94,6 +101,7 @@ export function dayRows(days: Day[], week: PlanWeek): DayRow[] {
       sessionId: item?.session_id ?? null,
       done: item?.exercises_done ?? 0,
       suggested: state === 'pending' && week.suggestion.day_id === day.id,
+      avoid: item?.avoid ?? [],
     }
   })
 }

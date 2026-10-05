@@ -36,12 +36,16 @@
     "reason": {
       "plan": "É o treino de hoje no plano.",
       "catch_up": "Ficou por fazer esta semana.",
-      "next": "É o seguinte na ordem do plano."
+      "next": "É o seguinte na ordem do plano.",
+      "before_activity": "Amanhã tens {{activities}}: hoje ainda encaixa.",
+      "instead": "Hoje tens {{activities}}: este encaixa melhor."
     },
     "rest": {
       "title": "Hoje não há treino no plano",
       "next": "A seguir: {{label}}, {{weekday}}.",
-      "nothing": "Podes descansar, ou adiantar um treino."
+      "nothing": "Podes descansar, ou adiantar um treino.",
+      "clashTitle": "Hoje tens {{activities}}",
+      "clash": "O treino que falta, {{label}}, não combina. Fica para outro dia."
     },
     "complete": {
       "title": "Semana completa",
@@ -62,6 +66,7 @@
       "today": "Hoje · {{done}}/{{total}} feito",
       "doneOn": "{{count}} ex. · feito {{when}}",
       "pending": "{{count}} ex. · por fazer",
+      "avoid": "evitar hoje · {{activities}}",
       "close": "Fechar"
     },
     "lastRecord": "Último recorde",
@@ -186,6 +191,8 @@
     },
     "autoRest": "Descanso automático",
     "autoRestHint": "Registar uma série inicia o descanso",
+    "activities": "Atividades",
+    "activitiesHint": "Futevôlei, surf… para sugerir o treino certo",
     "timezone": "Fuso horário",
     "data": "Dados",
     "pdfs": "PDFs importados",
@@ -322,7 +329,11 @@
     "admin_account_protected": "As contas de administração não podem ser inativadas nem apagadas aqui.",
     "measurement_not_found": "Essa pesagem já não existe.",
     "measurement_date_invalid": "A data da pesagem tem de ser até hoje.",
-    "demo_not_found": "Esta animação não está disponível."
+    "demo_not_found": "Esta animação não está disponível.",
+    "activity_not_found": "Atividade não encontrada.",
+    "activity_name_taken": "Já tens uma atividade com esse nome.",
+    "activity_limit": "Não cabem mais atividades (o máximo são 20).",
+    "activity_date_invalid": "Só dá para marcar até duas semanas de distância."
   },
   "weekdays": {
     "short": {
@@ -749,6 +760,47 @@
     "credit": "Animações: ExerciseDB, da AscendAPI",
     "close": "Fechar"
   },
+  "activities": {
+    "title": "Atividades",
+    "intro": "O que fazes além do ginásio. A app não sugere treinos que não combinam com elas, e adianta-os para a véspera.",
+    "empty": "Ainda sem atividades. Adiciona o futevôlei, o surf, a corrida…",
+    "add": "Nova atividade",
+    "edit": "Editar atividade",
+    "name": "Nome",
+    "namePlaceholder": "Ex.: Futevôlei",
+    "weekdays": "Dias fixos",
+    "weekdaysHint": "Sem dias fixos, marcas a atividade no próprio dia, no Início.",
+    "avoid": "Não combinar com treinos de",
+    "avoidHint": "No dia da atividade a app não sugere treinos destas zonas.",
+    "regions": {
+      "upper": "Superiores",
+      "lower": "Inferiores",
+      "core": "Abdómen"
+    },
+    "avoids": "No plano atual evita: {{days}}.",
+    "avoidsNone": "No plano atual não evita nenhum treino.",
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "archive": "Apagar atividade",
+    "archiveTitle": "Apagar {{name}}?",
+    "archiveBody": "Sai da tua semana a partir de hoje. Os dias em que a fizeste continuam no calendário.",
+    "archiveConfirm": "Apagar",
+    "noFixedDay": "Sem dia fixo",
+    "avoidsRegions": "evita {{regions}}",
+    "today": "Hoje também",
+    "toggle": "{{name}}, hoje",
+    "otherDays": "Outros dias",
+    "addFirst": "Atividade",
+    "addFirstLabel": "Adicionar uma atividade",
+    "mark": {
+      "title": "Atividades da semana",
+      "description": "Toca nos dias em que vais (ou foste). Um dia fixo que não aconteceu também se tira aqui.",
+      "which": "Atividade",
+      "days": "Dias de {{name}} esta semana",
+      "manage": "Gerir atividades",
+      "close": "Fechar"
+    }
+  },
   "progress": {
     "streak": "semanas seguidas",
     "weekVolume": "volume · semana",
@@ -805,6 +857,7 @@
       "noSessions": "Ainda sem treinos esta semana.",
       "session": "{{duration}} · {{sets}} séries",
       "markedDone": "marcado como feito",
+      "activity": "atividade",
       "today": "hoje · {{done}}/{{total}}"
     },
     "weeks": {

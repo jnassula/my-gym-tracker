@@ -27,6 +27,7 @@ import { Route as AppProgressCalendarRouteImport } from './routes/_app/progress/
 import { Route as AppProgressWeeksRouteImport } from './routes/_app/progress/weeks'
 import { Route as AppSettingsIndexRouteImport } from './routes/_app/settings/index'
 import { Route as AppSettingsAccountRouteImport } from './routes/_app/settings/account'
+import { Route as AppSettingsActivitiesRouteImport } from './routes/_app/settings/activities'
 import { Route as AppSettingsHealthRouteImport } from './routes/_app/settings/health'
 import { Route as AppSettingsHealthConnectRouteImport } from './routes/_app/settings/health-connect'
 import { Route as AppSettingsNotificationsRouteImport } from './routes/_app/settings/notifications'
@@ -131,6 +132,11 @@ const AppSettingsIndexRoute = AppSettingsIndexRouteImport.update({
 const AppSettingsAccountRoute = AppSettingsAccountRouteImport.update({
   id: '/settings/account',
   path: '/settings/account',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppSettingsActivitiesRoute = AppSettingsActivitiesRouteImport.update({
+  id: '/settings/activities',
+  path: '/settings/activities',
   getParentRoute: () => AppRoute,
 } as any)
 const AppSettingsHealthRoute = AppSettingsHealthRouteImport.update({
@@ -244,6 +250,7 @@ export interface FileRoutesByFullPath {
   '/progress/calendar': typeof AppProgressCalendarRoute
   '/progress/weeks': typeof AppProgressWeeksRoute
   '/settings/account': typeof AppSettingsAccountRoute
+  '/settings/activities': typeof AppSettingsActivitiesRoute
   '/settings/health': typeof AppSettingsHealthRoute
   '/settings/health-connect': typeof AppSettingsHealthConnectRoute
   '/settings/notifications': typeof AppSettingsNotificationsRoute
@@ -279,6 +286,7 @@ export interface FileRoutesByTo {
   '/progress/calendar': typeof AppProgressCalendarRoute
   '/progress/weeks': typeof AppProgressWeeksRoute
   '/settings/account': typeof AppSettingsAccountRoute
+  '/settings/activities': typeof AppSettingsActivitiesRoute
   '/settings/health': typeof AppSettingsHealthRoute
   '/settings/health-connect': typeof AppSettingsHealthConnectRoute
   '/settings/notifications': typeof AppSettingsNotificationsRoute
@@ -318,6 +326,7 @@ export interface FileRoutesById {
   '/_app/progress/calendar': typeof AppProgressCalendarRoute
   '/_app/progress/weeks': typeof AppProgressWeeksRoute
   '/_app/settings/account': typeof AppSettingsAccountRoute
+  '/_app/settings/activities': typeof AppSettingsActivitiesRoute
   '/_app/settings/health': typeof AppSettingsHealthRoute
   '/_app/settings/health-connect': typeof AppSettingsHealthConnectRoute
   '/_app/settings/notifications': typeof AppSettingsNotificationsRoute
@@ -355,6 +364,7 @@ export interface FileRouteTypes {
     | '/progress/calendar'
     | '/progress/weeks'
     | '/settings/account'
+    | '/settings/activities'
     | '/settings/health'
     | '/settings/health-connect'
     | '/settings/notifications'
@@ -390,6 +400,7 @@ export interface FileRouteTypes {
     | '/progress/calendar'
     | '/progress/weeks'
     | '/settings/account'
+    | '/settings/activities'
     | '/settings/health'
     | '/settings/health-connect'
     | '/settings/notifications'
@@ -428,6 +439,7 @@ export interface FileRouteTypes {
     | '/_app/progress/calendar'
     | '/_app/progress/weeks'
     | '/_app/settings/account'
+    | '/_app/settings/activities'
     | '/_app/settings/health'
     | '/_app/settings/health-connect'
     | '/_app/settings/notifications'
@@ -587,6 +599,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppSettingsAccountRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/settings/activities': {
+      id: '/_app/settings/activities'
+      path: '/settings/activities'
+      fullPath: '/settings/activities'
+      preLoaderRoute: typeof AppSettingsActivitiesRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/settings/health': {
       id: '/_app/settings/health'
       path: '/settings/health'
@@ -734,6 +753,7 @@ interface AppRouteChildren {
   AppProgressCalendarRoute: typeof AppProgressCalendarRoute
   AppProgressWeeksRoute: typeof AppProgressWeeksRoute
   AppSettingsAccountRoute: typeof AppSettingsAccountRoute
+  AppSettingsActivitiesRoute: typeof AppSettingsActivitiesRoute
   AppSettingsHealthRoute: typeof AppSettingsHealthRoute
   AppSettingsHealthConnectRoute: typeof AppSettingsHealthConnectRoute
   AppSettingsNotificationsRoute: typeof AppSettingsNotificationsRoute
@@ -762,6 +782,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppProgressCalendarRoute: AppProgressCalendarRoute,
   AppProgressWeeksRoute: AppProgressWeeksRoute,
   AppSettingsAccountRoute: AppSettingsAccountRoute,
+  AppSettingsActivitiesRoute: AppSettingsActivitiesRoute,
   AppSettingsHealthRoute: AppSettingsHealthRoute,
   AppSettingsHealthConnectRoute: AppSettingsHealthConnectRoute,
   AppSettingsNotificationsRoute: AppSettingsNotificationsRoute,
