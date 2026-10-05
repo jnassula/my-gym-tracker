@@ -113,9 +113,9 @@ docker compose exec -e LLM_LIVE_TESTS=1 backend pytest -m llm
 
 ## Treinar e registar cargas
 
-- **Hoje** abre logo o dia de hoje do plano ativo (pelo fuso horário do utilizador). Num dia sem treino mostra o próximo; sem plano, convida a importar um PDF.
-- **Treinos → plano** mostra a semana: cada dia com a data, o foco e o que já foi feito.
-- **Dia**: exercícios por grupo muscular, séries feitas/planeadas e a carga da última vez. Os aquecimentos (e qualquer exercício) podem ser marcados como feitos sem registar séries. "Terminar treino" fecha a sessão e mostra o resumo: séries, volume, duração e recordes pessoais.
+- **Início** sugere o treino de hoje e diz porquê: o que o plano tem para este dia da semana, um que ficou por fazer, ou o seguinte de um plano rotativo (A/B/C). Os dias da semana do plano são uma sugestão, não uma obrigação: **Trocar** mostra os outros treinos do plano com o estado de cada um esta semana, e qualquer treino pode ser feito em qualquer dia. **Já fiz** marca o treino inteiro como feito com um toque. A semana conta treinos feitos ("2 de 3"); nenhum dia aparece como falhado.
+- **Treinos → plano** lista os treinos do plano pela ordem do plano, cada um com o estado desta semana (por fazer, em curso hoje, feito e em que dia).
+- **Dia**: exercícios por grupo muscular, séries feitas/planeadas e a carga da última vez. Os aquecimentos (e qualquer exercício) podem ser marcados como feitos sem registar séries. "Terminar treino" fecha a sessão e mostra o resumo: séries, volume, duração e recordes pessoais. "Marcar treino como feito" dá o treino inteiro por feito sem registar séries (um treino de abdominais e alongamentos, por exemplo), com "Anular" para voltar atrás.
 - **Exercício**: a carga começa na da última vez e as reps no que o plano prescreve para a série seguinte. Os botões +5 … +25 (ou −, com "− diminuir") ajustam a carga, e "Registar série" abre uma folha para afinar (±2,5 e ±1) e confirmar. Confirmar arranca o descanso do plano (90 s se o plano não tiver) com ±15 s, pausa e saltar, e o telemóvel vibra no fim. Tocar numa série registada permite corrigi-la ou apagá-la.
 
 Uma sessão é um dia do plano treinado numa data (a data local do utilizador): começa com a primeira série registada, "Terminar treino" fecha-a e uma série registada depois reabre-a. As cargas são guardadas sempre em kg; quem usa lb vê e escreve libras. O histórico de um exercício continua no plano seguinte quando o nome e o grupo muscular coincidem.
@@ -123,7 +123,8 @@ Uma sessão é um dia do plano treinado numa data (a data local do utilizador): 
 | Endpoint | |
 | --- | --- |
 | `GET /api/logs/days/{day_id}` | sessão de hoje desse dia e a última vez de cada exercício |
-| `GET /api/logs/plans/{plan_id}/week` | a semana atual (segunda a domingo) do plano |
+| `GET /api/logs/plans/{plan_id}/week` | a semana atual (segunda a domingo): cada treino do plano, os treinos feitos por data, o objetivo e a sugestão para hoje |
+| `PUT`/`DELETE /api/logs/days/{day_id}/done` | marcar o treino inteiro como feito hoje, ou anular |
 | `POST /api/logs/exercises/{id}/sets` | `{weight, reps}` (kg); a primeira do dia cria a sessão |
 | `PUT`/`DELETE /api/logs/exercises/{id}/done` | marcar/desmarcar como feito sem séries |
 | `GET /api/logs/exercises/{id}/history` | últimas 4 sessões e a carga máxima |
@@ -147,7 +148,7 @@ No ecrã de um exercício, **Como fazer** abre uma animação do movimento. As a
 
 - **Visão geral:** semanas seguidas (toca para o calendário), volume da semana (toca para a comparação semanal), PRs deste mês, séries por grupo muscular esta semana e cada exercício com a evolução das últimas 8 sessões.
 - **Exercício:** 4 semanas, 3 meses ou 1 ano; gráfico da carga máxima por sessão (por semana no ano), PR, volume, tendência e as últimas sessões. Abre também a partir do cartão "Progressão" no ecrã do exercício.
-- **Consistência:** o mês com dias treinados, falhados e de descanso face ao plano ativo, o plano cumprido nos últimos 30 dias e os treinos desta semana.
+- **Consistência:** o mês com os dias treinados (nenhum dia aparece como falhado: os dias da semana do plano são uma sugestão), o objetivo semanal cumprido nas últimas quatro semanas (treinos feitos face aos que o plano pede por semana) e os treinos desta semana.
 - **Treino:** toca num treino desta semana (na Consistência) para ver a duração, as séries e a carga máxima de cada exercício e, com um dispositivo ligado, a FC média, as calorias, o gráfico da frequência cardíaca e o pico de cada exercício.
 - **Comparação semanal:** esta semana contra a passada até ao mesmo dia da semana, o volume por dia e os exercícios de hoje contra há uma semana.
 - **Peso corporal:** ver abaixo.
@@ -213,7 +214,7 @@ Cada dispositivo ativa-as em **Definições → Notificações** (o browser pede
 
 | Notificação | Quando |
 | --- | --- |
-| Lembrete de treino | nos dias do plano ativo, à hora escolhida (17:30 por omissão, no fuso do utilizador), se ainda não treinou; não sai com mais de 3 h de atraso |
+| Lembrete de treino | quando há treino por fazer (o do dia no plano, um que ficou para trás nesta semana, ou o seguinte de um plano rotativo), à hora escolhida (17:30 por omissão, no fuso do utilizador), se ainda não treinou; diz qual é e quantos vão feitos na semana; não sai num dia sem treino previsto, nem com a semana completa, nem com mais de 3 h de atraso |
 | Resumo semanal | domingo às 20:00: treinos e toneladas da semana (desligado por omissão) |
 | Plano a expirar | uma vez, 14 dias antes da data "trocar até" |
 | Fim do descanso | só com a app em segundo plano: ao sair a meio de um descanso a app pede-o ao servidor, e ao voltar cancela-o. Com a app aberta, vibra e toca um sinal |
