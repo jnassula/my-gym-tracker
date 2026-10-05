@@ -17,32 +17,42 @@ import type { Exercise, Plan } from '@/features/workouts/types'
 import { useRequiredSession } from '@/lib/auth'
 
 import { dayLogQuery, useFinishSession, useToggleDone } from './api'
+import { useDayDate } from './day-date'
 import { dayProgress, isDone, isTicked, plannedSets, setsOf, topWeight } from './plan'
 import { RestPill, RestSheet } from './rest-timer-ui'
 import { SummaryDialog } from './summary-dialog'
-import type { PastSession, SessionSummary, TrainingSession } from './types'
+import type { PastSession, PlanWeek, SessionSummary, TrainingSession } from './types'
+import { useMarkDayDone } from './use-mark-day-done'
 import { formatWeight } from './weight'
 
 type DayScreenProps = {
   plan: Plan
   dayId: string
-  isToday: boolean
+  /** The plan's week, once loaded: says whether this workout was already done on another day. */
+  week?: PlanWeek
   /** Opened from Início: its exercises keep the way back there, and finishing returns there. */
   fromHome?: boolean
   backLink?: ReactNode
 }
 
-/** A plan day: its exercises by muscle group, what's done today, and "Terminar treino". */
-export function DayScreen({ plan, dayId, isToday, fromHome = false, backLink }: DayScreenProps) {
+/**
+ * A plan day, on whatever date it is opened: its exercises by muscle group, what's done today,
+ * "Terminar treino", and "Marcar treino como feito" for a workout nobody wants to log set by set.
+ */
+export function DayScreen({ plan, dayId, week, fromHome = false, backLink }: DayScreenProps) {
   const { t } = useTranslation()
   const labels = useWorkoutLabels()
   const navigate = useNavigate()
+  const dayDate = useDayDate()
   const { user } = useRequiredSession()
   const log = useQuery(dayLogQuery(dayId))
   const toggle = useToggleDone(dayId)
   const finish = useFinishSession(dayId)
+  const mark = useMarkDayDone(dayId)
   const [summary, setSummary] = useState<SessionSummary | null>(null)
   const day = plan.days.find((item) => item.id === dayId)
+  const leave = () =>
+    void navigate(fromHome ? { to: '/' } : { to: '/workouts/$planId', params: { planId: plan.id } })
 
   if (!day) {
     return (
@@ -52,11 +62,19 @@ export function DayScreen({ plan, dayId, isToday, fromHome = false, backLink }: 
     )
   }
 
-  const weekday = labels.weekdayLong(day.weekday)
-  const title = day.label || weekday
-  const kicker = isToday ? t('training.todayKicker', { weekday }) : weekday
+  const weekday = day.weekday === null ? null : labels.weekdayLong(day.weekday)
+  const title = day.label || labels.weekdayLong(day.weekday)
   const session = log.data?.session ?? null
+  // "Hoje" once it is today's workout, whatever weekday the plan has it on.
+  const kicker = !session
+    ? (weekday ?? undefined)
+    : weekday
+      ? t('training.todayKicker', { weekday })
+      : t('training.today')
   const { done, total } = dayProgress(day, session)
+  const complete = session?.ended_at != null && done === total
+  // Done on another day this week: the list below is empty because it shows today's.
+  const earlier = week?.days.find((item) => item.day_id === dayId && item.trained && item.date !== week.today)
 
   return (
     <Page kicker={kicker} title={title} backLink={backLink} action={<RestPill />}>
@@ -66,6 +84,18 @@ export function DayScreen({ plan, dayId, isToday, fromHome = false, backLink }: 
         <FormAlert messageKey={errorKey(log.error)} />
       ) : (
         <div className="grid gap-5">
+          {!session && earlier?.date && earlier.session_id && (
+            <p className="rounded-xl bg-card px-3 py-2.5 text-[13px] text-muted-foreground">
+              {t('training.dayDone.earlier', { when: dayDate(earlier.date) })}{' '}
+              <Link
+                to="/progress/sessions/$sessionId"
+                params={{ sessionId: earlier.session_id }}
+                className="font-medium text-primary underline-offset-4 hover:underline"
+              >
+                {t('training.dayDone.see')}
+              </Link>
+            </p>
+          )}
           <div className="flex items-center gap-3">
             <Progress
               value={total ? (done / total) * 100 : 0}
@@ -99,17 +129,30 @@ export function DayScreen({ plan, dayId, isToday, fromHome = false, backLink }: 
               </ul>
             </section>
           ))}
-          {(toggle.error ?? finish.error) && (
-            <FormAlert messageKey={errorKey(toggle.error ?? finish.error)} />
+          {(toggle.error ?? finish.error ?? mark.error) && (
+            <FormAlert messageKey={errorKey(toggle.error ?? finish.error ?? mark.error)} />
           )}
-          <Button
-            variant="outline-primary"
-            size="hero"
-            disabled={!session || finish.isPending}
-            onClick={() => session && finish.mutate(session.id, { onSuccess: setSummary })}
-          >
-            {finish.isPending ? t('training.finishing') : t('training.finish')}
-          </Button>
+          <div className="grid gap-2">
+            <Button
+              variant="outline-primary"
+              size="hero"
+              disabled={!session || finish.isPending}
+              onClick={() => session && finish.mutate(session.id, { onSuccess: setSummary })}
+            >
+              {finish.isPending ? t('training.finishing') : t('training.finish')}
+            </Button>
+            {/* No sets, so nothing to sum up: a toast says it (and takes it back), and on we go. */}
+            {!complete && (
+              <Button
+                variant="outline"
+                size="touch"
+                disabled={mark.isPending}
+                onClick={() => mark.mutate(undefined, { onSuccess: leave })}
+              >
+                {t('training.dayDone.mark')}
+              </Button>
+            )}
+          </div>
         </div>
       )}
       <RestSheet next={null} />
@@ -119,7 +162,7 @@ export function DayScreen({ plan, dayId, isToday, fromHome = false, backLink }: 
         unit={user.unit}
         onClose={() => {
           setSummary(null)
-          void navigate(fromHome ? { to: '/' } : { to: '/workouts/$planId', params: { planId: plan.id } })
+          leave()
         }}
       />
     </Page>

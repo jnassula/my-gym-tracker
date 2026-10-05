@@ -2,7 +2,7 @@
 import { groupByMuscle } from '@/features/workouts/format'
 import type { Day, Exercise } from '@/features/workouts/types'
 
-import type { DayWeek, LoggedSet, PastSession, TrainingSession } from './types'
+import type { DayWeek, LoggedSet, OlderWeek, PastSession, PlanWeek, TrainingSession } from './types'
 
 /** Rest when the plan gives none (warm-ups), as in the design. */
 export const DEFAULT_REST_SECONDS = 90
@@ -35,10 +35,67 @@ export function dayProgress(day: Day, session: TrainingSession | null) {
   }
 }
 
-/** A day this week is done when finished with "Terminar treino" or every exercise is done. */
-export function isDayDone(status: DayWeek | undefined): boolean {
+/** A day's latest session is complete: finished with "Terminar treino", or every exercise done. */
+export function isDayDone(
+  status: Pick<DayWeek, 'finished' | 'exercises_done' | 'exercises_total'> | undefined,
+): boolean {
   if (!status) return false
   return status.finished || (status.exercises_total > 0 && status.exercises_done === status.exercises_total)
+}
+
+/**
+ * The week with everything this app reads. A server from before the flexible week (the app
+ * outlives a rollback for a while) sends no suggestion: nothing is suggested then, and the days
+ * count as they did.
+ */
+export function completeWeek(week: OlderWeek): PlanWeek {
+  const days = week.days.map((day) => ({ ...day, trained: day.trained ?? isDayDone(day) }))
+  return {
+    ...week,
+    days,
+    target: week.target ?? days.length,
+    workouts_done: week.workouts_done ?? days.filter((day) => day.trained).length,
+    sessions: week.sessions ?? [],
+    suggestion: week.suggestion ?? { kind: 'rest', day_id: null, reason: null },
+  }
+}
+
+/** A workout is in hand today: one started, or one the server suggests starting. */
+export function inHand(week: PlanWeek): boolean {
+  return week.suggestion.kind === 'suggest' || week.suggestion.kind === 'continue'
+}
+
+export type DayState = 'today' | 'trained' | 'pending'
+export type DayRow = {
+  day: Day
+  /** Has a session today; else trained earlier this week; else still to do. */
+  state: DayState
+  /** Counts for the week: trained on an earlier day, or complete today. */
+  trained: boolean
+  /** The date of its latest session this week. */
+  date: string | null
+  sessionId: string | null
+  done: number
+  /** The one the server would have the user do next. */
+  suggested: boolean
+}
+
+/** The plan's days, each with how it stands this week, in the plan's order. */
+export function dayRows(days: Day[], week: PlanWeek): DayRow[] {
+  const status = new Map(week.days.map((item) => [item.day_id, item]))
+  return days.map((day) => {
+    const item = status.get(day.id)
+    const state: DayState = item?.date === week.today ? 'today' : item?.trained ? 'trained' : 'pending'
+    return {
+      day,
+      state,
+      trained: item?.trained ?? false,
+      date: item?.date ?? null,
+      sessionId: item?.session_id ?? null,
+      done: item?.exercises_done ?? 0,
+      suggested: state === 'pending' && week.suggestion.day_id === day.id,
+    }
+  })
 }
 
 /** The day's exercises in the order the screen lists them (muscle groups by first appearance). */

@@ -4,7 +4,10 @@ import type { Day, Exercise } from '@/features/workouts/types'
 
 import {
   addDays,
+  completeWeek,
   dayProgress,
+  dayRows,
+  inHand,
   isDayDone,
   isDone,
   isTicked,
@@ -13,7 +16,7 @@ import {
   suggestion,
   weekdayOf,
 } from './plan'
-import type { LoggedSet, TrainingSession } from './types'
+import type { DayWeek, LoggedSet, PlanWeek, TrainingSession } from './types'
 
 function exercise(id: string, fields: Partial<Exercise> = {}): Exercise {
   return {
@@ -85,6 +88,82 @@ describe('done', () => {
     expect(isDayDone({ ...status, finished: true, exercises_done: 1, exercises_total: 4 })).toBe(true)
     expect(isDayDone({ ...status, finished: false, exercises_done: 4, exercises_total: 4 })).toBe(true)
     expect(isDayDone({ ...status, finished: false, exercises_done: 3, exercises_total: 4 })).toBe(false)
+  })
+})
+
+describe('the week', () => {
+  const day = (id: string, weekday: number | null): Day => ({ id, weekday, label: id, position: 0, exercises: [] }) as Day
+  const days = [day('a', 0), day('b', 2), day('c', 4)]
+  const status = (id: string, date: string | null, trained: boolean): DayWeek => ({
+    day_id: id,
+    session_id: date ? `s-${id}` : null,
+    date,
+    finished: trained,
+    exercises_done: date ? 2 : 0,
+    exercises_total: 4,
+    sets: 0,
+    trained,
+  })
+  const week: PlanWeek = {
+    today: '2026-09-30',
+    week_start: '2026-09-28',
+    days: [status('a', '2026-09-28', true), status('b', '2026-09-30', false), status('c', null, false)],
+    target: 3,
+    workouts_done: 1,
+    sessions: [],
+    suggestion: { kind: 'continue', day_id: 'b', reason: null },
+  }
+
+  it('says how each of the plan’s days stands, in the plan’s order', () => {
+    const rows = dayRows(days, week).map((row) => [row.day.id, row.state, row.trained, row.date, row.sessionId])
+
+    expect(rows).toEqual([
+      ['a', 'trained', true, '2026-09-28', 's-a'],
+      ['b', 'today', false, '2026-09-30', 's-b'], // in hand: it counts once it is complete
+      ['c', 'pending', false, null, null],
+    ])
+    expect(dayRows(days, week).some((row) => row.suggested)).toBe(false) // nothing left to suggest today
+  })
+
+  it('marks the day the server suggests, among those still to do', () => {
+    const before = { ...week, days: [week.days[0], status('b', null, false), week.days[2]] }
+
+    const suggested = (of: PlanWeek) => dayRows(days, of).filter((row) => row.suggested).map((row) => row.day.id)
+    expect(suggested({ ...before, suggestion: { kind: 'suggest', day_id: 'b', reason: 'plan' } })).toEqual(['b'])
+    expect(suggested({ ...before, suggestion: { kind: 'rest', day_id: 'c', reason: null } })).toEqual(['c'])
+    // A week already complete names where another round would start: a day done, so not marked.
+    expect(suggested({ ...before, suggestion: { kind: 'complete', day_id: 'a', reason: null } })).toEqual([])
+  })
+
+  it('a day trained earlier and started again today is today’s', () => {
+    const again = { ...week, days: [status('a', '2026-09-30', true), week.days[1], week.days[2]] }
+
+    expect(dayRows(days, again)[0]).toMatchObject({ state: 'today', trained: true })
+  })
+
+  it('has a workout in hand while one is started or suggested', () => {
+    const kinds = ['continue', 'suggest', 'done', 'rest', 'complete'] as const
+
+    expect(kinds.map((kind) => inHand({ ...week, suggestion: { kind, day_id: 'b', reason: null } }))).toEqual([
+      true,
+      true,
+      false,
+      false,
+      false,
+    ])
+  })
+
+  it('fills in what a server from before the flexible week doesn’t send', () => {
+    const { trained: _a, ...first } = status('a', '2026-09-28', true)
+    const { trained: _b, ...second } = status('b', '2026-09-30', false)
+
+    const completed = completeWeek({ today: '2026-09-30', week_start: '2026-09-28', days: [first, second] })
+
+    expect(completed.days.map((item) => item.trained)).toEqual([true, false]) // as "done" used to mean
+    expect([completed.workouts_done, completed.target]).toEqual([1, 2])
+    expect(completed.sessions).toEqual([])
+    expect(completed.suggestion).toEqual({ kind: 'rest', day_id: null, reason: null }) // nothing suggested
+    expect(completeWeek(week)).toEqual(week) // and leaves a whole one alone
   })
 })
 

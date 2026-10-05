@@ -6,7 +6,7 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { EmptyState } from '@/components/app-shell/empty-state'
-import { buttonVariants } from '@/components/ui/button'
+import { Button, buttonVariants } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
 import { Spinner } from '@/components/ui/spinner'
 import { errorKey } from '@/features/auth/errors'
@@ -16,8 +16,9 @@ import { OverviewStats } from '@/features/progress/overview-stats'
 import type { LastRecord, ProgressOverview } from '@/features/progress/types'
 import { UserAvatar } from '@/features/settings/user-avatar'
 import { dayLogQuery, weekQuery } from '@/features/training/api'
-import { addDays, dayProgress, isDayDone, weekdayOf } from '@/features/training/plan'
+import { addDays, dayProgress, weekdayOf } from '@/features/training/plan'
 import type { PlanWeek } from '@/features/training/types'
+import { useMarkDayDone } from '@/features/training/use-mark-day-done'
 import { formatWeight } from '@/features/training/weight'
 import { planQuery, plansQuery } from '@/features/workouts/api'
 import { useWorkoutLabels } from '@/features/workouts/labels'
@@ -25,7 +26,8 @@ import type { Day, Plan, Weekday } from '@/features/workouts/types'
 import { useRequiredSession } from '@/lib/auth'
 import { formatDayMonth, formatDayMonthLong } from '@/lib/format'
 
-import { firstName, greetingFor, localNow, nextToDo, todayPlan, weekStrip, type StripDay } from './home'
+import { firstName, greetingFor, localNow, nextToDo, weekStrip, type StripCell } from './home'
+import { SwitchSheet } from './switch-sheet'
 
 const HEADING = 'text-[0.6875rem] font-medium tracking-widest text-primary uppercase'
 const TODAY_CARD = 'grid gap-3 rounded-2xl bg-linear-to-b from-accent to-card p-4 ring-1 ring-primary/60'
@@ -106,48 +108,72 @@ function ActivePlan({ planId, overview }: { planId: string; overview: ProgressOv
   )
 }
 
+/** The reasons this app has words for; a newer server's others simply aren't said. */
+const REASONS = {
+  plan: 'home.reason.plan',
+  catch_up: 'home.reason.catch_up',
+  next: 'home.reason.next',
+} as const
+
+/**
+ * Today's workout as the server suggests it (`week.suggestion`): one to carry on, the one done,
+ * the one to start, or a quiet card when nothing is due or the week is complete. Whichever it
+ * is, "Trocar" opens the plan's other workouts: the user decides on the day.
+ */
 function TodayCard({ plan, week }: { plan: Plan; week: PlanWeek }) {
   const { t } = useTranslation()
   const labels = useWorkoutLabels()
-  const today = todayPlan(plan.days, weekdayOf(week.today))
-  if (today.kind === 'train') return <TrainCard plan={plan} day={today.day} week={week} />
+  const [choosing, setChoosing] = useState(false)
+  const { kind, day_id: dayId } = week.suggestion
+  const day = plan.days.find((item) => item.id === dayId) ?? null
+  const sheet = <SwitchSheet plan={plan} week={week} open={choosing} onOpenChange={setChoosing} />
 
-  const description =
-    today.kind === 'choose'
-      ? t('training.restToday.chooseDescription')
-      : today.next.label
-        ? t('training.restToday.next', { weekday: labels.weekdayLong(today.next.weekday), label: today.next.label })
-        : t('training.restToday.nextNoLabel', { weekday: labels.weekdayLong(today.next.weekday) })
-
+  if (day && (kind === 'continue' || kind === 'done' || kind === 'suggest')) {
+    return (
+      <>
+        <TrainCard plan={plan} day={day} week={week} onSwitch={() => setChoosing(true)} />
+        {sheet}
+      </>
+    )
+  }
+  const complete = kind === 'complete'
+  const description = complete
+    ? t('home.complete.description', { done: week.workouts_done, target: week.target })
+    : day
+      ? t('home.rest.next', {
+          label: day.label || labels.weekdayLong(day.weekday),
+          weekday: labels.weekdayLong(day.weekday),
+        })
+      : t('home.rest.nothing')
   return (
     <section aria-labelledby="home-today" className={TODAY_CARD}>
       <h2 id="home-today" className={HEADING}>
         {t('home.today')}
       </h2>
-      <p className="text-xl font-medium">
-        {today.kind === 'choose' ? t('training.restToday.chooseTitle') : t('training.restToday.title')}
-      </p>
+      <p className="text-xl font-medium">{complete ? t('home.complete.title') : t('home.rest.title')}</p>
       <p className="text-[13px] text-muted-foreground">{description}</p>
-      <Link
-        to="/workouts/$planId"
-        params={{ planId: plan.id }}
-        className={cn(buttonVariants({ variant: 'outline-primary', size: 'touch' }))}
-      >
-        {t('training.restToday.seeWeek')}
-      </Link>
+      <Button variant="outline-primary" size="touch" onClick={() => setChoosing(true)}>
+        {complete ? t('home.another') : t('home.choose')}
+      </Button>
+      {sheet}
     </section>
   )
 }
 
-function TrainCard({ plan, day, week }: { plan: Plan; day: Day; week: PlanWeek }) {
+type TrainCardProps = { plan: Plan; day: Day; week: PlanWeek; onSwitch: () => void }
+
+function TrainCard({ plan, day, week, onSwitch }: TrainCardProps) {
   const { t } = useTranslation()
   const labels = useWorkoutLabels()
   const log = useQuery(dayLogQuery(day.id))
+  const mark = useMarkDayDone(day.id)
   const session = log.data?.session ?? null
   const { done, total } = dayProgress(day, session)
-  const status = week.days.find((item) => item.day_id === day.id)
-  const finished = isDayDone(status) || (total > 0 && done === total)
+  const { kind, reason } = week.suggestion
+  const finished = kind === 'done' || (total > 0 && done === total)
   const next = nextToDo(day, session)
+  const title = day.label || labels.weekdayLong(day.weekday)
+  const why = kind === 'suggest' && reason !== null && reason in REASONS ? REASONS[reason as keyof typeof REASONS] : null
   // One hero per screen: starting or carrying on today's workout; once done, a quiet way back in.
   const action = finished ? 'review' : session ? 'continue' : 'start'
 
@@ -161,15 +187,17 @@ function TrainCard({ plan, day, week }: { plan: Plan; day: Day; week: PlanWeek }
           <span className="text-xs text-muted-foreground tabular-nums">{t('home.exercises', { done, total })}</span>
         )}
       </div>
-      <p className="text-xl font-medium">{day.label || labels.weekdayLong(day.weekday)}</p>
-      {log.isError && <FormAlert messageKey={errorKey(log.error)} />}
+      <p className="text-xl font-medium">{title}</p>
+      {(log.isError || mark.isError) && <FormAlert messageKey={errorKey(log.error ?? mark.error)} />}
       {log.data && (
         <>
           <Progress value={total ? (done / total) * 100 : 0} aria-label={t('training.progress', { done, total })} />
           <p className="truncate text-[13px] text-muted-foreground">
             {finished || !next
               ? t('home.allDone')
-              : t('home.next', { exercise: [next.name, labels.scheme(next)].filter(Boolean).join(' · ') })}
+              : !session && why
+                ? t(why)
+                : t('home.next', { exercise: [next.name, labels.scheme(next)].filter(Boolean).join(' · ') })}
           </p>
         </>
       )}
@@ -182,17 +210,32 @@ function TrainCard({ plan, day, week }: { plan: Plan; day: Day; week: PlanWeek }
         {t(`home.${action}`)}
         <CaretRightIcon aria-hidden className="size-4" />
       </Link>
+      {finished ? (
+        <Button variant="outline" size="touch" onClick={onSwitch}>
+          {t('home.another')}
+        </Button>
+      ) : (
+        <div className="grid grid-cols-2 gap-2">
+          <Button variant="outline" size="touch" aria-label={t('home.switchLabel')} onClick={onSwitch}>
+            {t('home.switch')}
+          </Button>
+          <Button
+            variant="outline"
+            size="touch"
+            aria-label={t('home.doneItLabel', { name: title })}
+            disabled={mark.isPending}
+            onClick={() => mark.mutate()}
+          >
+            {t('home.doneIt')}
+          </Button>
+        </div>
+      )}
     </section>
   )
 }
 
 function ThisWeek({ plan, week }: { plan: Plan; week: PlanWeek }) {
   const { t } = useTranslation()
-  const status = new Map(week.days.map((item) => [item.day_id, item]))
-  const done = plan.days.filter((day) => isDayDone(status.get(day.id))).length
-  // Plans that rotate days (A/B/C) have no weekdays to lay out.
-  const hasWeekdays = plan.days.some((day) => day.weekday !== null)
-
   return (
     <section aria-labelledby="home-week" className="grid gap-2">
       <div className="flex items-baseline justify-between gap-2">
@@ -200,65 +243,78 @@ function ThisWeek({ plan, week }: { plan: Plan; week: PlanWeek }) {
           {t('home.week')}
         </h2>
         <span className="text-xs text-muted-foreground">
-          {t('training.week.progress', { done, total: plan.days.length })}
+          {t('home.weekCount', { done: week.workouts_done, target: week.target })}
         </span>
       </div>
-      {hasWeekdays && (
-        <ol className="grid grid-cols-7 gap-1.5">
-          {weekStrip(plan.days, week).map((cell) => (
-            <li key={cell.weekday}>
-              <WeekCell cell={cell} planId={plan.id} />
-            </li>
-          ))}
-        </ol>
-      )}
+      <ol className="grid grid-cols-7 gap-1.5">
+        {weekStrip(plan.days, week).map((cell) => (
+          <li key={cell.date}>
+            <WeekCell cell={cell} planId={plan.id} />
+          </li>
+        ))}
+      </ol>
     </section>
   )
 }
 
-function WeekCell({ cell, planId }: { cell: StripDay; planId: string }) {
+function WeekCell({ cell, planId }: { cell: StripCell; planId: string }) {
   const { t } = useTranslation()
   const labels = useWorkoutLabels()
+  const trained = cell.state === 'trained'
   const label = [
     labels.weekdayLong(cell.weekday),
-    cell.state === 'planned' ? cell.day?.label : t(`home.dayState.${cell.state}`),
+    trained ? t('home.dayState.done') : cell.state === 'planned' ? t('home.dayState.planned') : t('home.dayState.idle'),
+    cell.day?.label,
     cell.isToday ? t('home.dayState.today') : null,
   ]
     .filter(Boolean)
     .join(', ')
   const className = cn(
     'flex h-11 items-center justify-center rounded-lg bg-card text-[13px] font-medium',
-    cell.state === 'done' && 'bg-primary text-primary-foreground',
-    cell.state === 'missed' && 'text-muted-foreground',
-    cell.state === 'rest' && 'bg-card/50 text-muted-foreground',
+    trained && 'bg-primary text-primary-foreground',
+    cell.state === 'idle' && 'bg-card/50 text-muted-foreground',
     cell.isToday && 'ring-1 ring-primary ring-inset',
   )
-  const mark =
-    cell.state === 'done' ? (
-      <CheckIcon aria-hidden weight="bold" className="size-4" />
-    ) : (
-      <span aria-hidden>{cell.state === 'rest' ? '·' : t(`weekdays.initial.${cell.weekday}`)}</span>
-    )
+  const mark = trained ? (
+    <CheckIcon aria-hidden weight="bold" className="size-4" />
+  ) : (
+    <span aria-hidden>{t(`weekdays.initial.${cell.weekday}`)}</span>
+  )
+  const current = cell.isToday ? 'date' : undefined
 
-  if (!cell.day) {
+  // Today's workout opens where it is carried on; an earlier day's opens what was done.
+  if (cell.isToday && cell.day) {
     return (
-      <span className={className}>
+      <Link
+        to="/workouts/$planId/days/$dayId"
+        params={{ planId, dayId: cell.day.id }}
+        search={{ from: 'home' }}
+        aria-label={label}
+        aria-current={current}
+        className={className}
+      >
         {mark}
-        <span className="sr-only">{label}</span>
-      </span>
+      </Link>
+    )
+  }
+  if (cell.sessionId) {
+    return (
+      <Link
+        to="/progress/sessions/$sessionId"
+        params={{ sessionId: cell.sessionId }}
+        aria-label={label}
+        aria-current={current}
+        className={className}
+      >
+        {mark}
+      </Link>
     )
   }
   return (
-    <Link
-      to="/workouts/$planId/days/$dayId"
-      params={{ planId, dayId: cell.day.id }}
-      search={{ from: 'home' }}
-      aria-label={label}
-      aria-current={cell.isToday ? 'date' : undefined}
-      className={className}
-    >
+    <span className={className} aria-current={current}>
       {mark}
-    </Link>
+      <span className="sr-only">{label}</span>
+    </span>
   )
 }
 

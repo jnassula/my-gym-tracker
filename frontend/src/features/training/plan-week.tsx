@@ -16,11 +16,10 @@ import { planQuery } from '@/features/workouts/api'
 import { ExportSheet } from '@/features/workouts/export-sheet'
 import { formatDate } from '@/features/workouts/format'
 import { useWorkoutLabels } from '@/features/workouts/labels'
-import { WEEKDAYS, type Day, type Weekday } from '@/features/workouts/types'
 
 import { weekQuery } from './api'
-import { addDays, isDayDone, weekdayOf } from './plan'
-import type { DayWeek } from './types'
+import { useDayDate } from './day-date'
+import { dayRows, inHand, type DayRow } from './plan'
 
 /** Treinos → plan: this week's days, what's done, and the way into each day. */
 export function PlanWeekScreen({ planId }: { planId: string }) {
@@ -45,11 +44,9 @@ export function PlanWeekScreen({ planId }: { planId: string }) {
   }
 
   const { days } = plan.data
-  const status = new Map(week.data.days.map((item) => [item.day_id, item]))
-  const byWeekday = new Map(days.filter((day) => day.weekday !== null).map((day) => [day.weekday, day]))
-  const unscheduled = days.filter((day) => day.weekday === null)
-  const today = weekdayOf(week.data.today)
-  const doneDays = days.filter((day) => isDayDone(status.get(day.id))).length
+  const { workouts_done: done, target } = week.data
+  // A plan that rotates its days has no weekday to show beside each.
+  const hasWeekdays = days.some((day) => day.weekday !== null)
 
   return (
     <Page
@@ -79,37 +76,25 @@ export function PlanWeekScreen({ planId }: { planId: string }) {
         </div>
         <div className="flex items-center gap-3">
           <Progress
-            value={days.length ? (doneDays / days.length) * 100 : 0}
-            aria-label={t('training.week.progress', { done: doneDays, total: days.length })}
+            value={target ? Math.min(100, (done / target) * 100) : 0}
+            aria-label={t('training.week.progress', { done, total: target })}
             className="flex-1"
           />
           <span className="text-sm text-muted-foreground tabular-nums">
-            {doneDays}/{days.length}
+            {done}/{target}
           </span>
         </div>
+        {/* The plan's workouts in its order. Its weekdays are where the trainer put them, not
+            when they must be done: each row says how the workout stands this week. */}
         <ul className="grid gap-2">
-          {WEEKDAYS.map((weekday) => {
-            const day = byWeekday.get(weekday)
-            const date = addDays(week.data.week_start, weekday)
-            return (
-              <li key={weekday}>
-                {day ? (
-                  <DayRow
-                    planId={planId}
-                    day={day}
-                    status={status.get(day.id)}
-                    date={date}
-                    isToday={weekday === today}
-                  />
-                ) : (
-                  <RestRow weekday={weekday} date={date} />
-                )}
-              </li>
-            )
-          })}
-          {unscheduled.map((day) => (
-            <li key={day.id}>
-              <DayRow planId={planId} day={day} status={status.get(day.id)} date={null} isToday={false} />
+          {dayRows(days, week.data).map((row) => (
+            <li key={row.day.id}>
+              <DayLink
+                planId={planId}
+                row={row}
+                showWeekday={hasWeekdays}
+                inHand={inHand(week.data) && week.data.suggestion.day_id === row.day.id}
+              />
             </li>
           ))}
         </ul>
@@ -118,38 +103,19 @@ export function PlanWeekScreen({ planId }: { planId: string }) {
   )
 }
 
-function DateColumn({ weekday, date }: { weekday: Weekday | null; date: string | null }) {
-  const labels = useWorkoutLabels()
-  return (
-    <span className="flex w-10 shrink-0 flex-col items-center">
-      <span className="text-[0.6875rem] font-medium text-muted-foreground uppercase">
-        {labels.weekdayShort(weekday)}
-      </span>
-      {date && <span className="text-lg tabular-nums">{Number(date.slice(8))}</span>}
-    </span>
-  )
-}
+type DayLinkProps = { planId: string; row: DayRow; showWeekday: boolean; inHand: boolean }
 
-type DayRowProps = {
-  planId: string
-  day: Day
-  status: DayWeek | undefined
-  date: string | null
-  isToday: boolean
-}
-
-function DayRow({ planId, day, status, date, isToday }: DayRowProps) {
+function DayLink({ planId, row, showWeekday, inHand: highlighted }: DayLinkProps) {
   const { t } = useTranslation()
   const labels = useWorkoutLabels()
-  const done = isDayDone(status)
+  const dayDate = useDayDate()
+  const { day, state } = row
   const total = day.exercises.length
-  const doneCount = status?.exercises_done ?? 0
-  const detail = done
-    ? t('training.week.done', { count: total })
-    : isToday
-      ? t('training.week.today', { done: doneCount, total })
-      : status?.session_id
-        ? t('training.week.partial', { done: doneCount, total })
+  const detail =
+    state === 'today'
+      ? t('training.week.today', { done: row.done, total })
+      : state === 'trained' && row.date
+        ? t('training.week.doneOn', { count: total, when: dayDate(row.date) })
         : t('training.week.exercises', { count: total })
 
   return (
@@ -158,38 +124,35 @@ function DayRow({ planId, day, status, date, isToday }: DayRowProps) {
       params={{ planId, dayId: day.id }}
       className={cn(
         'flex min-h-16 items-center gap-3 rounded-2xl bg-card px-3 py-2',
-        isToday && 'bg-accent ring-1 ring-primary',
+        highlighted && 'bg-accent ring-1 ring-primary',
       )}
     >
-      <DateColumn weekday={day.weekday} date={date} />
+      {showWeekday && (
+        <span className="w-10 shrink-0 text-center text-[0.6875rem] font-medium text-muted-foreground uppercase">
+          {day.weekday === null ? '—' : labels.weekdayShort(day.weekday)}
+        </span>
+      )}
       <span className="min-w-0 flex-1">
         <span className="block truncate text-[15px] font-medium">
           {day.label || labels.weekdayLong(day.weekday)}
         </span>
-        <span className={cn('block text-xs text-muted-foreground', isToday && 'text-primary')}>{detail}</span>
+        <span className={cn('block text-xs text-muted-foreground', highlighted && 'text-primary')}>{detail}</span>
       </span>
       <span
         className={cn(
           'flex size-7 shrink-0 items-center justify-center rounded-full text-primary',
-          done && 'bg-primary text-primary-foreground',
+          row.trained && 'bg-primary text-primary-foreground',
         )}
       >
-        {done ? (
+        {row.trained ? (
           <CheckIcon weight="bold" className="size-4" aria-label={t('training.week.doneLabel')} />
-        ) : isToday ? (
-          <CaretRightIcon className="size-4" aria-label={t('training.week.todayLabel')} />
+        ) : highlighted ? (
+          <CaretRightIcon
+            className="size-4"
+            aria-label={state === 'today' ? t('training.week.todayLabel') : t('training.week.suggestedLabel')}
+          />
         ) : null}
       </span>
     </Link>
-  )
-}
-
-function RestRow({ weekday, date }: { weekday: Weekday; date: string }) {
-  const { t } = useTranslation()
-  return (
-    <div className="flex min-h-16 items-center gap-3 rounded-2xl bg-card px-3 py-2 opacity-50">
-      <DateColumn weekday={weekday} date={date} />
-      <span className="text-sm text-muted-foreground">{t('training.week.restDay')}</span>
-    </div>
   )
 }

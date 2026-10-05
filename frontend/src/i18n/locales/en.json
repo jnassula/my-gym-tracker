@@ -27,12 +27,42 @@
     "start": "Start workout",
     "continue": "Continue workout",
     "review": "View workout",
+    "switch": "Switch",
+    "switchLabel": "Switch today's workout",
+    "doneIt": "Done it",
+    "doneItLabel": "Mark {{name}} as done",
+    "another": "Do another workout",
+    "choose": "Choose a workout",
+    "reason": {
+      "plan": "Today's workout in the plan.",
+      "catch_up": "Still to do this week.",
+      "next": "Next in the plan's order."
+    },
+    "rest": {
+      "title": "No workout in the plan today",
+      "next": "Next: {{label}}, {{weekday}}.",
+      "nothing": "Rest, or get a workout in early."
+    },
+    "complete": {
+      "title": "Week complete",
+      "description": "{{done}} of {{target}} workouts done. Rest, or do one more."
+    },
     "week": "This week",
+    "weekCount": "{{done}} of {{target}} workouts",
     "dayState": {
       "done": "done",
-      "missed": "not trained",
-      "rest": "rest day",
+      "planned": "to do",
+      "idle": "no workout",
       "today": "today"
+    },
+    "pick": {
+      "title": "Which workout today?",
+      "description": "The plan suggests an order; you do the one that fits your day.",
+      "suggested": "suggested",
+      "today": "Today · {{done}}/{{total}} done",
+      "doneOn": "{{count}} ex. · done {{when}}",
+      "pending": "{{count}} ex. · to do",
+      "close": "Close"
     },
     "lastRecord": "Latest record",
     "plan": "Plan “{{name}}”",
@@ -608,6 +638,7 @@
   },
   "training": {
     "todayKicker": "{{weekday}} · Today",
+    "today": "Today",
     "sets": "sets",
     "noLoad": "bodyweight",
     "progress": "{{done}} of {{total}} exercises done",
@@ -615,6 +646,13 @@
     "unmarkDone": "Unmark {{name}}",
     "finish": "Finish workout",
     "finishing": "Finishing…",
+    "dayDone": {
+      "mark": "Mark workout as done",
+      "marked": "Workout marked as done",
+      "undo": "Undo",
+      "earlier": "Done this week: {{when}}.",
+      "see": "See that workout"
+    },
     "dayNotFound": "This day is no longer in the plan.",
     "restPill": "Rest {{time}}. Open timer",
     "rest": {
@@ -682,22 +720,13 @@
     },
     "week": {
       "kicker": "Workout",
-      "progress": "{{done}}/{{total}} days this week",
-      "restDay": "Rest day",
+      "progress": "{{done}} of {{total}} workouts this week",
       "exercises": "{{count}} ex.",
-      "done": "{{count}} ex. · done",
+      "doneOn": "{{count}} ex. · done {{when}}",
       "today": "Today · {{done}}/{{total}} done",
-      "partial": "{{done}}/{{total}} done",
       "doneLabel": "Done",
-      "todayLabel": "Today"
-    },
-    "restToday": {
-      "title": "Today is a rest day",
-      "next": "Next workout: {{weekday}} · {{label}}",
-      "nextNoLabel": "Next workout: {{weekday}}",
-      "seeWeek": "See the week",
-      "chooseTitle": "Pick today's workout",
-      "chooseDescription": "Your plan has no fixed weekdays: pick the workout from the list."
+      "todayLabel": "Today",
+      "suggestedLabel": "Suggested for today"
     },
     "plates": {
       "open": "Plates",
@@ -762,7 +791,7 @@
       "title": "Consistency",
       "streak": "week streak",
       "total": "workouts · total",
-      "adherence": "plan done · 30 d",
+      "adherence": "weekly goal · 4 wks",
       "previous": "Previous month",
       "next": "Next month",
       "status": {
@@ -775,6 +804,7 @@
       "thisWeek": "This week",
       "noSessions": "No workouts yet this week.",
       "session": "{{duration}} · {{sets}} sets",
+      "markedDone": "marked as done",
       "today": "today · {{done}}/{{total}}"
     },
     "weeks": {
@@ -789,11 +819,11 @@
       "showTable": "Show values",
       "hideTable": "Hide values",
       "day": "Day",
-      "today": "Today vs. a week ago",
+      "today": "Today vs. last week",
       "exercise": "Exercise",
       "delta": "Δ",
       "pending": "to do",
-      "noToday": "No workout in the plan today.",
+      "noToday": "No workout to do today.",
       "weekShort": "W{{week}}"
     }
   },
@@ -946,7 +976,7 @@
     },
     "reminders": "Reminders",
     "trainingReminder": "Workout reminder",
-    "trainingReminderHint": "Plan days · {{time}}",
+    "trainingReminderHint": "When a workout is due · {{time}}",
     "reminderTime": "Reminder time",
     "restEnd": "End of rest",
     "restEndHint": "Vibration + sound when the timer reaches 0",
@@ -1045,6 +1075,7 @@
       "kcal": "{{value}} kcal",
       "setsPeaks": "Sets · heart-rate peaks",
       "sets": "Sets",
+      "markedDone": "Marked as done: {{done}} of {{total}} exercises.",
       "exerciseSets_one": "{{name}} · {{count}} set",
       "exerciseSets_other": "{{name}} · {{count}} sets",
       "peak": "Peak of {{value}} bpm",

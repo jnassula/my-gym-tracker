@@ -1,8 +1,9 @@
-import { queryOptions, useMutation, useQueryClient } from '@tanstack/react-query'
+import { queryOptions, useMutation, useQueryClient, type QueryClient } from '@tanstack/react-query'
 
 import { api } from '@/lib/api'
 
-import type { DayLog, ExerciseHistory, PlanWeek, SessionSummary, TrainingSession } from './types'
+import { completeWeek } from './plan'
+import type { DayLog, ExerciseHistory, OlderWeek, PlanWeek, SessionSummary, TrainingSession } from './types'
 
 export const trainingKeys = {
   all: ['training'] as const,
@@ -27,7 +28,7 @@ export const historyQuery = (exerciseId: string) =>
 export const weekQuery = (planId: string) =>
   queryOptions({
     queryKey: trainingKeys.week(planId),
-    queryFn: () => api<PlanWeek>(`/api/logs/plans/${planId}/week`),
+    queryFn: async (): Promise<PlanWeek> => completeWeek(await api<OlderWeek>(`/api/logs/plans/${planId}/week`)),
   })
 
 /** Every write returns today's session (or null once it's empty): put it in the day's cache. */
@@ -68,6 +69,20 @@ export const useToggleDone = (dayId: string) =>
       method: done ? 'PUT' : 'DELETE',
     }),
   )
+
+/**
+ * The whole workout done today in one go (or that taken back): every exercise still to do is
+ * ticked and the session ends. A plain function, so a toast's "Anular" can call it after the
+ * screen that marked it is gone.
+ */
+export async function setDayDone(queryClient: QueryClient, dayId: string, done: boolean) {
+  const session = await api<TrainingSession | null>(`/api/logs/days/${dayId}/done`, {
+    method: done ? 'PUT' : 'DELETE',
+  })
+  queryClient.setQueryData<DayLog>(trainingKeys.day(dayId), (log) => log && { ...log, session })
+  await queryClient.invalidateQueries({ queryKey: trainingKeys.weeks })
+  return session
+}
 
 export function useFinishSession(dayId: string) {
   const queryClient = useQueryClient()

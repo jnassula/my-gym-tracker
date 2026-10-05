@@ -7,7 +7,6 @@ import { errorKey } from '@/features/auth/errors'
 import { FormAlert } from '@/features/auth/form-parts'
 import { weekQuery } from '@/features/training/api'
 import { DayScreen } from '@/features/training/day-screen'
-import { weekdayOf } from '@/features/training/plan'
 import { planQuery } from '@/features/workouts/api'
 
 type Search = { from?: 'home' }
@@ -36,7 +35,7 @@ function PlanDay() {
       </Page>
     )
   }
-  const weekday = plan.data.days.find((day) => day.id === dayId)?.weekday
-  const isToday = week.data !== undefined && weekday === weekdayOf(week.data.today)
-  return <DayScreen plan={plan.data} dayId={dayId} isToday={isToday} fromHome={from === 'home'} backLink={backLink} />
+  return (
+    <DayScreen plan={plan.data} dayId={dayId} week={week.data} fromHome={from === 'home'} backLink={backLink} />
+  )
 }

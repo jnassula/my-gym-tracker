@@ -84,7 +84,7 @@ describe('NotificationsScreen', () => {
     renderWithRouter(<NotificationsScreen />)
 
     expect(await screen.findByText('Este browser não suporta notificações.')).toBeInTheDocument()
-    expect(screen.getByText('Dias do plano · 17:30')).toBeInTheDocument()
+    expect(screen.getByText('Quando há treino por fazer · 17:30')).toBeInTheDocument()
     await userEvent.click(screen.getByRole('switch', { name: /Resumo semanal/ }))
 
     await waitFor(() => expect(requests('PATCH /api/notifications/settings')).toEqual([{ weekly_summary: true }]))

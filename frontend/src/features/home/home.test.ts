@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest'
 
-import type { PlanWeek, TrainingSession } from '@/features/training/types'
+import type { DayWeek, PlanWeek, TrainingSession } from '@/features/training/types'
 import type { Day, Exercise, Weekday } from '@/features/workouts/types'
 
-import { firstName, greetingFor, localNow, nextToDo, todayPlan, weekStrip } from './home'
+import { firstName, greetingFor, localNow, nextToDo, weekStrip } from './home'
 
 function exercise(id: string, fields: Partial<Exercise> = {}): Exercise {
   return {
@@ -54,23 +54,6 @@ describe('firstName', () => {
   })
 })
 
-describe('todayPlan', () => {
-  const days = [day('mon', 0), day('wed', 2), day('fri', 4)]
-
-  it('trains the day on today’s weekday', () => {
-    expect(todayPlan(days, 2)).toEqual({ kind: 'train', day: days[1] })
-  })
-
-  it('points a rest day to the next training day, wrapping into next week', () => {
-    expect(todayPlan(days, 3)).toEqual({ kind: 'rest', next: days[2] })
-    expect(todayPlan(days, 5)).toEqual({ kind: 'rest', next: days[0] })
-  })
-
-  it('asks to choose when the plan has no weekdays', () => {
-    expect(todayPlan([day('a', null), day('b', null)], 2)).toEqual({ kind: 'choose' })
-  })
-})
-
 describe('nextToDo', () => {
   const warmup = exercise('treadmill', { muscle_group: 'warmup', sets: null })
   const row = exercise('row')
@@ -103,24 +86,107 @@ describe('nextToDo', () => {
 
 describe('weekStrip', () => {
   const days = [day('mon', 0), day('tue', 1), day('wed', 2), day('fri', 4), day('sat', 5)]
+  const status = (id: string, date: string | null, trained: boolean): DayWeek => ({
+    day_id: id,
+    session_id: date ? `s-${id}` : null,
+    date,
+    finished: trained,
+    exercises_done: trained ? 5 : 0,
+    exercises_total: 5,
+    sets: 0,
+    trained,
+  })
+  // Wednesday. Monday's workout was done on Tuesday, and Friday's on Monday.
   const week: PlanWeek = {
-    today: '2026-09-30', // Wednesday
+    today: '2026-09-30',
     week_start: '2026-09-28',
     days: [
-      { day_id: 'mon', session_id: 's1', date: '2026-09-28', finished: true, exercises_done: 4, exercises_total: 5, sets: 12 },
-      { day_id: 'tue', session_id: null, date: null, finished: false, exercises_done: 0, exercises_total: 5, sets: 0 },
+      status('mon', '2026-09-29', true),
+      status('tue', null, false),
+      status('wed', null, false),
+      status('fri', '2026-09-28', true),
+      status('sat', null, false),
     ],
+    target: 5,
+    workouts_done: 2,
+    sessions: [
+      { session_id: 's-fri', day_id: 'fri', date: '2026-09-28', complete: true },
+      { session_id: 's-mon', day_id: 'mon', date: '2026-09-29', complete: false }, // left half done
+    ],
+    suggestion: { kind: 'suggest', day_id: 'wed', reason: 'plan' },
   }
+  const cells = (of: PlanWeek) => weekStrip(days, of).map((cell) => [cell.state, cell.day?.id ?? null, cell.sessionId])
 
-  it('marks each weekday as done, missed, planned or rest', () => {
-    expect(weekStrip(days, week).map(({ state, isToday }) => [state, isToday])).toEqual([
-      ['done', false],
-      ['missed', false],
-      ['planned', true],
-      ['rest', false],
-      ['planned', false],
-      ['planned', false],
-      ['rest', false],
+  it('says what was trained on each date, whatever the plan had there', () => {
+    expect(cells(week)).toEqual([
+      ['trained', 'fri', 's-fri'], // Monday: Friday's workout
+      ['trained', 'mon', 's-mon'], // Tuesday: an earlier day counts as it was left
+      ['planned', 'wed', null], // today: the one suggested
+      ['idle', null, null],
+      ['idle', null, null], // Friday's is done already: nothing is waiting there
+      ['planned', 'sat', null],
+      ['idle', null, null],
     ])
+    expect(weekStrip(days, week).map((cell) => cell.isToday)).toEqual([false, false, true, false, false, false, false])
+  })
+
+  it('never calls a day gone by missed', () => {
+    const untouched = { ...week, days: week.days.map((item) => status(item.day_id, null, false)), sessions: [] }
+
+    expect(cells(untouched).slice(0, 2)).toEqual([
+      ['idle', null, null], // Monday and Tuesday had workouts in the plan and none was done:
+      ['idle', null, null], // days like any other, and the week's count says the rest
+    ])
+  })
+
+  it('shows today’s workout as trained only once it is complete', () => {
+    const started = {
+      ...week,
+      sessions: [...week.sessions, { session_id: 's-wed', day_id: 'wed', date: '2026-09-30', complete: false }],
+      suggestion: { kind: 'continue', day_id: 'wed', reason: null },
+    } satisfies PlanWeek
+    const done = {
+      ...started,
+      sessions: started.sessions.map((item) => ({ ...item, complete: true })),
+      suggestion: { kind: 'done', day_id: 'wed', reason: null },
+    } satisfies PlanWeek
+
+    expect(cells(started)[2]).toEqual(['planned', 'wed', null])
+    expect(cells(done)[2]).toEqual(['trained', 'wed', 's-wed'])
+  })
+
+  it('has nothing waiting today on a rest day or in a week already complete', () => {
+    for (const kind of ['rest', 'complete'] as const) {
+      expect(cells({ ...week, suggestion: { kind, day_id: 'sat', reason: null } })[2]).toEqual(['idle', null, null])
+    }
+  })
+
+  it('lays out a plan that rotates its days by what was trained alone', () => {
+    const rotating = [day('a', null), day('b', null)]
+    const of: PlanWeek = {
+      ...week,
+      days: [status('a', '2026-09-28', true), status('b', null, false)],
+      sessions: [{ session_id: 's-a', day_id: 'a', date: '2026-09-28', complete: true }],
+      suggestion: { kind: 'suggest', day_id: 'b', reason: 'next' },
+    }
+
+    expect(weekStrip(rotating, of).map((cell) => cell.state)).toEqual([
+      'trained',
+      'idle',
+      'planned', // today
+      'idle',
+      'idle',
+      'idle',
+      'idle',
+    ])
+  })
+
+  it('opens another plan’s workout by its session alone', () => {
+    const of: PlanWeek = {
+      ...week,
+      sessions: [{ session_id: 's-old', day_id: 'gone', date: '2026-09-28', complete: true }],
+    }
+
+    expect(cells(of)[0]).toEqual(['trained', null, 's-old'])
   })
 })

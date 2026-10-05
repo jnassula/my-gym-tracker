@@ -43,15 +43,48 @@ export type ExerciseHistory = {
 
 export type DayWeek = {
   day_id: string
+  /** This week's latest session for the day. */
   session_id: string | null
   date: string | null
   finished: boolean
   exercises_done: number
   exercises_total: number
   sets: number
+  /** Trained this week: on an earlier day (however far it got), or complete today. */
+  trained: boolean
 }
 
-export type PlanWeek = { today: string; week_start: string; days: DayWeek[] }
+/** A workout of this week on its date; `day_id` may be another plan's day, or gone. */
+export type WeekWorkout = { session_id: string; day_id: string | null; date: string; complete: boolean }
+
+/**
+ * Which workout today (the server's rule, `app/logs/week.py`): one to carry on, the one done, the
+ * one suggested, or (rest, complete) the one that would come next. `reason` goes with `suggest`;
+ * a newer server may send reasons this app doesn't know.
+ */
+export type Suggestion = {
+  kind: 'continue' | 'done' | 'suggest' | 'rest' | 'complete'
+  day_id: string | null
+  reason: string | null
+}
+
+export type PlanWeek = {
+  today: string
+  week_start: string
+  days: DayWeek[]
+  /** Workouts the plan asks of a week, and how many of this week's count already. */
+  target: number
+  workouts_done: number
+  /** Every workout of the week, oldest first. */
+  sessions: WeekWorkout[]
+  suggestion: Suggestion
+}
+
+/** The week as a server from before the flexible week sends it (after a rollback). */
+export type OlderWeek = Pick<PlanWeek, 'today' | 'week_start'> &
+  Partial<Pick<PlanWeek, 'target' | 'workouts_done' | 'sessions' | 'suggestion'>> & {
+    days: Array<Omit<DayWeek, 'trained'> & { trained?: boolean }>
+  }
 
 export type PersonalRecord = { exercise_id: string; name: string; weight: number }
 

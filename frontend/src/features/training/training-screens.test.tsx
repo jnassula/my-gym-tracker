@@ -9,7 +9,7 @@ import { json, renderWithRouter, user } from '@/test/render'
 import { DayScreen } from './day-screen'
 import { ExerciseScreen } from './exercise-screen'
 import { restTimer } from './rest-timer'
-import type { DayLog, LoggedSet, TrainingSession } from './types'
+import type { DayLog, LoggedSet, PlanWeek, TrainingSession } from './types'
 
 function exercise(id: string, name: string, fields: Partial<Exercise> = {}): Exercise {
   return {
@@ -252,7 +252,7 @@ describe('ExerciseScreen extras', () => {
 describe('DayScreen', () => {
   it('lists the day by muscle group with what is done', async () => {
     serve({ 'GET /api/logs/days/day-1': () => json(dayLog(session([loggedSet(1, 50, 12)], ['ex-1']))) })
-    renderWithRouter(<DayScreen plan={plan} dayId="day-1" isToday fromHome />)
+    renderWithRouter(<DayScreen plan={plan} dayId="day-1" fromHome />)
 
     expect(await screen.findByRole('progressbar', { name: '1 de 3 exercícios feitos' })).toBeInTheDocument()
     expect(screen.getByText('Quarta · Hoje')).toBeInTheDocument()
@@ -266,7 +266,7 @@ describe('DayScreen', () => {
       'GET /api/logs/days/day-1': () => json(dayLog(null)),
       'PUT /api/logs/exercises/ex-3/done': () => json(session([], ['ex-3'])),
     })
-    renderWithRouter(<DayScreen plan={plan} dayId="day-1" isToday fromHome />)
+    renderWithRouter(<DayScreen plan={plan} dayId="day-1" fromHome />)
 
     await userEvent.click(await screen.findByRole('button', { name: 'Marcar Puxador Horizontal como feito' }))
 
@@ -285,7 +285,7 @@ describe('DayScreen', () => {
           records: [{ exercise_id: 'ex-2', name: 'Remada Curvada', weight: 55 }],
         }),
     })
-    renderWithRouter(<DayScreen plan={plan} dayId="day-1" isToday fromHome />)
+    renderWithRouter(<DayScreen plan={plan} dayId="day-1" fromHome />)
 
     await userEvent.click(await screen.findByRole('button', { name: 'Terminar treino' }))
 
@@ -298,8 +298,81 @@ describe('DayScreen', () => {
 
   it('cannot finish before anything was logged', async () => {
     serve({ 'GET /api/logs/days/day-1': () => json(dayLog(null)) })
-    renderWithRouter(<DayScreen plan={plan} dayId="day-1" isToday={false} />)
+    renderWithRouter(<DayScreen plan={plan} dayId="day-1" />)
 
     expect(await screen.findByRole('button', { name: 'Terminar treino' })).toBeDisabled()
+    // Not today's workout yet: the plan's weekday is only where the trainer put it.
+    expect(screen.getByText('Quarta')).toBeInTheDocument()
+    expect(screen.queryByText('Quarta · Hoje')).not.toBeInTheDocument()
+  })
+
+  it('marks the whole workout as done without logging a set', async () => {
+    const done = { ...session([], ['ex-1', 'ex-2', 'ex-3']), ended_at: '2026-09-30T18:00:00Z' }
+    serve({
+      'GET /api/logs/days/day-1': () => json(dayLog(null)),
+      'PUT /api/logs/days/day-1/done': () => json(done),
+    })
+    renderWithRouter(<DayScreen plan={plan} dayId="day-1" />)
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Marcar treino como feito' }))
+
+    await waitFor(() => expect(requests('PUT /api/logs/days/day-1/done')).toHaveLength(1))
+    // No summary to show (nothing was lifted): the screen moves on, and a toast offers the way back.
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  })
+
+  it('offers no marking once the workout is complete', async () => {
+    const done = { ...session([], ['ex-1', 'ex-2', 'ex-3']), ended_at: '2026-09-30T18:00:00Z' }
+    serve({ 'GET /api/logs/days/day-1': () => json(dayLog(done)) })
+    renderWithRouter(<DayScreen plan={plan} dayId="day-1" />)
+
+    expect(await screen.findByRole('progressbar', { name: '3 de 3 exercícios feitos' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Marcar treino como feito' })).not.toBeInTheDocument()
+  })
+
+  it('says when the workout was already done on another day this week', async () => {
+    serve({ 'GET /api/logs/days/day-1': () => json(dayLog(null)) })
+    const week: PlanWeek = {
+      today: '2026-09-30',
+      week_start: '2026-09-28',
+      days: [
+        {
+          day_id: 'day-1',
+          session_id: 'session-0',
+          date: '2026-09-28',
+          finished: true,
+          exercises_done: 3,
+          exercises_total: 3,
+          sets: 9,
+          trained: true,
+        },
+      ],
+      target: 1,
+      workouts_done: 1,
+      sessions: [{ session_id: 'session-0', day_id: 'day-1', date: '2026-09-28', complete: true }],
+      suggestion: { kind: 'complete', day_id: 'day-1', reason: null },
+    }
+    renderWithRouter(<DayScreen plan={plan} dayId="day-1" week={week} />)
+
+    expect(await screen.findByText(/Feito esta semana: seg, 28 set\./)).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Ver esse treino' })).toHaveAttribute(
+      'href',
+      '/progress/sessions/session-0',
+    )
+    // It can still be done again today.
+    expect(screen.getByRole('button', { name: 'Marcar treino como feito' })).toBeEnabled()
+  })
+
+  it('a rotating plan’s day has no weekday to show, only "Hoje" once it is today’s', async () => {
+    const rotating: Plan = {
+      ...plan,
+      days: [{ ...plan.days[0], weekday: null, label: 'Treino B' }],
+    }
+    serve({ 'GET /api/logs/days/day-1': () => json(dayLog(session([], ['ex-1']))) })
+    renderWithRouter(<DayScreen plan={rotating} dayId="day-1" />)
+
+    expect(await screen.findByRole('heading', { name: 'Treino B' })).toBeInTheDocument()
+    expect(await screen.findByText('Hoje')).toBeInTheDocument()
+    expect(screen.queryByText(/Sem dia/)).not.toBeInTheDocument()
   })
 })

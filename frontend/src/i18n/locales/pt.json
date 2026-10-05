@@ -27,12 +27,42 @@
     "start": "Começar treino",
     "continue": "Continuar treino",
     "review": "Ver treino",
+    "switch": "Trocar",
+    "switchLabel": "Trocar o treino de hoje",
+    "doneIt": "Já fiz",
+    "doneItLabel": "Marcar {{name}} como feito",
+    "another": "Fazer outro treino",
+    "choose": "Escolher treino",
+    "reason": {
+      "plan": "É o treino de hoje no plano.",
+      "catch_up": "Ficou por fazer esta semana.",
+      "next": "É o seguinte na ordem do plano."
+    },
+    "rest": {
+      "title": "Hoje não há treino no plano",
+      "next": "A seguir: {{label}}, {{weekday}}.",
+      "nothing": "Podes descansar, ou adiantar um treino."
+    },
+    "complete": {
+      "title": "Semana completa",
+      "description": "{{done}} de {{target}} treinos feitos. Descansa, ou faz mais um."
+    },
     "week": "Esta semana",
+    "weekCount": "{{done}} de {{target}} treinos",
     "dayState": {
       "done": "feito",
-      "missed": "não treinado",
-      "rest": "descanso",
+      "planned": "por fazer",
+      "idle": "sem treino",
       "today": "hoje"
+    },
+    "pick": {
+      "title": "Que treino hoje?",
+      "description": "O plano sugere uma ordem; fazes o que encaixar no teu dia.",
+      "suggested": "sugerido",
+      "today": "Hoje · {{done}}/{{total}} feito",
+      "doneOn": "{{count}} ex. · feito {{when}}",
+      "pending": "{{count}} ex. · por fazer",
+      "close": "Fechar"
     },
     "lastRecord": "Último recorde",
     "plan": "Plano “{{name}}”",
@@ -608,6 +638,7 @@
   },
   "training": {
     "todayKicker": "{{weekday}} · Hoje",
+    "today": "Hoje",
     "sets": "séries",
     "noLoad": "sem carga",
     "progress": "{{done}} de {{total}} exercícios feitos",
@@ -615,6 +646,13 @@
     "unmarkDone": "Desmarcar {{name}}",
     "finish": "Terminar treino",
     "finishing": "A terminar…",
+    "dayDone": {
+      "mark": "Marcar treino como feito",
+      "marked": "Treino marcado como feito",
+      "undo": "Anular",
+      "earlier": "Feito esta semana: {{when}}.",
+      "see": "Ver esse treino"
+    },
     "dayNotFound": "Este dia já não existe no plano.",
     "restPill": "Descanso {{time}}. Abrir temporizador",
     "rest": {
@@ -682,22 +720,13 @@
     },
     "week": {
       "kicker": "Treino",
-      "progress": "{{done}}/{{total}} dias esta semana",
-      "restDay": "Dia de descanso",
+      "progress": "{{done}} de {{total}} treinos esta semana",
       "exercises": "{{count}} ex.",
-      "done": "{{count}} ex. · feito",
+      "doneOn": "{{count}} ex. · feito {{when}}",
       "today": "Hoje · {{done}}/{{total}} feito",
-      "partial": "{{done}}/{{total}} feito",
       "doneLabel": "Feito",
-      "todayLabel": "Hoje"
-    },
-    "restToday": {
-      "title": "Hoje é dia de descanso",
-      "next": "Próximo treino: {{weekday}} · {{label}}",
-      "nextNoLabel": "Próximo treino: {{weekday}}",
-      "seeWeek": "Ver a semana",
-      "chooseTitle": "Escolhe o treino de hoje",
-      "chooseDescription": "O teu plano não tem dias da semana fixos: escolhe o treino na lista."
+      "todayLabel": "Hoje",
+      "suggestedLabel": "Sugerido para hoje"
     },
     "plates": {
       "open": "Anilhas",
@@ -762,7 +791,7 @@
       "title": "Consistência",
       "streak": "semanas seguidas",
       "total": "treinos · total",
-      "adherence": "plano cumprido · 30 d",
+      "adherence": "objetivo semanal · 4 sem.",
       "previous": "Mês anterior",
       "next": "Mês seguinte",
       "status": {
@@ -775,6 +804,7 @@
       "thisWeek": "Esta semana",
       "noSessions": "Ainda sem treinos esta semana.",
       "session": "{{duration}} · {{sets}} séries",
+      "markedDone": "marcado como feito",
       "today": "hoje · {{done}}/{{total}}"
     },
     "weeks": {
@@ -789,11 +819,11 @@
       "showTable": "Ver valores",
       "hideTable": "Esconder valores",
       "day": "Dia",
-      "today": "Hoje vs. há uma semana",
+      "today": "Hoje vs. semana passada",
       "exercise": "Exercício",
       "delta": "Δ",
       "pending": "por fazer",
-      "noToday": "Hoje não há treino no plano.",
+      "noToday": "Hoje não há treino por fazer.",
       "weekShort": "S{{week}}"
     }
   },
@@ -946,7 +976,7 @@
     },
     "reminders": "Lembretes",
     "trainingReminder": "Lembrete de treino",
-    "trainingReminderHint": "Dias do plano · {{time}}",
+    "trainingReminderHint": "Quando há treino por fazer · {{time}}",
     "reminderTime": "Hora do lembrete",
     "restEnd": "Fim do descanso",
     "restEndHint": "Vibração + som quando o temporizador chega a 0",
@@ -1045,6 +1075,7 @@
       "kcal": "{{value}} kcal",
       "setsPeaks": "Séries · picos de FC",
       "sets": "Séries",
+      "markedDone": "Marcado como feito: {{done}} de {{total}} exercícios.",
       "exerciseSets_one": "{{name}} · {{count}} série",
       "exerciseSets_other": "{{name}} · {{count}} séries",
       "peak": "Pico de {{value}} bpm",
