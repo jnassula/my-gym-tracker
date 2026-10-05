@@ -21,6 +21,7 @@ from sqlalchemy.orm import selectinload
 from app.core.db import utcnow
 from app.exercises.key import ExerciseKey, exercise_key
 from app.exercises.models import Exercise
+from app.logs import week
 from app.logs.errors import (
     DayNotFoundError,
     ExerciseNotFoundError,
@@ -41,6 +42,8 @@ from app.logs.schemas import (
     SetCreate,
     SetRead,
     SetUpdate,
+    Suggestion,
+    WeekWorkout,
     WeightPoint,
 )
 from app.users.models import User
@@ -311,6 +314,51 @@ async def unmark_done(
     return None if dropped else await _read(session, workout)
 
 
+async def _sets_logged(session: AsyncSession, workout: WorkoutSession) -> dict[uuid.UUID, int]:
+    rows = await session.execute(
+        select(ExerciseLog.exercise_id, func.count())
+        .where(ExerciseLog.session_id == workout.id)
+        .group_by(ExerciseLog.exercise_id)
+    )
+    return {exercise_id: count for exercise_id, count in rows}
+
+
+async def mark_day_done(session: AsyncSession, user: User, day_id: uuid.UUID) -> SessionRead:
+    """The whole workout done today, in one go: every exercise its sets don't already make done
+    is ticked, and the session ends. Sets logged before stay as they are."""
+    day = await _day(session, user.id, day_id)
+    workout = await _ensure_session(session, user, day.id)
+    logged = await _sets_logged(session, workout)
+    left = [
+        exercise.id
+        for exercise in day.exercises
+        if exercise.id not in workout.done_exercise_ids
+        and logged.get(exercise.id, 0) < planned_sets(exercise)
+    ]
+    if left:
+        workout.done_exercise_ids = [*workout.done_exercise_ids, *left]
+    if workout.ended_at is None:
+        workout.ended_at = now()
+    await session.commit()
+    return await _read(session, workout)
+
+
+async def unmark_day_done(
+    session: AsyncSession, user: User, day_id: uuid.UUID
+) -> SessionRead | None:
+    """Takes that back: no exercise of today's session is ticked and it isn't finished. What is
+    left is the sets that were logged, or no session at all."""
+    day = await _day(session, user.id, day_id)
+    workout = await _todays_session(session, user, day.id, lock=True)
+    if workout is None:
+        return None
+    workout.done_exercise_ids = []
+    workout.ended_at = None
+    dropped = await _drop_if_empty(session, workout)
+    await session.commit()
+    return None if dropped else await _read(session, workout)
+
+
 # --- history -------------------------------------------------------------------------------------
 
 
@@ -428,59 +476,130 @@ async def exercise_history(
 # --- week and summary ----------------------------------------------------------------------------
 
 
-async def plan_week(session: AsyncSession, user: User, plan_id: uuid.UUID) -> PlanWeek:
-    plan = await workouts.get_plan(session, user.id, plan_id)
-    today = local_today(user)
+@dataclass(frozen=True)
+class WeekState:
+    """A plan's week as the user trained it, and which workout today (``week.suggest``)."""
+
+    today: date
+    week_start: date
+    # The user's sessions Monday to Sunday, oldest first: every plan's, not only this one's.
+    workouts: list[WorkoutSession]
+    complete: dict[uuid.UUID, bool]  # by session id
+    sets: dict[tuple[uuid.UUID, uuid.UUID], int]  # by session and exercise, this plan's days
+    target: int
+    done: int
+    trained: set[uuid.UUID]  # the plan's days with a workout that counts this week
+    suggestion: week.Suggestion
+
+
+async def week_state(
+    session: AsyncSession, user: User, plan: WorkoutPlan, today: date
+) -> WeekState:
+    """``plan`` with its days and their exercises loaded. ``today`` is the caller's (the
+    scheduler has its own clock)."""
     week_start = today - timedelta(days=today.weekday())
-    workouts_this_week = await session.scalars(
-        select(WorkoutSession)
-        .where(
-            WorkoutSession.user_id == user.id,
-            WorkoutSession.day_id.in_([day.id for day in plan.days]),
-            WorkoutSession.local_date.between(week_start, week_start + timedelta(days=6)),
+    workouts = list(
+        await session.scalars(
+            select(WorkoutSession)
+            .where(
+                WorkoutSession.user_id == user.id,
+                WorkoutSession.local_date.between(week_start, week_start + timedelta(days=6)),
+            )
+            .order_by(WorkoutSession.local_date, WorkoutSession.started_at)
         )
-        .order_by(WorkoutSession.local_date)
     )
-    latest = {workout.day_id: workout for workout in workouts_this_week}  # the last date wins
-    counts: dict[tuple[uuid.UUID, uuid.UUID], int] = {}
-    if latest:
+    days = {day.id: day for day in plan.days}
+    of_plan = [workout for workout in workouts if workout.day_id in days]
+    sets: dict[tuple[uuid.UUID, uuid.UUID], int] = {}
+    if of_plan:
         rows = await session.execute(
             select(ExerciseLog.session_id, ExerciseLog.exercise_id, func.count())
-            .where(ExerciseLog.session_id.in_([w.id for w in latest.values()]))
+            .where(ExerciseLog.session_id.in_([workout.id for workout in of_plan]))
             .group_by(ExerciseLog.session_id, ExerciseLog.exercise_id)
         )
-        counts = {(row[0], row[1]): row[2] for row in rows}
+        sets = {(row[0], row[1]): row[2] for row in rows}
+
+    def complete(workout: WorkoutSession) -> bool:
+        day = days.get(workout.day_id) if workout.day_id else None
+        if workout.ended_at is not None or day is None or not day.exercises:
+            return workout.ended_at is not None
+        logged = {ex_id: n for (sid, ex_id), n in sets.items() if sid == workout.id}
+        return count_done(day.exercises, workout, logged) == len(day.exercises)
+
+    completeness = {workout.id: complete(workout) for workout in workouts}
+    last_trained = {
+        day_id: latest
+        for day_id, latest in await session.execute(
+            select(WorkoutSession.day_id, func.max(WorkoutSession.local_date))
+            .where(WorkoutSession.user_id == user.id, WorkoutSession.day_id.in_(list(days)))
+            .group_by(WorkoutSession.day_id)
+        )
+        if day_id is not None
+    }
+    plan_days = [week.PlanDay(day.id, day.weekday, day.position) for day in plan.days]
+    this_week = [
+        week.Workout(workout.day_id, workout.local_date, completeness[workout.id])
+        for workout in workouts
+    ]
+    return WeekState(
+        today=today,
+        week_start=week_start,
+        workouts=workouts,
+        complete=completeness,
+        sets=sets,
+        target=week.target(plan_days),
+        done=week.done(this_week, today),
+        trained=week.trained(this_week, today) & set(days),
+        suggestion=week.suggest(plan_days, this_week, last_trained, today),
+    )
+
+
+async def plan_week(session: AsyncSession, user: User, plan_id: uuid.UUID) -> PlanWeek:
+    plan = await workouts.get_plan(session, user.id, plan_id)
+    state = await week_state(session, user, plan, local_today(user))
+    latest = {w.day_id: w for w in state.workouts}  # the last date wins
 
     days = []
     for day in plan.days:
         workout = latest.get(day.id)
-        if workout is None:
-            days.append(
-                DayWeek(
-                    day_id=day.id,
-                    session_id=None,
-                    date=None,
-                    finished=False,
-                    exercises_done=0,
-                    exercises_total=len(day.exercises),
-                    sets=0,
-                )
-            )
-            continue
-        logged = {ex_id: n for (sid, ex_id), n in counts.items() if sid == workout.id}
-        done = count_done(day.exercises, workout, logged)
+        logged = (
+            {ex_id: n for (sid, ex_id), n in state.sets.items() if sid == workout.id}
+            if workout
+            else {}
+        )
         days.append(
             DayWeek(
                 day_id=day.id,
-                session_id=workout.id,
-                date=workout.local_date,
-                finished=workout.ended_at is not None,
-                exercises_done=done,
+                session_id=workout.id if workout else None,
+                date=workout.local_date if workout else None,
+                finished=workout is not None and workout.ended_at is not None,
+                exercises_done=count_done(day.exercises, workout, logged) if workout else 0,
                 exercises_total=len(day.exercises),
-                sets=sum(n for (session_id, _), n in counts.items() if session_id == workout.id),
+                sets=sum(logged.values()),
+                trained=day.id in state.trained,
             )
         )
-    return PlanWeek(today=today, week_start=week_start, days=days)
+    return PlanWeek(
+        today=state.today,
+        week_start=state.week_start,
+        days=days,
+        target=state.target,
+        workouts_done=state.done,
+        sessions=[
+            WeekWorkout(
+                session_id=workout.id,
+                day_id=workout.day_id,
+                date=workout.local_date,
+                complete=state.complete[workout.id],
+            )
+            for workout in state.workouts
+        ],
+        suggestion=Suggestion(
+            kind=state.suggestion.kind,
+            day_id=state.suggestion.day_id,
+            reason=state.suggestion.reason,
+        ),
+    )
 
 
 async def finish_session(

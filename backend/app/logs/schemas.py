@@ -7,6 +7,8 @@ from typing import Annotated, Self
 
 from pydantic import BaseModel, ConfigDict, Field, PlainSerializer, model_validator
 
+from app.logs.week import Kind, Reason
+
 # Kilograms, as stored (Numeric(6, 2)). JSON carries a number, not Pydantic's default string.
 Kg = Annotated[Decimal, PlainSerializer(float, return_type=float, when_used="json")]
 WeightIn = Annotated[Decimal, Field(ge=0, le=1000, max_digits=6, decimal_places=2)]
@@ -92,13 +94,34 @@ class ExerciseHistory(BaseModel):
 
 class DayWeek(BaseModel):
     day_id: uuid.UUID
-    # This week's session for the day, if it was trained.
+    # This week's latest session for the day, if it was trained.
     session_id: uuid.UUID | None
     date: date | None
     finished: bool
     exercises_done: int
     exercises_total: int
     sets: int
+    # Trained this week: on an earlier day (however far it got), or complete today.
+    trained: bool = False
+
+
+class WeekWorkout(BaseModel):
+    """A workout of this week, on its date. ``day_id`` may be another plan's day (the plan
+    changed mid-week), or null once that day is gone."""
+
+    session_id: uuid.UUID
+    day_id: uuid.UUID | None
+    date: date
+    complete: bool
+
+
+class Suggestion(BaseModel):
+    """Which workout today (``logs.week``). ``day_id`` is the day to carry on, the one done,
+    the one suggested, or (rest, complete) the one that would come next."""
+
+    kind: Kind
+    day_id: uuid.UUID | None
+    reason: Reason | None
 
 
 class PlanWeek(BaseModel):
@@ -107,6 +130,11 @@ class PlanWeek(BaseModel):
     today: date
     week_start: date
     days: list[DayWeek]
+    # Workouts the plan asks of a week, and how many of this week's count already.
+    target: int
+    workouts_done: int
+    sessions: list[WeekWorkout]
+    suggestion: Suggestion
 
 
 class PersonalRecord(BaseModel):

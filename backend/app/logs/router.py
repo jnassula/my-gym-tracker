@@ -24,6 +24,20 @@ async def day_log(day_id: uuid.UUID, user: CurrentUser, session: SessionDep) -> 
     return await service.day_log(session, user, day_id)
 
 
+@router.put("/days/{day_id}/done")
+async def mark_day_done(day_id: uuid.UUID, user: CurrentUser, session: SessionDep) -> SessionRead:
+    """The whole workout done today, without logging its sets: ticks what is left and ends it."""
+    return await service.mark_day_done(session, user, day_id)
+
+
+@router.delete("/days/{day_id}/done")
+async def unmark_day_done(
+    day_id: uuid.UUID, user: CurrentUser, session: SessionDep
+) -> SessionRead | None:
+    """Takes that back. Returns null when nothing is left of today's session (it is removed)."""
+    return await service.unmark_day_done(session, user, day_id)
+
+
 @router.get("/plans/{plan_id}/week")
 async def plan_week(plan_id: uuid.UUID, user: CurrentUser, session: SessionDep) -> PlanWeek:
     return await service.plan_week(session, user, plan_id)
