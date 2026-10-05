@@ -8,9 +8,9 @@ from app.users.models import Language
 
 _TEXT: dict[str, dict[Language, tuple[str, str]]] = {
     "training_reminder": {
-        Language.PT: ("Hora de treinar", "Treino de hoje: {label}."),
-        Language.EN: ("Time to train", "Today's workout: {label}."),
-        Language.ES: ("Hora de entrenar", "Entreno de hoy: {label}."),
+        Language.PT: ("Hora de treinar", "Hoje: {label} · {done} de {target} esta semana."),
+        Language.EN: ("Time to train", "Today: {label} · {done} of {target} this week."),
+        Language.ES: ("Hora de entrenar", "Hoy: {label} · {done} de {target} esta semana."),
     },
     "weekly_summary": {
         Language.PT: ("Resumo da semana", "Treinos: {workouts} · {volume} t levantadas"),
@@ -54,8 +54,11 @@ def _message(kind: str, language: Language, url: str, **values: str) -> PushMess
     return PushMessage(title=title, body=body.format(**values), url=url, tag=kind)
 
 
-def training_reminder(language: Language, label: str) -> PushMessage:
-    return _message("training_reminder", language, "/", label=label)
+def training_reminder(language: Language, label: str, done: int, target: int) -> PushMessage:
+    """The workout suggested for today, and how far the week has got."""
+    return _message(
+        "training_reminder", language, "/", label=label, done=str(done), target=str(target)
+    )
 
 
 def weekly_summary(language: Language, workouts: int, volume_kg: Decimal) -> PushMessage:

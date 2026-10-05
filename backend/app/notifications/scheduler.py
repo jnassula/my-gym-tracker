@@ -21,6 +21,8 @@ from sqlalchemy.orm import selectinload
 from app.core.db import utcnow
 from app.exercises.models import Exercise, MuscleGroup
 from app.logs.models import ExerciseLog, WorkoutSession
+from app.logs.service import week_state
+from app.logs.week import Kind
 from app.notifications import messages
 from app.notifications.models import (
     NotificationDelivery,
@@ -31,7 +33,7 @@ from app.notifications.models import (
 from app.notifications.sender import PushMessage, PushSender
 from app.notifications.service import DEFAULTS, notify
 from app.users.models import User
-from app.workouts.models import WorkoutPlan
+from app.workouts.models import WorkoutDay, WorkoutPlan
 
 logger = logging.getLogger(__name__)
 
@@ -46,7 +48,7 @@ async def _active_plan(session: AsyncSession, user_id: uuid.UUID) -> WorkoutPlan
     return await session.scalar(
         select(WorkoutPlan)
         .where(WorkoutPlan.user_id == user_id, WorkoutPlan.is_active)
-        .options(selectinload(WorkoutPlan.days))
+        .options(selectinload(WorkoutPlan.days).selectinload(WorkoutDay.exercises))
     )
 
 
@@ -82,6 +84,41 @@ async def _week_totals(
     return workouts or 0, Decimal(volume or 0)
 
 
+async def _sent(
+    session: AsyncSession, user_id: uuid.UUID, kind: NotificationKind, key: str
+) -> bool:
+    found = await session.scalar(
+        select(NotificationDelivery.id)
+        .where(
+            NotificationDelivery.user_id == user_id,
+            NotificationDelivery.kind == kind,
+            NotificationDelivery.key == key,
+        )
+        .limit(1)
+    )
+    return found is not None
+
+
+async def _training_reminder(
+    session: AsyncSession, user: User, plan: WorkoutPlan, today: date
+) -> PushMessage | None:
+    """The workout suggested for today (``logs.week``: the plan's own day, one its weekday left
+    behind, or the next of a plan that rotates), while nothing was trained today. Nothing on a
+    day with nothing due, nor once the week's workouts are done."""
+    # Asked every minute of the reminder's three hours: the week is only read until it is sent.
+    if await _sent(session, user.id, NotificationKind.TRAINING_REMINDER, today.isoformat()):
+        return None
+    if await _trained_on(session, user.id, today):
+        return None
+    state = await week_state(session, user, plan, today)
+    day = next((d for d in plan.days if d.id == state.suggestion.day_id), None)
+    if state.suggestion.kind is not Kind.SUGGEST or day is None:
+        return None
+    return messages.training_reminder(
+        user.language, day.label or plan.name, state.done, state.target
+    )
+
+
 async def _due(
     session: AsyncSession, user: User, prefs: NotificationSettings, now: datetime
 ) -> list[tuple[NotificationKind, str, PushMessage]]:
@@ -92,9 +129,8 @@ async def _due(
     due: list[tuple[NotificationKind, str, PushMessage]] = []
 
     if prefs.training_reminder and plan and reminder_at <= local < reminder_at + REMINDER_WINDOW:
-        day = next((d for d in plan.days if d.weekday == today.weekday()), None)
-        if day is not None and not await _trained_on(session, user.id, today):
-            message = messages.training_reminder(user.language, day.label or plan.name)
+        message = await _training_reminder(session, user, plan, today)
+        if message is not None:
             due.append((NotificationKind.TRAINING_REMINDER, today.isoformat(), message))
 
     if prefs.weekly_summary and today.weekday() == SUMMARY_WEEKDAY and local.time() >= SUMMARY_TIME:
