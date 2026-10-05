@@ -204,3 +204,106 @@ def test_friday_with_two_left_names_the_one_due() -> None:
     workouts = [did(A, MONDAY)]
 
     assert suggest(FIXED, workouts, {A: MONDAY}, FRIDAY) == Suggestion(Kind.SUGGEST, C, Reason.PLAN)
+
+
+# --- other activities (footvolley, surf) ---------------------------------------------------------
+# The user's own week: A (upper) on Monday, then B (legs) on Tuesday because Wednesday is
+# footvolley, then C (abs and stretching) on Wednesday.
+
+
+def test_what_will_not_fit_tomorrow_is_done_today() -> None:
+    plan = days(None, None, None)  # A, C (abs), B (legs), as the trainer ordered them
+    legs = plan[2].id
+    monday = [did(A, MONDAY)]
+
+    # Tuesday: C would be next, but tomorrow's footvolley rules the legs out.
+    assert suggest(plan, monday, {A: MONDAY}, TUESDAY, blocked_tomorrow={legs}) == Suggestion(
+        Kind.SUGGEST, legs, Reason.BEFORE_ACTIVITY
+    )
+    # Wednesday, footvolley: what is left fits.
+    tuesday = [*monday, did(legs, TUESDAY)]
+    last = {A: MONDAY, legs: TUESDAY}
+    assert suggest(plan, tuesday, last, WEDNESDAY, blocked_today={legs}) == Suggestion(
+        Kind.SUGGEST, B, Reason.NEXT
+    )
+
+
+def test_a_workout_that_clashes_with_todays_activity_gives_way() -> None:
+    """Surf today: not the upper-body workout."""
+    assert suggest(ROTATING, [], {}, MONDAY, blocked_today={A}) == Suggestion(
+        Kind.SUGGEST, B, Reason.INSTEAD
+    )
+
+
+def test_nothing_is_suggested_when_all_that_is_left_clashes() -> None:
+    workouts = [did(B, MONDAY), did(C, TUESDAY)]
+    last = {B: MONDAY, C: TUESDAY}
+
+    assert suggest(ROTATING, workouts, last, WEDNESDAY, blocked_today={A}) == Suggestion(
+        Kind.REST, A, Reason.CLASH
+    )
+
+
+def test_an_activity_changes_nothing_when_the_plan_already_agrees() -> None:
+    # B is next anyway, and blocked tomorrow: no need to say why.
+    monday = [did(A, MONDAY)]
+    assert suggest(ROTATING, monday, {A: MONDAY}, TUESDAY, blocked_tomorrow={B}) == Suggestion(
+        Kind.SUGGEST, B, Reason.NEXT
+    )
+    # An activity that gets in the way of a workout already done says nothing either.
+    assert suggest(ROTATING, monday, {A: MONDAY}, TUESDAY, blocked_today={A}) == Suggestion(
+        Kind.SUGGEST, B, Reason.NEXT
+    )
+
+
+def test_a_workout_blocked_today_and_tomorrow_waits() -> None:
+    assert suggest(ROTATING, [], {}, MONDAY, blocked_today={A}, blocked_tomorrow={A}) == Suggestion(
+        Kind.SUGGEST, B, Reason.INSTEAD
+    )
+
+
+def test_a_fixed_plan_brings_a_workout_forward_ahead_of_an_activity() -> None:
+    """Monday, Wednesday, Friday; footvolley on Wednesdays gets in the way of Wednesday's legs."""
+    monday = [did(A, MONDAY)]
+    last = {A: MONDAY}
+
+    # Tuesday would be a rest day: the legs are brought forward instead.
+    assert suggest(FIXED, monday, last, TUESDAY, blocked_tomorrow={B}) == Suggestion(
+        Kind.SUGGEST, B, Reason.BEFORE_ACTIVITY
+    )
+    # Left for Wednesday all the same, it doesn't go with footvolley; Friday's is offered.
+    assert suggest(FIXED, monday, last, WEDNESDAY, blocked_today={B}) == Suggestion(
+        Kind.SUGGEST, C, Reason.INSTEAD
+    )
+    # And without the activity nothing changes: Tuesday rests, Wednesday is the legs' day.
+    assert suggest(FIXED, monday, last, TUESDAY) == Suggestion(Kind.REST, B)
+
+
+def test_the_plans_own_day_gives_way_to_one_that_will_not_fit_tomorrow() -> None:
+    plan = days(0, 1, 2)  # A Monday, B Tuesday, C Wednesday; C is the legs, footvolley Wednesday
+    monday = [did(A, MONDAY)]
+
+    assert suggest(plan, monday, {A: MONDAY}, TUESDAY, blocked_tomorrow={C}) == Suggestion(
+        Kind.SUGGEST, C, Reason.BEFORE_ACTIVITY
+    )
+
+
+def test_a_complete_week_stays_complete_whatever_the_activities() -> None:
+    workouts = [did(A, MONDAY), did(B, TUESDAY), did(C, WEDNESDAY)]
+    last = {A: MONDAY, B: TUESDAY, C: WEDNESDAY}
+
+    assert (
+        suggest(ROTATING, workouts, last, THURSDAY, blocked_today={A, B, C}).kind is Kind.COMPLETE
+    )
+    # Another round would start with what fits today.
+    assert suggest(ROTATING, workouts, last, THURSDAY, blocked_today={A}) == Suggestion(
+        Kind.COMPLETE, B
+    )
+
+
+def test_a_workout_in_hand_is_carried_on_even_with_an_activity_in_its_way() -> None:
+    workouts = [did(A, MONDAY, complete=False)]
+
+    assert suggest(ROTATING, workouts, {A: MONDAY}, MONDAY, blocked_today={A}) == Suggestion(
+        Kind.CONTINUE, A
+    )

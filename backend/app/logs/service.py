@@ -18,6 +18,8 @@ from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from app.activities import rules as activity_rules
+from app.activities import service as activities
 from app.core.db import utcnow
 from app.exercises.key import ExerciseKey, exercise_key
 from app.exercises.models import Exercise
@@ -43,6 +45,7 @@ from app.logs.schemas import (
     SetRead,
     SetUpdate,
     Suggestion,
+    WeekActivity,
     WeekWorkout,
     WeightPoint,
 )
@@ -51,6 +54,7 @@ from app.workouts import service as workouts
 from app.workouts.models import WorkoutDay, WorkoutPlan
 
 HISTORY_SESSIONS = 4
+WEEK = timedelta(days=7)
 # The exercise screen's "Progressão" sparkline.
 RECENT_SESSIONS = 8
 
@@ -490,6 +494,11 @@ class WeekState:
     done: int
     trained: set[uuid.UUID]  # the plan's days with a workout that counts this week
     suggestion: week.Suggestion
+    # The user's other activities, by date, from Monday to the Monday after.
+    activities: dict[date, list[activities.Happening]]
+    # By plan day: today's activities it shouldn't share the day with.
+    avoid: dict[uuid.UUID, list[str]]
+    because: list[str]  # the activities behind the suggestion's reason, when they gave it
 
 
 async def week_state(
@@ -541,6 +550,31 @@ async def week_state(
         week.Workout(workout.day_id, workout.local_date, completeness[workout.id])
         for workout in workouts
     ]
+    # The user's other activities get in the way of the workouts of the regions they avoid:
+    # today's are not suggested, tomorrow's are suggested today.
+    tomorrow = today + timedelta(days=1)
+    happening = await activities.on_dates(session, user.id, week_start, week_start + WEEK)
+    worked = {
+        day.id: activity_rules.regions(exercise.muscle_group for exercise in day.exercises)
+        for day in plan.days
+    }
+
+    def clashing(on: date) -> dict[uuid.UUID, list[str]]:
+        found = {
+            day_id: [a.name for a in happening.get(on, []) if a.avoid & regions]
+            for day_id, regions in worked.items()
+        }
+        return {day_id: names for day_id, names in found.items() if names}
+
+    today_clashes, tomorrow_clashes = clashing(today), clashing(tomorrow)
+    suggestion = week.suggest(
+        plan_days,
+        this_week,
+        last_trained,
+        today,
+        blocked_today=set(today_clashes),
+        blocked_tomorrow=set(tomorrow_clashes),
+    )
     return WeekState(
         today=today,
         week_start=week_start,
@@ -550,8 +584,25 @@ async def week_state(
         target=week.target(plan_days),
         done=week.done(this_week, today),
         trained=week.trained(this_week, today) & set(days),
-        suggestion=week.suggest(plan_days, this_week, last_trained, today),
+        suggestion=suggestion,
+        activities=happening,
+        avoid=today_clashes,
+        because=_because(suggestion, today_clashes, tomorrow_clashes),
     )
+
+
+def _because(
+    suggestion: week.Suggestion,
+    today_clashes: dict[uuid.UUID, list[str]],
+    tomorrow_clashes: dict[uuid.UUID, list[str]],
+) -> list[str]:
+    """The activities to name with a reason they gave: tomorrow's that the suggested workout
+    wouldn't fit with, or today's that ruled workouts out."""
+    if suggestion.reason is week.Reason.BEFORE_ACTIVITY and suggestion.day_id:
+        return tomorrow_clashes.get(suggestion.day_id, [])
+    if suggestion.reason in (week.Reason.INSTEAD, week.Reason.CLASH):
+        return list(dict.fromkeys(name for names in today_clashes.values() for name in names))
+    return []
 
 
 async def plan_week(session: AsyncSession, user: User, plan_id: uuid.UUID) -> PlanWeek:
@@ -577,6 +628,7 @@ async def plan_week(session: AsyncSession, user: User, plan_id: uuid.UUID) -> Pl
                 exercises_total=len(day.exercises),
                 sets=sum(logged.values()),
                 trained=day.id in state.trained,
+                avoid=state.avoid.get(day.id, []),
             )
         )
     return PlanWeek(
@@ -598,7 +650,13 @@ async def plan_week(session: AsyncSession, user: User, plan_id: uuid.UUID) -> Pl
             kind=state.suggestion.kind,
             day_id=state.suggestion.day_id,
             reason=state.suggestion.reason,
+            because=state.because,
         ),
+        activities=[
+            WeekActivity(activity_id=a.activity_id, name=a.name, date=day, fixed=a.fixed)
+            for day, on_day in sorted(state.activities.items())
+            for a in on_day
+        ],
     )
 
 

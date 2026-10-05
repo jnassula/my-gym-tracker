@@ -15,6 +15,7 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from app.activities import service as activities
 from app.exercises.key import exercise_key
 from app.exercises.models import Exercise, MuscleGroup
 from app.health import service as health
@@ -267,10 +268,18 @@ async def calendar(session: AsyncSession, user: User, month: date | None) -> Pro
             return "future"
         return "today" if day == today and due_today else "rest"
 
+    month_days = _month_days(first)
+    happening = await activities.on_dates(session, user.id, month_days[0], month_days[-1])
+
     return ProgressCalendar(
         month=first,
         today=today,
-        days=[CalendarDay(date=day, status=status(day)) for day in _month_days(first)],
+        days=[
+            CalendarDay(
+                date=day, status=status(day), activities=[a.name for a in happening.get(day, [])]
+            )
+            for day in month_days
+        ],
         week_streak=week_streak(trained, today),
         sessions_total=len(trained),
         adherence_30d=await _adherence(session, user, state),

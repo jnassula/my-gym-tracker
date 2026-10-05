@@ -99,6 +99,40 @@ async def test_no_reminder_once_the_weeks_workouts_are_done(
     assert await run_due(db_session, push_sender, wednesday) == 0
 
 
+async def test_the_reminder_works_around_the_users_other_activities(
+    client: AsyncClient, clock: Clock, db_session: AsyncSession, push_sender: FakePushSender
+) -> None:
+    """Legs before Wednesday's footvolley; and no reminder for a workout surf rules out."""
+
+    def exercise(group: str) -> dict[str, object]:
+        return {"name": group, "muscle_group": group, "sets": 3, "reps": "12"}
+
+    plan = {
+        "name": "AB",
+        "days": [
+            {"weekday": None, "label": "Superiores", "exercises": [exercise("chest")]},
+            {"weekday": None, "label": "Inferiores", "exercises": [exercise("quads")]},
+        ],
+    }
+    gym = await open_gym(client, "atividades@example.pt", plan)
+    await subscribe(gym)
+    for activity in (
+        {"name": "Futevôlei", "weekdays": [1], "avoid": ["lower"]},  # Tuesdays
+        {"name": "Surf", "avoid": ["upper"]},
+    ):
+        await gym.client.post("/api/activities", json=activity, headers=gym.headers)
+    surf = (await gym.get("/api/activities"))["activities"][1]
+
+    # Monday: the plan would start with the upper body, but tomorrow the legs won't fit.
+    assert await run_due(db_session, push_sender, MONDAY_1740) == 1
+    assert bodies(push_sender)[-1][1] == "Hoje: Inferiores · 0 de 2 esta semana."
+    await gym.client.put(f"/api/logs/days/{gym.day(1)}/done", headers=gym.headers)
+    clock.advance(days=2)  # Wednesday, and the sea is good: the upper body is all that is left
+    await gym.client.put(f"/api/activities/{surf['id']}/days/2026-09-30", headers=gym.headers)
+
+    assert await run_due(db_session, push_sender, MONDAY_1740 + timedelta(days=2)) == 0
+
+
 async def test_a_rotating_plan_is_reminded_until_its_week_is_done(
     client: AsyncClient, clock: Clock, db_session: AsyncSession, push_sender: FakePushSender
 ) -> None:

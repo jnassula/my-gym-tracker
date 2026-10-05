@@ -12,6 +12,7 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from app.activities.models import Activity, ActivityDay
 from app.body.models import BodyMeasurement
 from app.core.config import get_settings
 from app.core.db import utcnow
@@ -127,6 +128,33 @@ async def _weighings(session: AsyncSession, user: User) -> list[dict[str, Any]]:
     ]
 
 
+async def _activities(session: AsyncSession, user: User) -> list[dict[str, Any]]:
+    """Archived ones too, each with what was said outright of its dates (its fixed weekdays
+    put it on the others)."""
+    days: dict[Any, list[dict[str, Any]]] = {}
+    for row in await session.scalars(
+        select(ActivityDay).where(ActivityDay.user_id == user.id).order_by(ActivityDay.local_date)
+    ):
+        days.setdefault(row.activity_id, []).append(
+            {"date": row.local_date, "skipped": row.skipped}
+        )
+    rows = await session.scalars(
+        select(Activity).where(Activity.user_id == user.id).order_by(Activity.created_at)
+    )
+    return [
+        {
+            "name": row.name,
+            "weekdays": row.weekdays,
+            "weekdays_since": row.weekdays_since,
+            "avoid": row.avoid,
+            "created_at": row.created_at,
+            "archived_at": row.deleted_at,
+            "days": days.get(row.id, []),
+        }
+        for row in rows
+    ]
+
+
 async def _health(session: AsyncSession, user: User) -> dict[str, Any]:
     connections = await session.scalars(
         select(HealthConnection)
@@ -196,6 +224,7 @@ async def export_data(session: AsyncSession, user: User) -> dict[str, Any]:
         "plans": await _plans(session, user),
         "workouts": await _workouts(session, user),
         "weighings": await _weighings(session, user),
+        "activities": await _activities(session, user),
         "health": await _health(session, user),
         "notifications": {
             "settings": NotificationSettingsRead.model_validate(settings).model_dump(),

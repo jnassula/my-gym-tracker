@@ -243,6 +243,7 @@ async def test_the_week_shows_what_was_trained(gym: Gym, clock: Clock) -> None:
         "exercises_total": 4,
         "sets": 3,
         "trained": False,  # started today, not complete yet
+        "avoid": [],
     }
     assert wednesday["session_id"] is None
     assert wednesday["exercises_done"] == 0
@@ -254,7 +255,13 @@ async def test_the_week_shows_what_was_trained(gym: Gym, clock: Clock) -> None:
         "date": "2026-09-28",
         "complete": False,
     }
-    assert week["suggestion"] == {"kind": "continue", "day_id": gym.day(0), "reason": None}
+    assert week["suggestion"] == suggests("continue", gym.day(0), None)
+
+
+def suggests(
+    kind: str, day_id: str, reason: str | None = None, because: tuple[str, ...] = ()
+) -> dict[str, Any]:
+    return {"kind": kind, "day_id": day_id, "reason": reason, "because": list(because)}
 
 
 async def week_of(gym: Gym) -> dict[str, Any]:
@@ -264,17 +271,9 @@ async def week_of(gym: Gym) -> dict[str, Any]:
 
 async def test_mondays_workout_can_be_done_on_wednesday(gym: Gym, clock: Clock) -> None:
     """The plan's weekdays are a suggestion: nothing is missed, and the week counts workouts."""
-    assert (await week_of(gym))["suggestion"] == {
-        "kind": "suggest",
-        "day_id": gym.day(0),
-        "reason": "plan",
-    }
+    assert (await week_of(gym))["suggestion"] == suggests("suggest", gym.day(0), "plan")
     clock.advance(days=1)  # Tuesday: Monday's is still to do
-    assert (await week_of(gym))["suggestion"] == {
-        "kind": "suggest",
-        "day_id": gym.day(0),
-        "reason": "catch_up",
-    }
+    assert (await week_of(gym))["suggestion"] == suggests("suggest", gym.day(0), "catch_up")
     clock.advance(days=1)  # Wednesday: its own day first; Monday's is done instead
     assert (await week_of(gym))["suggestion"]["day_id"] == gym.day(1)
     await gym.client.put(f"/api/logs/days/{gym.day(0)}/done", headers=gym.headers)
@@ -285,13 +284,9 @@ async def test_mondays_workout_can_be_done_on_wednesday(gym: Gym, clock: Clock) 
     assert (monday["trained"], monday["date"]) == (True, "2026-09-30")
     assert wednesday["trained"] is False
     assert (week["workouts_done"], week["target"]) == (1, 2)
-    assert week["suggestion"] == {"kind": "done", "day_id": gym.day(0), "reason": None}
+    assert week["suggestion"] == suggests("done", gym.day(0), None)
     clock.advance(days=1)  # Thursday: what is left of the week
-    assert (await week_of(gym))["suggestion"] == {
-        "kind": "suggest",
-        "day_id": gym.day(1),
-        "reason": "catch_up",
-    }
+    assert (await week_of(gym))["suggestion"] == suggests("suggest", gym.day(1), "catch_up")
 
 
 async def test_the_week_is_complete_when_each_day_was_trained(gym: Gym, clock: Clock) -> None:
@@ -322,14 +317,14 @@ async def test_a_rotating_plan_suggests_the_day_trained_longest_ago(
     gym = await open_gym(client, "rotativo@example.pt", rotating)
     a, b, c = (gym.day(index) for index in range(3))
 
-    assert (await week_of(gym))["suggestion"] == {"kind": "suggest", "day_id": a, "reason": "next"}
+    assert (await week_of(gym))["suggestion"] == suggests("suggest", a, "next")
     await gym.client.put(f"/api/logs/days/{c}/done", headers=gym.headers)  # C instead, today
     clock.advance(days=1)
     assert (await week_of(gym))["suggestion"]["day_id"] == a
     await gym.client.put(f"/api/logs/days/{a}/done", headers=gym.headers)
     clock.advance(days=6)  # next week: B was never trained, then C (longest ago), then A
 
-    assert (await week_of(gym))["suggestion"] == {"kind": "suggest", "day_id": b, "reason": "next"}
+    assert (await week_of(gym))["suggestion"] == suggests("suggest", b, "next")
     await gym.client.put(f"/api/logs/days/{b}/done", headers=gym.headers)
     clock.advance(days=1)
     assert (await week_of(gym))["suggestion"]["day_id"] == c
@@ -405,11 +400,7 @@ async def test_taking_it_back_leaves_the_sets_and_reopens_the_workout(gym: Gym) 
 
     assert (session["done_exercise_ids"], session["ended_at"]) == ([], None)
     assert len(session["sets"]) == 1
-    assert (await week_of(gym))["suggestion"] == {
-        "kind": "continue",
-        "day_id": gym.day(0),
-        "reason": None,
-    }
+    assert (await week_of(gym))["suggestion"] == suggests("continue", gym.day(0), None)
 
 
 async def test_only_ones_own_days_are_marked(gym: Gym, client: AsyncClient) -> None:

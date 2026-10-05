@@ -78,6 +78,9 @@ class ExerciseProgress(BaseModel):
 class CalendarDay(BaseModel):
     date: date
     status: DayStatus
+    # The user's other activities on that date (footvolley, surf), by name: a field beside the
+    # status, not another status, so a day can be trained and have one.
+    activities: list[str] = []
 
 
 class WeekSession(BaseModel):

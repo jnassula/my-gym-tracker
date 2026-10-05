@@ -103,6 +103,8 @@ class DayWeek(BaseModel):
     sets: int
     # Trained this week: on an earlier day (however far it got), or complete today.
     trained: bool = False
+    # Today's activities (footvolley, surf) this workout shouldn't share the day with.
+    avoid: list[str] = []
 
 
 class WeekWorkout(BaseModel):
@@ -122,6 +124,19 @@ class Suggestion(BaseModel):
     kind: Kind
     day_id: uuid.UUID | None
     reason: Reason | None
+    # The activities behind a reason they gave: tomorrow's (before_activity), today's (instead,
+    # clash).
+    because: list[str] = []
+
+
+class WeekActivity(BaseModel):
+    """An activity besides the gym on a date. ``fixed``: there by its weekday, with nothing
+    said of that date (so taking it off means "não fui")."""
+
+    activity_id: uuid.UUID
+    name: str
+    date: date
+    fixed: bool
 
 
 class PlanWeek(BaseModel):
@@ -135,6 +150,8 @@ class PlanWeek(BaseModel):
     workouts_done: int
     sessions: list[WeekWorkout]
     suggestion: Suggestion
+    # Monday to the Monday after: on a Sunday, tomorrow is already next week.
+    activities: list[WeekActivity] = []
 
 
 class PersonalRecord(BaseModel):

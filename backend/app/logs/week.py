@@ -8,7 +8,7 @@ today's suggestion is the one that fits best, which the user can swap for anothe
 """
 
 import uuid
-from collections.abc import Mapping, Sequence
+from collections.abc import Mapping, Sequence, Set
 from dataclasses import dataclass
 from datetime import date
 from enum import StrEnum
@@ -28,6 +28,10 @@ class Reason(StrEnum):
     PLAN = "plan"  # the plan has it on today's weekday
     CATCH_UP = "catch_up"  # its weekday went by this week
     NEXT = "next"  # no weekday to go by: the one trained longest ago
+    # The user's other activities (``activities.rules``) changed what the plan alone would say:
+    BEFORE_ACTIVITY = "before_activity"  # tomorrow one gets in its way: today, while it fits
+    INSTEAD = "instead"  # one today rules out the workout that came first: this one fits
+    CLASH = "clash"  # with REST: all that is left clashes with today's activity
 
 
 @dataclass(frozen=True)
@@ -51,7 +55,7 @@ class Workout:
 class Suggestion:
     kind: Kind
     day_id: uuid.UUID | None  # None only for a plan without days
-    reason: Reason | None = None  # with SUGGEST
+    reason: Reason | None = None  # with SUGGEST, and CLASH with REST
 
 
 def counts(workout: Workout, today: date) -> bool:
@@ -81,11 +85,24 @@ def suggest(
     workouts: Sequence[Workout],
     last_trained: Mapping[uuid.UUID, date],
     today: date,
+    *,
+    blocked_today: Set[uuid.UUID] = frozenset(),
+    blocked_tomorrow: Set[uuid.UUID] = frozenset(),
 ) -> Suggestion:
-    """``workouts`` oldest first; ``last_trained`` is each day's latest date, of any week."""
+    """``workouts`` oldest first; ``last_trained`` is each day's latest date, of any week.
+    ``blocked_today`` and ``blocked_tomorrow`` are the days an activity of that date gets in
+    the way of ("no legs with footvolley"): one blocked today isn't suggested, and one blocked
+    tomorrow is suggested today, while it still fits."""
     if not days:
         return Suggestion(Kind.REST, None)
-    return _todays(days, workouts, today) or _next(days, workouts, last_trained, today)
+    return _todays(days, workouts, today) or _next(
+        days,
+        workouts,
+        last_trained,
+        today,
+        blocked_today=blocked_today,
+        blocked_tomorrow=blocked_tomorrow,
+    )
 
 
 def _todays(days: Sequence[PlanDay], workouts: Sequence[Workout], today: date) -> Suggestion | None:
@@ -105,6 +122,9 @@ def _next(
     workouts: Sequence[Workout],
     last_trained: Mapping[uuid.UUID, date],
     today: date,
+    *,
+    blocked_today: Set[uuid.UUID],
+    blocked_tomorrow: Set[uuid.UUID],
 ) -> Suggestion:
     weekday = today.weekday()
     already = trained(workouts, today)
@@ -121,10 +141,20 @@ def _next(
             day.position,
         )
 
-    best = min(pool, key=rank)
+    natural = min(pool, key=rank)  # what the plan alone would have
+    free = [day for day in pool if day.id not in blocked_today]
+    # Of what fits today, what won't fit tomorrow comes first.
+    best = min(free, key=lambda day: (day.id not in blocked_tomorrow, *rank(day))) if free else None
     if done(workouts, today) >= target(days):
-        return Suggestion(Kind.COMPLETE, best.id)
+        return Suggestion(Kind.COMPLETE, (best or natural).id)
+    if best is None:
+        return Suggestion(Kind.REST, natural.id, Reason.CLASH)
+    if best.id != natural.id:
+        swapped = Reason.INSTEAD if natural.id in blocked_today else Reason.BEFORE_ACTIVITY
+        return Suggestion(Kind.SUGGEST, best.id, swapped)
     reason = _reason(best, weekday)
+    if reason is None and best.id in blocked_tomorrow:
+        reason = Reason.BEFORE_ACTIVITY  # its weekday is ahead, but so is what gets in its way
     # Without a reason its weekday is still to come: nothing is due today.
     return Suggestion(Kind.SUGGEST, best.id, reason) if reason else Suggestion(Kind.REST, best.id)
 
