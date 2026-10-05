@@ -152,12 +152,13 @@ const calendar: ProgressCalendar = {
   days: Array.from({ length: 30 }, (_, index) => {
     const day = index + 1
     const date = `2026-09-${String(day).padStart(2, '0')}`
-    const status = day === 30 ? 'today' : day === 28 ? 'trained' : day === 2 ? 'missed' : 'rest'
+    // No date is missed any more: a plan's weekday without a workout is a day like any other.
+    const status = day === 30 ? 'today' : day === 28 || day === 29 ? 'trained' : 'rest'
     return { date, status } as const
   }),
   week_streak: 1,
-  sessions_total: 1,
-  adherence_30d: 0.125,
+  sessions_total: 2,
+  adherence_30d: 0.5,
   this_week: [
     {
       session_id: 's1',
@@ -169,21 +170,36 @@ const calendar: ProgressCalendar = {
       exercises_done: 8,
       exercises_total: 8,
     },
+    {
+      // The whole workout marked as done: nothing was timed or lifted.
+      session_id: 's2',
+      date: '2026-09-29',
+      weekday: 1,
+      label: 'Abdominal e alongamentos',
+      duration_seconds: 0,
+      sets: 0,
+      exercises_done: 5,
+      exercises_total: 5,
+    },
   ],
 }
 
 describe('CalendarScreen', () => {
-  it('marks trained, missed and rest days and sums up the week', async () => {
+  it('marks trained and rest days, with no day missed, and sums up the week', async () => {
     serve({ '/api/progress/calendar': calendar })
     renderWithRouter(<CalendarScreen month="" onMonthChange={vi.fn()} />)
 
     expect(await screen.findByRole('heading', { name: 'setembro de 2026' })).toBeInTheDocument()
-    expect(screen.getByText('13%')).toBeInTheDocument()
+    expect(screen.getByText('50%')).toBeInTheDocument()
+    expect(screen.getByText('objetivo semanal · 4 sem.')).toBeInTheDocument()
     expect(screen.getByLabelText('28 de setembro: treinado')).toBeInTheDocument()
-    expect(screen.getByLabelText('2 de setembro: falhado')).toBeInTheDocument()
+    expect(screen.getByLabelText('2 de setembro: descanso')).toBeInTheDocument()
     expect(screen.getByLabelText('30 de setembro: hoje, por treinar')).toBeInTheDocument()
+    expect(screen.queryByText('falhado')).not.toBeInTheDocument() // not even in the legend
     expect(screen.getByText('Seg · Quadríceps e Glúteos')).toBeInTheDocument()
     expect(screen.getByText('52 min · 19 séries')).toBeInTheDocument()
+    expect(screen.getByText('Ter · Abdominal e alongamentos')).toBeInTheDocument()
+    expect(screen.getByText('marcado como feito')).toBeInTheDocument()
     // The current month is the last one.
     expect(screen.getByRole('button', { name: 'Mês seguinte' })).toBeDisabled()
   })

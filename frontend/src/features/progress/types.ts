@@ -116,6 +116,10 @@ export type SessionDetail = {
   /** Working sets. */
   sets: number
   volume: number
+  /** Of the day's exercises, how many were done: by their sets, or ticked (a workout marked as
+   * done has no sets to show). Missing from a server older than the flexible week. */
+  exercises_done?: number
+  exercises_total?: number
   /** In the order they were first logged. */
   exercises: SessionExercise[]
   health: SessionHealth | null

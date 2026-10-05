@@ -108,6 +108,12 @@ function Session({ data }: { data: SessionDetail }) {
 
         <section className="grid gap-2">
           <h2 className={HEADING}>{health ? t('health.session.setsPeaks') : t('health.session.sets')}</h2>
+          {/* Exercises ticked without sets (the whole workout marked as done) have no row below. */}
+          {(data.exercises_done ?? 0) > data.exercises.length && (
+            <p className="text-[13px] text-muted-foreground">
+              {t('health.session.markedDone', { done: data.exercises_done, total: data.exercises_total })}
+            </p>
+          )}
           <ul className="grid gap-1.5">
             {data.exercises.map((exercise) => (
               <li

@@ -22,9 +22,10 @@ import type { DayStatus, ProgressCalendar, WeekSession } from './types'
 const HEADING = 'text-[0.6875rem] font-medium tracking-widest text-primary uppercase'
 
 /**
- * Status is categorical, not an intensity scale. Trained and missed differ enough in lightness
- * for colour-blind readers; missed and rest also differ in form (filled vs. outlined), every cell
- * carries its day number and a spoken label, and the legend names each state.
+ * Status is categorical, not an intensity scale: trained is filled, every other day outlined,
+ * every cell carries its day number and a spoken label, and the legend names the two states.
+ * "missed" is only what a server from before the flexible week may still send: no date is missed
+ * now (the plan's weekdays are a suggestion), so it isn't in the legend.
  */
 const CELL: Record<DayStatus, string> = {
   trained: 'bg-primary text-primary-foreground',
@@ -139,7 +140,7 @@ function Month({ data, onMonthChange }: { data: ProgressCalendar; onMonthChange:
         ))}
       </ol>
       <ul className="flex flex-wrap gap-x-4 gap-y-1 text-[0.6875rem] text-muted-foreground">
-        {(['trained', 'missed', 'rest'] as const).map((status) => (
+        {(['trained', 'rest'] as const).map((status) => (
           <li key={status} className="flex items-center gap-1.5">
             <span aria-hidden className={cn('size-3 rounded', CELL[status])} />
             {t(`progress.calendar.status.${status}`)}
@@ -185,10 +186,12 @@ function ThisWeek({ sessions, today }: { sessions: WeekSession[]; today: string 
                 <span className={cn('shrink-0 text-muted-foreground tabular-nums', isToday && 'text-primary')}>
                   {isToday && !complete
                     ? t('progress.calendar.today', { done: session.exercises_done, total: session.exercises_total })
-                    : t('progress.calendar.session', {
-                        duration: formatDuration(session.duration_seconds),
-                        sets: session.sets,
-                      })}
+                    : complete && session.sets === 0 && session.duration_seconds === 0
+                      ? t('progress.calendar.markedDone')
+                      : t('progress.calendar.session', {
+                          duration: formatDuration(session.duration_seconds),
+                          sets: session.sets,
+                        })}
                   </span>
                 </Link>
               </li>

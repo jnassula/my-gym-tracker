@@ -291,6 +291,30 @@ describe('SessionScreen', () => {
     expect(screen.queryByText(/Pico de/)).not.toBeInTheDocument()
   })
 
+  it('says how much of a workout was only marked as done', async () => {
+    serve({
+      'GET /api/progress/sessions/session-1': () =>
+        json({ ...detail(null), exercises_done: 6, exercises_total: 6 }), // one of them with sets
+      [SOURCES]: () => json(off),
+    })
+    renderWithRouter(<SessionScreen sessionId="session-1" />)
+
+    expect(await screen.findByText('Marcado como feito: 6 de 6 exercícios.')).toBeInTheDocument()
+    expect(screen.getByText(/Supino Inclinado/)).toBeInTheDocument()
+  })
+
+  it('says nothing of the kind when every exercise done has its sets', async () => {
+    serve({
+      'GET /api/progress/sessions/session-1': () =>
+        json({ ...detail(null), exercises_done: 1, exercises_total: 6 }),
+      [SOURCES]: () => json(off),
+    })
+    renderWithRouter(<SessionScreen sessionId="session-1" />)
+
+    expect(await screen.findByText(/Supino Inclinado/)).toBeInTheDocument()
+    expect(screen.queryByText(/Marcado como feito/)).not.toBeInTheDocument()
+  })
+
   it('waits for the next sync where there is no shortcut to run', async () => {
     onPhone(ANDROID)
     serve({
