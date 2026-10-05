@@ -35,6 +35,9 @@ const CELL: Record<DayStatus, string> = {
   future: 'border border-dashed border-border text-muted-foreground',
 }
 
+/** The mark of another activity on a day, in whatever colour the cell's text has. */
+const DOT = 'absolute bottom-1 left-1/2 size-1 -translate-x-1/2 rounded-full bg-current opacity-70'
+
 type CalendarScreenProps = {
   /** First day of the month shown; empty for the current month. */
   month: string
@@ -125,17 +128,22 @@ function Month({ data, onMonthChange }: { data: ProgressCalendar; onMonthChange:
         {Array.from({ length: blanks }, (_, index) => (
           <li key={`blank-${index}`} aria-hidden />
         ))}
-        {data.days.map(({ date, status }) => (
+        {data.days.map(({ date, status, activities = [] }) => (
           <li
             key={date}
-            aria-label={`${dayLabel.format(new Date(`${date}T00:00:00`))}: ${t(`progress.calendar.status.${status}`)}`}
+            aria-label={[
+              `${dayLabel.format(new Date(`${date}T00:00:00`))}: ${t(`progress.calendar.status.${status}`)}`,
+              ...activities,
+            ].join(', ')}
             className={cn(
-              'flex aspect-square items-center justify-center rounded-lg text-xs tabular-nums',
+              'relative flex aspect-square items-center justify-center rounded-lg text-xs tabular-nums',
               CELL[status],
               date === data.today && 'ring-2 ring-primary ring-offset-2 ring-offset-card',
             )}
           >
             <span aria-hidden>{Number(date.slice(8))}</span>
+            {/* Another activity that day: a mark of its own, since the day may be trained too. */}
+            {activities.length > 0 && <span aria-hidden className={DOT} />}
           </li>
         ))}
       </ol>
@@ -146,6 +154,14 @@ function Month({ data, onMonthChange }: { data: ProgressCalendar; onMonthChange:
             {t(`progress.calendar.status.${status}`)}
           </li>
         ))}
+        {data.days.some((day) => day.activities?.length) && (
+          <li className="flex items-center gap-1.5">
+            <span aria-hidden className={cn('relative size-3 rounded', CELL.rest)}>
+              <span className={cn(DOT, 'bottom-0.5')} />
+            </span>
+            {t('progress.calendar.activity')}
+          </li>
+        )}
       </ul>
     </Card>
   )

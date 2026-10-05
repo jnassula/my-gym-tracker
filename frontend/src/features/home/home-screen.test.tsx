@@ -2,6 +2,7 @@ import { cleanup, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import type { Activity } from '@/features/activities/types'
 import type { ProgressOverview } from '@/features/progress/types'
 import type { DayLog, PlanWeek, Suggestion, TrainingSession } from '@/features/training/types'
 import type { Day, Exercise, Plan, PlanSummary, Weekday } from '@/features/workouts/types'
@@ -68,6 +69,7 @@ function week(today: string, suggestion: Suggestion, trained: Record<string, str
       exercises_total: item.exercises.length,
       sets: 0,
       trained: item.id in trained || (item.id === started && suggestion.kind === 'done'),
+      avoid: [],
     }
   })
   return {
@@ -85,11 +87,12 @@ function week(today: string, suggestion: Suggestion, trained: Record<string, str
         complete: item.trained,
       })),
     suggestion,
+    activities: [],
   }
 }
 
 const MON_TUE = { 'day-mon': '2026-09-28', 'day-tue': '2026-09-29' }
-const SUGGEST_WED: Suggestion = { kind: 'suggest', day_id: 'day-wed', reason: 'plan' }
+const SUGGEST_WED: Suggestion = { kind: 'suggest', day_id: 'day-wed', reason: 'plan', because: [] }
 
 const overview: ProgressOverview = {
   week_streak: 6,
@@ -130,8 +133,18 @@ function serve(routes: Record<string, () => Response>) {
   })
 }
 
-function serveActivePlan(of: PlanWeek | object, current: TrainingSession | null = null) {
+const FOOTVOLLEY: Activity = { id: 'act-1', name: 'Futevôlei', weekdays: [3], avoid: ['lower'] }
+const SURF: Activity = { id: 'act-2', name: 'Surf', weekdays: [], avoid: ['upper'] }
+
+function serveActivePlan(
+  of: PlanWeek | object,
+  current: TrainingSession | null = null,
+  activities: Activity[] = [],
+) {
   serve({
+    'GET /api/activities': () => json({ activities, plan_days: [] }),
+    'PUT /api/activities/act-2/days/2026-09-30': () => new Response(null, { status: 204 }),
+    'DELETE /api/activities/act-1/days/2026-10-01': () => new Response(null, { status: 204 }),
     'GET /api/workouts': () => json([summary]),
     'GET /api/progress': () => json(overview),
     'GET /api/workouts/plan-1': () => json(plan),
@@ -206,7 +219,7 @@ describe('HomeScreen', () => {
   })
 
   it('carries on a workout already started', async () => {
-    serveActivePlan(week('2026-09-30', { kind: 'continue', day_id: 'day-wed', reason: null }), session(['ex-1']))
+    serveActivePlan(week('2026-09-30', { kind: 'continue', day_id: 'day-wed', reason: null, because: [] }), session(['ex-1']))
     renderWithRouter(<HomeScreen />)
 
     const today = await todayCard()
@@ -217,7 +230,7 @@ describe('HomeScreen', () => {
 
   it('says why a workout from another weekday is today’s', async () => {
     // Thursday: Wednesday's workout wasn't done.
-    serveActivePlan(week('2026-10-01', { kind: 'suggest', day_id: 'day-wed', reason: 'catch_up' }))
+    serveActivePlan(week('2026-10-01', { kind: 'suggest', day_id: 'day-wed', reason: 'catch_up', because: [] }))
     renderWithRouter(<HomeScreen />)
 
     const today = await todayCard()
@@ -228,7 +241,7 @@ describe('HomeScreen', () => {
   })
 
   it('still shows the workout when the server gives a reason this app has no words for', async () => {
-    serveActivePlan(week('2026-09-30', { kind: 'suggest', day_id: 'day-wed', reason: 'before_activity' }))
+    serveActivePlan(week('2026-09-30', { kind: 'suggest', day_id: 'day-wed', reason: 'full_moon', because: [] }))
     renderWithRouter(<HomeScreen />)
 
     const today = await todayCard()
@@ -270,7 +283,7 @@ describe('HomeScreen', () => {
 
   it('offers another workout once today’s is done', async () => {
     serveActivePlan(
-      week('2026-09-30', { kind: 'done', day_id: 'day-wed', reason: null }),
+      week('2026-09-30', { kind: 'done', day_id: 'day-wed', reason: null, because: [] }),
       { ...session(['ex-1', 'ex-2', 'ex-3']), ended_at: '2026-09-30T13:00:00Z' },
     )
     renderWithRouter(<HomeScreen />)
@@ -285,7 +298,7 @@ describe('HomeScreen', () => {
 
   it('is quiet on a day with nothing due, and still lets a workout be chosen', async () => {
     serveActivePlan(
-      week('2026-10-01', { kind: 'rest', day_id: 'day-fri', reason: null }, { ...MON_TUE, 'day-wed': '2026-09-30' }),
+      week('2026-10-01', { kind: 'rest', day_id: 'day-fri', reason: null, because: [] }, { ...MON_TUE, 'day-wed': '2026-09-30' }),
     )
     renderWithRouter(<HomeScreen />)
 
@@ -299,7 +312,7 @@ describe('HomeScreen', () => {
 
   it('says so when the week’s workouts are done', async () => {
     const all = { ...MON_TUE, 'day-wed': '2026-09-30', 'day-fri': '2026-09-30' }
-    serveActivePlan(week('2026-10-01', { kind: 'complete', day_id: 'day-mon', reason: null }, all))
+    serveActivePlan(week('2026-10-01', { kind: 'complete', day_id: 'day-mon', reason: null, because: [] }, all))
     renderWithRouter(<HomeScreen />)
 
     const today = await todayCard()
@@ -321,6 +334,102 @@ describe('HomeScreen', () => {
     expect(within(today).getByText('Podes descansar, ou adiantar um treino.')).toBeInTheDocument()
     expect(within(today).getByRole('button', { name: 'Escolher treino' })).toBeInTheDocument()
     expect(screen.getByText('2 de 4 treinos')).toBeInTheDocument() // counted from the days it does send
+  })
+
+  it('says which activity brought a workout forward', async () => {
+    // Wednesday; tomorrow is footvolley, so the legs (Friday's) come today.
+    serveActivePlan(
+      {
+        ...week('2026-09-30', { kind: 'suggest', day_id: 'day-wed', reason: 'before_activity', because: ['Futevôlei'] }),
+        activities: [{ activity_id: 'act-1', name: 'Futevôlei', date: '2026-10-01', fixed: true }],
+      },
+      null,
+      [FOOTVOLLEY, SURF],
+    )
+    renderWithRouter(<HomeScreen />)
+
+    const today = await todayCard()
+    expect(await within(today).findByText('Amanhã tens Futevôlei: hoje ainda encaixa.')).toBeInTheDocument()
+    // The strip marks the day of the activity, and says it.
+    expect(screen.getByText('Quinta, sem treino, Futevôlei')).toBeInTheDocument()
+  })
+
+  it('suggests nothing when all that is left clashes with today’s activity', async () => {
+    serveActivePlan(
+      {
+        ...week('2026-09-30', { kind: 'rest', day_id: 'day-wed', reason: 'clash', because: ['Surf'] }),
+        activities: [{ activity_id: 'act-2', name: 'Surf', date: '2026-09-30', fixed: false }],
+      },
+      null,
+      [SURF],
+    )
+    renderWithRouter(<HomeScreen />)
+
+    const today = await todayCard()
+    expect(within(today).getByText('Hoje tens Surf')).toBeInTheDocument()
+    expect(
+      within(today).getByText('O treino que falta, Costas (ênfase em remadas), não combina. Fica para outro dia.'),
+    ).toBeInTheDocument()
+    expect(within(today).getByRole('button', { name: 'Escolher treino' })).toBeInTheDocument()
+  })
+
+  it('warns in the list about a workout that clashes with today’s activity', async () => {
+    const of = week('2026-09-30', { kind: 'suggest', day_id: 'day-fri', reason: 'instead', because: ['Surf'] })
+    serveActivePlan({
+      ...of,
+      days: of.days.map((item) => (item.day_id === 'day-wed' ? { ...item, avoid: ['Surf'] } : item)),
+    })
+    renderWithRouter(<HomeScreen />)
+
+    const today = await todayCard()
+    await userEvent.click(within(today).getByRole('button', { name: 'Trocar o treino de hoje' }))
+
+    const sheet = await screen.findByRole('dialog', { name: 'Que treino hoje?' })
+    expect(within(sheet).getByRole('link', { name: /Costas/ })).toHaveTextContent('evitar hoje · Surf')
+    expect(within(sheet).getByRole('link', { name: /Ombros/ })).not.toHaveTextContent('evitar')
+  })
+
+  it('marks an activity for today with one tap, and takes a fixed day off the week', async () => {
+    serveActivePlan(
+      {
+        ...week('2026-09-30', SUGGEST_WED),
+        activities: [{ activity_id: 'act-1', name: 'Futevôlei', date: '2026-10-01', fixed: true }],
+      },
+      null,
+      [FOOTVOLLEY, SURF],
+    )
+    renderWithRouter(<HomeScreen />)
+
+    const also = await screen.findByRole('region', { name: 'Hoje também' })
+    const surf = within(also).getByRole('button', { name: 'Surf, hoje' })
+    expect(surf).toHaveAttribute('aria-pressed', 'false')
+    await userEvent.click(surf)
+    await waitFor(() => expect(requested('PUT /api/activities/act-2/days/2026-09-30')).toBe(1))
+    await waitFor(() => expect(requested('GET /api/logs/plans/plan-1/week')).toBe(2)) // the suggestion again
+
+    await userEvent.click(within(also).getByRole('button', { name: 'Outros dias' }))
+    const sheet = await screen.findByRole('dialog', { name: 'Atividades da semana' })
+    const days = within(sheet).getByRole('group', { name: 'Dias de Futevôlei esta semana' })
+    const thursday = within(days).getByRole('button', { name: 'Quinta' })
+    expect(thursday).toHaveAttribute('aria-pressed', 'true')
+    expect(within(days).getByRole('button', { name: 'Quarta' })).toHaveAttribute('aria-current', 'date')
+    await userEvent.click(thursday) // "não fui"
+    await waitFor(() => expect(requested('DELETE /api/activities/act-1/days/2026-10-01')).toBe(1))
+    expect(within(sheet).getByRole('link', { name: 'Gerir atividades' })).toHaveAttribute(
+      'href',
+      '/settings/activities',
+    )
+  })
+
+  it('offers a way to add activities to someone who has none', async () => {
+    serveActivePlan(week('2026-09-30', SUGGEST_WED))
+    renderWithRouter(<HomeScreen />)
+
+    expect(await screen.findByRole('link', { name: 'Adicionar uma atividade' })).toHaveAttribute(
+      'href',
+      '/settings/activities',
+    )
+    expect(screen.queryByRole('region', { name: 'Hoje também' })).not.toBeInTheDocument()
   })
 
   it('asks for a PDF when there is no active plan', async () => {

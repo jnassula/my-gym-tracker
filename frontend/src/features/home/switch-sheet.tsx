@@ -10,6 +10,7 @@ import { dayRows, type DayRow } from '@/features/training/plan'
 import type { PlanWeek } from '@/features/training/types'
 import { useWorkoutLabels } from '@/features/workouts/labels'
 import type { Plan } from '@/features/workouts/types'
+import { formatList } from '@/lib/format'
 
 type SwitchSheetProps = { plan: Plan; week: PlanWeek; open: boolean; onOpenChange: (open: boolean) => void }
 
@@ -47,7 +48,7 @@ export function SwitchSheet({ plan, week, open, onOpenChange }: SwitchSheetProps
 }
 
 function PickLink({ planId, row }: { planId: string; row: DayRow }) {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const labels = useWorkoutLabels()
   const dayDate = useDayDate()
   const total = row.day.exercises.length
@@ -78,6 +79,12 @@ function PickLink({ planId, row }: { planId: string; row: DayRow }) {
           )}
         </span>
         <span className="block truncate text-xs text-muted-foreground">{detail}</span>
+        {/* It can still be opened: the user knows the day better than the rule does. */}
+        {row.state === 'pending' && row.avoid.length > 0 && (
+          <span className="block truncate text-xs text-warning">
+            {t('home.pick.avoid', { activities: formatList(row.avoid, i18n.language) })}
+          </span>
+        )}
       </span>
       {row.trained ? (
         <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground">

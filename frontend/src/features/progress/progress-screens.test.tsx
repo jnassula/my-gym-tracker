@@ -154,7 +154,9 @@ const calendar: ProgressCalendar = {
     const date = `2026-09-${String(day).padStart(2, '0')}`
     // No date is missed any more: a plan's weekday without a workout is a day like any other.
     const status = day === 30 ? 'today' : day === 28 || day === 29 ? 'trained' : 'rest'
-    return { date, status } as const
+    // Footvolley on Wednesdays; and surf on a day that was also trained.
+    const activities = [day % 7 === 2 ? 'Futevôlei' : null, day === 28 ? 'Surf' : null].filter((name) => name !== null)
+    return { date, status, activities } as const
   }),
   week_streak: 1,
   sessions_total: 2,
@@ -192,9 +194,11 @@ describe('CalendarScreen', () => {
     expect(await screen.findByRole('heading', { name: 'setembro de 2026' })).toBeInTheDocument()
     expect(screen.getByText('50%')).toBeInTheDocument()
     expect(screen.getByText('objetivo semanal · 4 sem.')).toBeInTheDocument()
-    expect(screen.getByLabelText('28 de setembro: treinado')).toBeInTheDocument()
-    expect(screen.getByLabelText('2 de setembro: descanso')).toBeInTheDocument()
-    expect(screen.getByLabelText('30 de setembro: hoje, por treinar')).toBeInTheDocument()
+    expect(screen.getByLabelText('28 de setembro: treinado, Surf')).toBeInTheDocument()
+    expect(screen.getByLabelText('2 de setembro: descanso, Futevôlei')).toBeInTheDocument()
+    expect(screen.getByLabelText('3 de setembro: descanso')).toBeInTheDocument()
+    expect(screen.getByLabelText('30 de setembro: hoje, por treinar, Futevôlei')).toBeInTheDocument()
+    expect(screen.getByText('atividade')).toBeInTheDocument() // the legend explains the dot
     expect(screen.queryByText('falhado')).not.toBeInTheDocument() // not even in the legend
     expect(screen.getByText('Seg · Quadríceps e Glúteos')).toBeInTheDocument()
     expect(screen.getByText('52 min · 19 séries')).toBeInTheDocument()

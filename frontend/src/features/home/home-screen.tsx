@@ -11,6 +11,7 @@ import { Progress } from '@/components/ui/progress'
 import { Spinner } from '@/components/ui/spinner'
 import { errorKey } from '@/features/auth/errors'
 import { FormAlert } from '@/features/auth/form-parts'
+import { TodayActivities } from '@/features/activities/today-activities'
 import { overviewQuery } from '@/features/progress/api'
 import { OverviewStats } from '@/features/progress/overview-stats'
 import type { LastRecord, ProgressOverview } from '@/features/progress/types'
@@ -24,7 +25,7 @@ import { planQuery, plansQuery } from '@/features/workouts/api'
 import { useWorkoutLabels } from '@/features/workouts/labels'
 import type { Day, Plan, Weekday } from '@/features/workouts/types'
 import { useRequiredSession } from '@/lib/auth'
-import { formatDayMonth, formatDayMonthLong } from '@/lib/format'
+import { formatDayMonth, formatDayMonthLong, formatList } from '@/lib/format'
 
 import { firstName, greetingFor, localNow, nextToDo, weekStrip, type StripCell } from './home'
 import { SwitchSheet } from './switch-sheet'
@@ -101,6 +102,7 @@ function ActivePlan({ planId, overview }: { planId: string; overview: ProgressOv
     <>
       <TodayCard plan={plan.data} week={week.data} />
       <ThisWeek plan={plan.data} week={week.data} />
+      <TodayActivities week={week.data} />
       <OverviewStats data={overview} />
       {overview.last_record && <LastRecordCard record={overview.last_record} today={week.data.today} />}
       <PlanLink plan={plan.data} />
@@ -113,6 +115,9 @@ const REASONS = {
   plan: 'home.reason.plan',
   catch_up: 'home.reason.catch_up',
   next: 'home.reason.next',
+  // The user's other activities changed what the plan alone would say; `{{activities}}` names them.
+  before_activity: 'home.reason.before_activity',
+  instead: 'home.reason.instead',
 } as const
 
 /**
@@ -121,10 +126,10 @@ const REASONS = {
  * is, "Trocar" opens the plan's other workouts: the user decides on the day.
  */
 function TodayCard({ plan, week }: { plan: Plan; week: PlanWeek }) {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const labels = useWorkoutLabels()
   const [choosing, setChoosing] = useState(false)
-  const { kind, day_id: dayId } = week.suggestion
+  const { kind, day_id: dayId, reason } = week.suggestion
   const day = plan.days.find((item) => item.id === dayId) ?? null
   const sheet = <SwitchSheet plan={plan} week={week} open={choosing} onOpenChange={setChoosing} />
 
@@ -137,20 +142,29 @@ function TodayCard({ plan, week }: { plan: Plan; week: PlanWeek }) {
     )
   }
   const complete = kind === 'complete'
+  // All that is left clashes with today's activity (surf, and only the upper body to do).
+  const clash = kind === 'rest' && reason === 'clash' && day !== null
+  const activities = formatList(week.suggestion.because, i18n.language)
+  const label = day ? day.label || labels.weekdayLong(day.weekday) : ''
   const description = complete
     ? t('home.complete.description', { done: week.workouts_done, target: week.target })
-    : day
-      ? t('home.rest.next', {
-          label: day.label || labels.weekdayLong(day.weekday),
-          weekday: labels.weekdayLong(day.weekday),
-        })
-      : t('home.rest.nothing')
+    : clash
+      ? t('home.rest.clash', { label })
+      : day
+        ? t('home.rest.next', { label, weekday: labels.weekdayLong(day.weekday) })
+        : t('home.rest.nothing')
   return (
     <section aria-labelledby="home-today" className={TODAY_CARD}>
       <h2 id="home-today" className={HEADING}>
         {t('home.today')}
       </h2>
-      <p className="text-xl font-medium">{complete ? t('home.complete.title') : t('home.rest.title')}</p>
+      <p className="text-xl font-medium">
+        {complete
+          ? t('home.complete.title')
+          : clash
+            ? t('home.rest.clashTitle', { activities })
+            : t('home.rest.title')}
+      </p>
       <p className="text-[13px] text-muted-foreground">{description}</p>
       <Button variant="outline-primary" size="touch" onClick={() => setChoosing(true)}>
         {complete ? t('home.another') : t('home.choose')}
@@ -163,7 +177,7 @@ function TodayCard({ plan, week }: { plan: Plan; week: PlanWeek }) {
 type TrainCardProps = { plan: Plan; day: Day; week: PlanWeek; onSwitch: () => void }
 
 function TrainCard({ plan, day, week, onSwitch }: TrainCardProps) {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const labels = useWorkoutLabels()
   const log = useQuery(dayLogQuery(day.id))
   const mark = useMarkDayDone(day.id)
@@ -196,7 +210,7 @@ function TrainCard({ plan, day, week, onSwitch }: TrainCardProps) {
             {finished || !next
               ? t('home.allDone')
               : !session && why
-                ? t(why)
+                ? t(why, { activities: formatList(week.suggestion.because, i18n.language) })
                 : t('home.next', { exercise: [next.name, labels.scheme(next)].filter(Boolean).join(' · ') })}
           </p>
         </>
@@ -265,20 +279,29 @@ function WeekCell({ cell, planId }: { cell: StripCell; planId: string }) {
     labels.weekdayLong(cell.weekday),
     trained ? t('home.dayState.done') : cell.state === 'planned' ? t('home.dayState.planned') : t('home.dayState.idle'),
     cell.day?.label,
+    ...cell.activities,
     cell.isToday ? t('home.dayState.today') : null,
   ]
     .filter(Boolean)
     .join(', ')
   const className = cn(
-    'flex h-11 items-center justify-center rounded-lg bg-card text-[13px] font-medium',
+    'relative flex h-11 items-center justify-center rounded-lg bg-card text-[13px] font-medium',
     trained && 'bg-primary text-primary-foreground',
     cell.state === 'idle' && 'bg-card/50 text-muted-foreground',
     cell.isToday && 'ring-1 ring-primary ring-inset',
   )
-  const mark = trained ? (
-    <CheckIcon aria-hidden weight="bold" className="size-4" />
-  ) : (
-    <span aria-hidden>{t(`weekdays.initial.${cell.weekday}`)}</span>
+  const mark = (
+    <>
+      {trained ? (
+        <CheckIcon aria-hidden weight="bold" className="size-4" />
+      ) : (
+        <span aria-hidden>{t(`weekdays.initial.${cell.weekday}`)}</span>
+      )}
+      {/* An activity that day (footvolley, surf): a dot, whatever else the day holds. */}
+      {cell.activities.length > 0 && (
+        <span aria-hidden className="absolute bottom-1 size-1 rounded-full bg-current opacity-70" />
+      )}
+    </>
   )
   const current = cell.isToday ? 'date' : undefined
 

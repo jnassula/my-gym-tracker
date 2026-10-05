@@ -45,6 +45,8 @@ export type StripCell = {
   sessionId: string | null
   /** The plan's day trained on that date, or the one the plan has for it. */
   day: Day | null
+  /** The user's other activities on that date (footvolley, surf), by name. */
+  activities: string[]
 }
 
 /**
@@ -58,11 +60,12 @@ export function weekStrip(days: Day[], week: PlanWeek): StripCell[] {
   return WEEKDAYS.map((weekday) => {
     const date = addDays(week.week_start, weekday)
     const isToday = date === week.today
+    const activities = week.activities.filter((item) => item.date === date).map((item) => item.name)
     // Today's only counts once it is complete; until then it is the workout in hand.
     const workout = week.sessions.filter((item) => item.date === date && (!isToday || item.complete)).at(-1)
     if (workout) {
       const day = (workout.day_id && byId.get(workout.day_id)) || null
-      return { date, weekday, state: 'trained', isToday, sessionId: workout.session_id, day }
+      return { date, weekday, state: 'trained', isToday, sessionId: workout.session_id, day, activities }
     }
     // Still to come: today, the workout in hand; later in the week, the plan's own day for
     // that weekday while it wasn't trained.
@@ -73,6 +76,6 @@ export function weekStrip(days: Day[], week: PlanWeek): StripCell[] {
       : date > week.today
         ? (days.find((item) => item.weekday === weekday && !status.get(item.id)?.trained) ?? null)
         : null
-    return { date, weekday, state: day ? 'planned' : 'idle', isToday, sessionId: null, day }
+    return { date, weekday, state: day ? 'planned' : 'idle', isToday, sessionId: null, day, activities }
   })
 }

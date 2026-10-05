@@ -95,6 +95,7 @@ describe('weekStrip', () => {
     exercises_total: 5,
     sets: 0,
     trained,
+    avoid: [],
   })
   // Wednesday. Monday's workout was done on Tuesday, and Friday's on Monday.
   const week: PlanWeek = {
@@ -113,7 +114,8 @@ describe('weekStrip', () => {
       { session_id: 's-fri', day_id: 'fri', date: '2026-09-28', complete: true },
       { session_id: 's-mon', day_id: 'mon', date: '2026-09-29', complete: false }, // left half done
     ],
-    suggestion: { kind: 'suggest', day_id: 'wed', reason: 'plan' },
+    suggestion: { kind: 'suggest', day_id: 'wed', reason: 'plan', because: [] },
+    activities: [],
   }
   const cells = (of: PlanWeek) => weekStrip(days, of).map((cell) => [cell.state, cell.day?.id ?? null, cell.sessionId])
 
@@ -143,12 +145,12 @@ describe('weekStrip', () => {
     const started = {
       ...week,
       sessions: [...week.sessions, { session_id: 's-wed', day_id: 'wed', date: '2026-09-30', complete: false }],
-      suggestion: { kind: 'continue', day_id: 'wed', reason: null },
+      suggestion: { kind: 'continue', day_id: 'wed', reason: null, because: [] },
     } satisfies PlanWeek
     const done = {
       ...started,
       sessions: started.sessions.map((item) => ({ ...item, complete: true })),
-      suggestion: { kind: 'done', day_id: 'wed', reason: null },
+      suggestion: { kind: 'done', day_id: 'wed', reason: null, because: [] },
     } satisfies PlanWeek
 
     expect(cells(started)[2]).toEqual(['planned', 'wed', null])
@@ -157,7 +159,7 @@ describe('weekStrip', () => {
 
   it('has nothing waiting today on a rest day or in a week already complete', () => {
     for (const kind of ['rest', 'complete'] as const) {
-      expect(cells({ ...week, suggestion: { kind, day_id: 'sat', reason: null } })[2]).toEqual(['idle', null, null])
+      expect(cells({ ...week, suggestion: { kind, day_id: 'sat', reason: null, because: [] } })[2]).toEqual(['idle', null, null])
     }
   })
 
@@ -167,7 +169,7 @@ describe('weekStrip', () => {
       ...week,
       days: [status('a', '2026-09-28', true), status('b', null, false)],
       sessions: [{ session_id: 's-a', day_id: 'a', date: '2026-09-28', complete: true }],
-      suggestion: { kind: 'suggest', day_id: 'b', reason: 'next' },
+      suggestion: { kind: 'suggest', day_id: 'b', reason: 'next', because: [] },
     }
 
     expect(weekStrip(rotating, of).map((cell) => cell.state)).toEqual([

@@ -57,7 +57,9 @@ export type WeekSession = {
 export type ProgressCalendar = {
   month: string
   today: string
-  days: Array<{ date: string; status: DayStatus }>
+  /** `activities`: the user's other activities that day (footvolley, surf), by name; missing
+   * from a server older than they are. */
+  days: Array<{ date: string; status: DayStatus; activities?: string[] }>
   week_streak: number
   sessions_total: number
   adherence_30d: number | null
