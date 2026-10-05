@@ -245,14 +245,15 @@ async def client(
 
 @pytest.fixture
 def clock(monkeypatch: pytest.MonkeyPatch) -> Clock:
-    """Moves "now" for the training log (and so for progress), the data sources and the body
-    measurements: starts on a Monday evening."""
-    from app.body import service as body  # noqa: PLC0415  # imported after env is set
+    """Moves "now" for the training log (and so for progress), the data sources, the body
+    measurements and the activities: starts on a Monday evening."""
+    from app.activities import service as activities  # noqa: PLC0415  # imported after env is set
+    from app.body import service as body  # noqa: PLC0415
     from app.health import service as health  # noqa: PLC0415
     from app.logs import service  # noqa: PLC0415
 
     clock = Clock(MONDAY)
-    for domain in (service, health, body):
+    for domain in (service, health, body, activities):
         monkeypatch.setattr(domain, "now", lambda: clock.now)
     return clock
 

@@ -8,6 +8,7 @@ from fastapi import APIRouter, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from slowapi.errors import RateLimitExceeded
 
+from app.activities.router import router as activities_router
 from app.admin.router import router as admin_router
 from app.auth import janitor
 from app.auth.dependencies import client_key
@@ -52,6 +53,7 @@ DOMAIN_ROUTERS = (
     files_router,
     health_router,
     body_router,
+    activities_router,
     admin_router,
 )
 
