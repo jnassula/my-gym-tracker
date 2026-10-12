@@ -22,7 +22,7 @@ services:
   storage:
     # S3-compatible object storage for the uploaded PDFs. RustFS replaced MinIO, whose
     # community images were withdrawn from Docker Hub and quay.io.
-    image: rustfs/rustfs:1.0.0
+    image: rustfs/rustfs:1.0.1
     environment:
       RUSTFS_ACCESS_KEY: ${S3_ACCESS_KEY:?set in .env}
       RUSTFS_SECRET_KEY: ${S3_SECRET_KEY:?set in .env}
