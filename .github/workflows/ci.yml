@@ -205,6 +205,7 @@ jobs:
           only-fixed: true
           output-format: table
       - name: Start the production stack
+        id: stack
         working-directory: deploy
         run: |
           cat > .env <<EOF
@@ -240,7 +241,9 @@ jobs:
           # Backups work: the database dump and the stored files.
           docker compose run --rm --no-deps backup now
       - name: Logs of the failed stack
-        if: failure()
+        # Only once the stack was started: before that there is no .env to read, and this step
+        # would fail on top of the one that did (the image scan, say).
+        if: failure() && steps.stack.outcome != 'skipped'
         working-directory: deploy
         run: docker compose logs --tail 100
 

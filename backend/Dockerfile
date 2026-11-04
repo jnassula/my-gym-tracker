@@ -1,6 +1,6 @@
 # Base images by digest: a tag can be moved to other content, a digest can't. Dependabot
 # updates both.
-FROM python:3.13-slim@sha256:3dd7cc108ec1493442514f5c2a871af6af0ec31d768ff6e378a93340c3b3db5f AS base
+FROM python:3.13-slim@sha256:ae14d4ce8771606477a81446e7ef429edd6762305fc50c84507c1041fa8285d1 AS base
 
 # The distribution's security fixes published since the base image was built. CI passes the
 # day as OS_UPDATES, so this layer is built again every day instead of staying cached.
