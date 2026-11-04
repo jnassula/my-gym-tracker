@@ -60,8 +60,10 @@ jobs:
         run: |
           uv export --locked --no-dev --no-emit-project --format requirements-txt \
             --output-file "$RUNNER_TEMP/requirements.txt" --quiet
+          # CVE-2026-114603: opentelemetry-api, fixed in 1.45.1, which google-adk 2.13 still
+          # pins below (the app itself never uses it). Drop the exception once ADK moves.
           uvx pip-audit==2.10.1 --requirement "$RUNNER_TEMP/requirements.txt" \
-            --require-hashes --disable-pip
+            --require-hashes --disable-pip --ignore-vuln CVE-2026-114603
       - name: Lint
         run: uv run ruff check --output-format=github .
       - name: Format
