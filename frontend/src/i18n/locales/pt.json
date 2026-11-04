@@ -676,7 +676,10 @@
       "restart": "Recomeçar",
       "less": "Menos 15 segundos",
       "more": "Mais 15 segundos",
-      "skip": "Saltar descanso"
+      "skip": "Saltar descanso",
+      "goSet": "Próxima série",
+      "goExercise": "Próximo exercício",
+      "goOn": "Continuar"
     },
     "exercise": {
       "rest": "Descanso {{time}}",
@@ -1004,7 +1007,9 @@
   },
   "pwa": {
     "updateAvailable": "Há uma nova versão da app.",
-    "update": "Atualizar"
+    "update": "Atualizar",
+    "rotate": "Roda o telemóvel",
+    "rotateHint": "A app é feita para usar ao alto."
   },
   "notifications": {
     "title": "Notificações",

@@ -27,7 +27,7 @@ import { LogSetSheet } from './log-set-sheet'
 import { PlateSheet } from './plate-sheet'
 import { nextExercise, plannedSets, restSeconds, setsOf, suggestion, topWeight } from './plan'
 import { restTimer } from './rest-timer'
-import { RestPill, RestSheet } from './rest-timer-ui'
+import { RestPill, RestSheet, type AfterRest } from './rest-timer-ui'
 import { SetDialog } from './set-dialog'
 import type { DayLog, ExerciseHistory, LoggedSet, PastSet } from './types'
 import {
@@ -43,10 +43,17 @@ import {
 
 const HEADING = 'text-[0.6875rem] font-medium tracking-widest text-primary uppercase'
 
-type ExerciseScreenProps = { plan: Plan; dayId: string; exerciseId: string; backLink: ReactNode }
+type ExerciseScreenProps = {
+  plan: Plan
+  dayId: string
+  exerciseId: string
+  backLink: ReactNode
+  /** The rest after the last set ran out: open the exercise that follows. */
+  onNextExercise?: (exerciseId: string) => void
+}
 
 /** One exercise mid-workout: pick the weight, log sets, rest, see last time. */
-export function ExerciseScreen({ plan, dayId, exerciseId, backLink }: ExerciseScreenProps) {
+export function ExerciseScreen({ plan, dayId, exerciseId, backLink, onNextExercise }: ExerciseScreenProps) {
   const labels = useWorkoutLabels()
   const log = useQuery(dayLogQuery(dayId))
   const day = plan.days.find((item) => item.id === dayId)
@@ -72,13 +79,26 @@ export function ExerciseScreen({ plan, dayId, exerciseId, backLink }: ExerciseSc
         <FormAlert messageKey={errorKey(log.error)} />
       ) : (
         // Keyed: another exercise starts from its own suggestion.
-        <ExerciseLogger key={exercise.id} day={day} exercise={exercise} log={log.data} />
+        <ExerciseLogger
+          key={exercise.id}
+          day={day}
+          exercise={exercise}
+          log={log.data}
+          onNextExercise={onNextExercise}
+        />
       )}
     </Page>
   )
 }
 
-function ExerciseLogger({ day, exercise, log }: { day: Day; exercise: Exercise; log: DayLog }) {
+type ExerciseLoggerProps = {
+  day: Day
+  exercise: Exercise
+  log: DayLog
+  onNextExercise?: (exerciseId: string) => void
+}
+
+function ExerciseLogger({ day, exercise, log, onNextExercise }: ExerciseLoggerProps) {
   const { t, i18n } = useTranslation()
   const locale = i18n.language
   const labels = useWorkoutLabels()
@@ -104,7 +124,7 @@ function ExerciseLogger({ day, exercise, log }: { day: Day; exercise: Exercise; 
   const [decreasing, setDecreasing] = useState(false)
   const [logging, setLogging] = useState(false)
   const [editing, setEditing] = useState<LoggedSet | null>(null)
-  const [afterRest, setAfterRest] = useState<string | null>(null)
+  const [afterRest, setAfterRest] = useState<AfterRest | null>(null)
   const [platesOpen, setPlatesOpen] = useState(false)
 
   function changeWeight(value: number) {
@@ -136,10 +156,11 @@ function ExerciseLogger({ day, exercise, log }: { day: Day; exercise: Exercise; 
           }
           const count = setsOf(session, exercise.id).length
           const following = nextExercise(day, exercise.id)
+          // The last planned set done: the rest is before the next exercise, which then opens.
           setAfterRest(
             count >= planned && following
-              ? t('training.rest.next', { name: following.name })
-              : t('training.rest.nextSet', { name: exercise.name, n: count + 1 }),
+              ? { text: t('training.rest.next', { name: following.name }), exerciseId: following.id }
+              : { text: t('training.rest.nextSet', { name: exercise.name, n: count + 1 }), exerciseId: null },
           )
           // "Descanso automático" (Definições) decides whether logging starts the rest.
           if (user.auto_rest) restTimer.start(restSeconds(exercise))
@@ -311,7 +332,7 @@ function ExerciseLogger({ day, exercise, log }: { day: Day; exercise: Exercise; 
       />
       <SetDialog dayId={day.id} set={editing} unit={unit} onClose={() => setEditing(null)} />
       <PlateSheet open={platesOpen} onOpenChange={setPlatesOpen} weight={weight} unit={unit} />
-      <RestSheet next={afterRest} />
+      <RestSheet next={afterRest} onExercise={onNextExercise} />
     </div>
   )
 }

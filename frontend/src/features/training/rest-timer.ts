@@ -163,6 +163,12 @@ export const restTimer = {
   },
 }
 
+/** Whether a rest is running: for what only needs that (the wake lock), without re-rendering
+ * on every tick the countdown takes. */
+export function useRestRunning(): boolean {
+  return useSyncExternalStore(restTimer.subscribe, () => isRunning(state))
+}
+
 export function useRestTimer() {
   const rest = useSyncExternalStore(restTimer.subscribe, restTimer.get)
   const leftMs = remaining(rest)

@@ -30,11 +30,28 @@ export function RestPill() {
 const RADIUS = 45
 const CIRCUMFERENCE = 2 * Math.PI * RADIUS
 
-/** The rest sheet: ring countdown, ±15 s, pause/resume, skip. `next` says what comes after. */
-export function RestSheet({ next }: { next: string | null }) {
+/** What the rest is before: the next set, or the next exercise (its id), said in `text`. */
+export type AfterRest = { text: string; exerciseId: string | null }
+
+type RestSheetProps = {
+  next: AfterRest | null
+  /** The rest ran out before the next exercise: open it. */
+  onExercise?: (exerciseId: string) => void
+}
+
+/**
+ * The rest sheet: ring countdown, ±15 s, pause/resume, and "Saltar descanso" while it runs.
+ * Once it has run out the way on is what comes next: the next set (the sheet closes over the
+ * exercise) or the next exercise (which opens).
+ */
+export function RestSheet({ next, onExercise }: RestSheetProps) {
   const { t } = useTranslation()
   const { rest, left, paused } = useRestTimer()
   const over = left === 0
+  const goOn = () => {
+    restTimer.skip()
+    if (next?.exerciseId) onExercise?.(next.exerciseId)
+  }
   const fraction = rest.total > 0 ? Math.min(1, left / rest.total) : 0
   return (
     <Sheet open={rest.open} onOpenChange={(open) => !open && restTimer.hide()}>
@@ -73,7 +90,7 @@ export function RestSheet({ next }: { next: string | null }) {
           </p>
         </div>
         <SheetDescription className="min-h-5 text-center">
-          {over ? t('training.rest.ready') : next}
+          {over ? t('training.rest.ready') : next?.text}
         </SheetDescription>
         <div className="grid grid-cols-3 gap-2">
           <Button
@@ -100,9 +117,19 @@ export function RestSheet({ next }: { next: string | null }) {
             +15 s
           </Button>
         </div>
-        <Button variant="ghost" size="touch" onClick={restTimer.skip}>
-          {t('training.rest.skip')}
-        </Button>
+        {over ? (
+          <Button size="hero" onClick={goOn}>
+            {next?.exerciseId
+              ? t('training.rest.goExercise')
+              : next
+                ? t('training.rest.goSet')
+                : t('training.rest.goOn')}
+          </Button>
+        ) : (
+          <Button variant="ghost" size="touch" onClick={restTimer.skip}>
+            {t('training.rest.skip')}
+          </Button>
+        )}
       </SheetContent>
     </Sheet>
   )

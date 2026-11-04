@@ -1,4 +1,4 @@
-import { cleanup, screen, waitFor, within } from '@testing-library/react'
+import { act, cleanup, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -113,8 +113,11 @@ afterEach(() => {
 })
 
 describe('ExerciseScreen', () => {
+  const onNextExercise = vi.fn()
   function renderExercise() {
-    renderWithRouter(<ExerciseScreen plan={plan} dayId="day-1" exerciseId="ex-2" backLink={null} />)
+    renderWithRouter(
+      <ExerciseScreen plan={plan} dayId="day-1" exerciseId="ex-2" backLink={null} onNextExercise={onNextExercise} />,
+    )
   }
 
   it('starts from last time’s weight and the plan’s reps', async () => {
@@ -179,6 +182,48 @@ describe('ExerciseScreen', () => {
 
     await userEvent.click(within(rest).getByRole('button', { name: 'Saltar descanso' }))
     expect(await screen.findByRole('button', { name: 'Série 1: 52,5 kg × 12. Tocar para corrigir' })).toBeInTheDocument()
+    expect(restTimer.get().endsAt).toBeNull()
+  })
+
+  it('offers the next set once the rest has run out', async () => {
+    serve({
+      'GET /api/logs/days/day-1': () => json(dayLog(null)),
+      'GET /api/logs/exercises/ex-2/history': () => json({ sessions: [], best_weight: 50 }),
+      'POST /api/logs/exercises/ex-2/sets': () => json(session([loggedSet(1, 50, 12)]), 201),
+    })
+    renderExercise()
+    await userEvent.click(await screen.findByRole('button', { name: 'Registar série · 50 kg × 12' }))
+    await userEvent.click(within(await screen.findByRole('dialog', { name: 'Registar série #1' })).getByRole('button', { name: /Confirmar/ }))
+    const rest = await screen.findByRole('dialog', { name: 'Descanso' })
+    expect(within(rest).queryByRole('button', { name: 'Próxima série' })).not.toBeInTheDocument()
+
+    act(() => restTimer.adjust(-80)) // the rest runs out
+
+    expect(await within(rest).findByText('Pronto — próxima série')).toBeInTheDocument()
+    expect(within(rest).queryByRole('button', { name: 'Saltar descanso' })).not.toBeInTheDocument()
+    await userEvent.click(within(rest).getByRole('button', { name: 'Próxima série' }))
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Descanso' })).not.toBeInTheDocument())
+    expect(onNextExercise).not.toHaveBeenCalled()
+    expect(screen.getByRole('button', { name: 'Registar série · 50 kg × 12' })).toBeInTheDocument()
+  })
+
+  it('opens the next exercise once the rest after the last set has run out', async () => {
+    const done = [loggedSet(1, 50, 12), loggedSet(2, 50, 12), loggedSet(3, 50, 12)]
+    serve({
+      'GET /api/logs/days/day-1': () => json(dayLog(session(done.slice(0, 2)))),
+      'GET /api/logs/exercises/ex-2/history': () => json({ sessions: [], best_weight: 50 }),
+      'POST /api/logs/exercises/ex-2/sets': () => json(session(done), 201),
+    })
+    renderExercise()
+    await userEvent.click(await screen.findByRole('button', { name: /Registar série · 50 kg/ }))
+    await userEvent.click(within(await screen.findByRole('dialog', { name: 'Registar série #3' })).getByRole('button', { name: /Confirmar/ }))
+    const rest = await screen.findByRole('dialog', { name: 'Descanso' })
+    expect(within(rest).getByText('A seguir: Puxador Horizontal')).toBeInTheDocument()
+
+    act(() => restTimer.adjust(-80))
+
+    await userEvent.click(await within(rest).findByRole('button', { name: 'Próximo exercício' }))
+    expect(onNextExercise).toHaveBeenCalledWith('ex-3')
     expect(restTimer.get().endsAt).toBeNull()
   })
 

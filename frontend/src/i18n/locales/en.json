@@ -676,7 +676,10 @@
       "restart": "Restart",
       "less": "15 seconds less",
       "more": "15 seconds more",
-      "skip": "Skip rest"
+      "skip": "Skip rest",
+      "goSet": "Next set",
+      "goExercise": "Next exercise",
+      "goOn": "Carry on"
     },
     "exercise": {
       "rest": "Rest {{time}}",
@@ -1004,7 +1007,9 @@
   },
   "pwa": {
     "updateAvailable": "A new version of the app is ready.",
-    "update": "Update"
+    "update": "Update",
+    "rotate": "Turn your phone",
+    "rotateHint": "The app is made to be used upright."
   },
   "notifications": {
     "title": "Notifications",

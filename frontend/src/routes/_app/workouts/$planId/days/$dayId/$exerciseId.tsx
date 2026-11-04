@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, useNavigate } from '@tanstack/react-router'
 
 import { BackLink, Page } from '@/components/app-shell/page'
 import { Spinner } from '@/components/ui/spinner'
@@ -19,6 +19,7 @@ export const Route = createFileRoute('/_app/workouts/$planId/days/$dayId/$exerci
 function PlanExercise() {
   const { planId, dayId, exerciseId } = Route.useParams()
   const { from } = Route.useSearch()
+  const navigate = useNavigate()
   const plan = useQuery(planQuery(planId))
   const backLink = <BackLink to="/workouts/$planId/days/$dayId" params={{ planId, dayId }} search={{ from }} />
 
@@ -33,5 +34,19 @@ function PlanExercise() {
       </Page>
     )
   }
-  return <ExerciseScreen plan={plan.data} dayId={dayId} exerciseId={exerciseId} backLink={backLink} />
+  return (
+    <ExerciseScreen
+      plan={plan.data}
+      dayId={dayId}
+      exerciseId={exerciseId}
+      backLink={backLink}
+      onNextExercise={(next) =>
+        void navigate({
+          to: '/workouts/$planId/days/$dayId/$exerciseId',
+          params: { planId, dayId, exerciseId: next },
+          search: { from },
+        })
+      }
+    />
+  )
 }
